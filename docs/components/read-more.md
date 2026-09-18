@@ -150,10 +150,10 @@ Regular HTML attributes, including `class`, pass through the component attribute
 The structural stylesheet owns the `max-block-size` transition property because the controller waits for that specific
 geometry change. Presets and applications own its timing through custom properties on `data-slot="read-more"`:
 
-| Property                      | Nova default  | Purpose                    |
-| ----------------------------- | ------------- | -------------------------- |
-| `--read-more-motion-duration` | `500ms`       | Viewport expansion timing. |
-| `--read-more-motion-easing`   | `ease-in-out` | Viewport easing curve.     |
+| Property                      | Nova default  | Bloom default                    | Purpose                    |
+| ----------------------------- | ------------- | -------------------------------- | -------------------------- |
+| `--read-more-motion-duration` | `500ms`       | `600ms`                          | Viewport expansion timing. |
+| `--read-more-motion-easing`   | `ease-in-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | Viewport easing curve.     |
 
 Set the duration to `0ms` to disable this motion without changing the structural transition property. The shared
 reduced-motion rule still disables it regardless of the configured values. The controller's emergency watchdog is capped

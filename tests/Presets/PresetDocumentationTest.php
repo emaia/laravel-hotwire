@@ -2,6 +2,30 @@
 
 use Illuminate\Support\Facades\File;
 
+it('documents both official presets and their typography boundary', function () {
+    $presets = File::get(__DIR__.'/../../docs/presets.md');
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($presets)
+        ->toContain('Nova')
+        ->toContain('Bloom')
+        ->toContain('--preset=bloom')
+        ->toContain('--from=bloom')
+        ->and($theming)
+        ->toContain('Preset-owned tokens');
+});
+
+it('documents the tokens a preset owns and how an application still overrides them', function () {
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($theming)
+        ->toContain('Preset-owned tokens')
+        ->toContain('--radius-control')
+        ->toContain('keeps the same name and role')
+        ->and(File::get(__DIR__.'/../../docs/presets.md'))
+        ->toContain('preset-owned-tokens');
+});
+
 it('keeps preset authoring separate from component markup and controller wiring', function () {
     $theming = File::get(__DIR__.'/../../docs/theming.md');
     $registry = File::get(__DIR__.'/../../docs/registry.md');
@@ -35,7 +59,8 @@ it('documents how application-owned presets are maintained across package upgrad
         ->toContain('## Maintain an application preset')
         ->toContain('does not merge')
         ->toMatch('/new visual\s+slots/')
-        ->toMatch('/new foundation imports/')
+        ->toContain('copied preset-base changes')
+        ->toContain('single live `foundation.css` import')
         ->toContain('light and dark themes')
         ->toContain('right-to-left')
         ->toMatch('/reduced\s+motion/')
@@ -55,4 +80,32 @@ it('keeps visual preset ownership separate from component template ownership', f
         ->toMatch('/does not require\s+publishing package views/')
         ->toMatch('/application-owned fork of markup\s+and behavior/')
         ->toMatch('/targets, lifecycle and\s+accessibility/');
+});
+
+it('documents the official preset token metadata contract without name inference', function () {
+    $registry = File::get(__DIR__.'/../../docs/registry.md');
+    $presets = File::get(__DIR__.'/../../docs/presets.md');
+    $theming = File::get(__DIR__.'/../../docs/theming.md');
+
+    expect($registry)
+        ->toContain('`properties`', '`aliases`', '`contrast_pairs`')
+        ->toContain('`global`', '`themed`')
+        ->toContain('mutually exclusive')
+        ->toContain('must not also appear')
+        ->toContain('unthemed default')
+        ->toContain('optional override')
+        ->toContain('any subset')
+        ->toContain('inherited classification')
+        ->toMatch('/CSS inheritance\s+does not satisfy/')
+        ->toContain('full CSS custom-property names')
+        ->toContain('does not infer')
+        ->toContain('exactly one distinct `var(--...)` target')
+        ->and($presets)
+        ->toContain('registered additional property')
+        ->toContain('all ordered preset-base sources')
+        ->toContain('combined declarations of all base sources')
+        ->not->toContain('validation evaluates their combined cascade order')
+        ->and($theming)
+        ->toContain('registered contrast pairs')
+        ->toContain('discovers every official preset');
 });

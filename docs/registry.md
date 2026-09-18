@@ -12,9 +12,82 @@ The registry is the public query surface for everything the package exposes:
 Public component and controller metadata lives in [`src/Registry/catalog.php`](../src/Registry/catalog.php). Component
 families own their slot anatomy in their root class, and catalog entries project those declarations into the registry.
 Visual CSS ownership and dependency closure live separately in [`src/Registry/styles.php`](../src/Registry/styles.php),
-where each official preset maps those logical modules to its private sources in canonical cascade order. A source may
-cover several modules and may be nested within the preset's private directory; neither its path nor its grouping is a
-cross-preset contract. Only the top-level `resources/css/presets/<name>.css` entrypoint is public and discoverable.
+where each official preset declares an ordered `base` list and maps logical modules to private sources in canonical
+cascade order. Base sources always precede modules and remain included for an empty module selection. A module source may
+cover several modules and may be nested within the preset's private directory; no private path or grouping is a
+cross-preset contract. The public CSS surfaces are the top-level `resources/css/presets/<name>.css` entrypoints and the
+shared `resources/css/foundation.css` facade.
+
+## Preset token contract
+
+`styles.php` declares the shared foundation token contract once and each official preset declares only what it adds:
+
+```php
+'foundation' => [
+    'properties' => [
+        '--background' => 'themed',
+        '--foreground' => 'themed',
+        '--radius' => 'global',
+    ],
+    'aliases' => ['--color-background' => '--background'],
+    'contrast_pairs' => [
+        'background' => [
+            'foreground' => '--foreground',
+            'background' => '--background',
+        ],
+    ],
+],
+'presets' => [
+    'example' => [
+        'base' => ['presets/example/theme.css'],
+        'properties' => [
+            '--status' => 'themed',
+            '--status-foreground' => 'themed',
+            '--panel-radius' => 'global',
+        ],
+        'aliases' => ['--color-status' => '--status'],
+        'contrast_pairs' => [
+            'status' => [
+                'foreground' => '--status-foreground',
+                'background' => '--status',
+            ],
+        ],
+        'sources' => [/* ... */],
+    ],
+],
+```
+
+The `properties` map uses full CSS custom-property names as keys and assigns each name introduced at that level its
+declaration scope. A `global` property requires a top-level `:root` declaration. A `themed` property requires all three
+top-level theme selectors: the unthemed default `:where(:root:not([data-theme="dark"]))`, explicit
+`[data-theme="light"]` and explicit `[data-theme="dark"]`. CSS inheritance does not satisfy a missing default, light or
+dark declaration: a computed value inherited from `:root` or an ancestor can hide an incomplete theme from browser-only
+checks.
+
+These owner contracts are mutually exclusive. A `global` property must not also appear in a theme scope, and a `themed`
+property must not appear in `:root`. In the latter case, `:root` has greater specificity than the zero-specificity
+unthemed default and would make that default declaration dead even if every required selector were present.
+
+`aliases` maps each property emitted by Tailwind's `@theme inline` to the registered property it references; aliases are
+optional for preset knobs. Every alias value must resolve to exactly one distinct `var(--...)` target. Static values and
+expressions referencing different properties are not aliases in this contract.
+`contrast_pairs` names explicit foreground/background roles. The manifest does not infer aliases, foregrounds or pairs
+from stems because valid semantic relationships need not follow a naming convention.
+
+Every official preset inherits the foundation properties, aliases and pairs even when all three preset additions are
+empty. A preset cannot redeclare a foundation-owned name or pair. Its additional properties must occur in its complete
+ordered `base`, and every additional alias must occur in `@theme inline` with the registered target. Base sources may
+override values in cascade order, including shared properties, but an unregistered additional name is an ownership
+error. A foundation-owned property declared by a preset base is an optional override rather than a new property: it may
+target any subset allowed by its inherited classification. A themed override may use `default`, `light` and/or `dark`
+without providing all three; a global override may use only `root`. Both inherit the foundation value wherever they are
+not declared. Overrides do not require theme symmetry; do not register their names again under the preset. Package
+validation reads CSS blocks structurally so formatting, multiple base files and nested function values do not weaken the
+contract or create scope through name inference.
+
+This metadata describes shipped package presets. An application-owned scaffold or clone may declare its own properties
+after the import, and `hotwire:check --preset` does not claim to recover official provenance or diagnose arbitrary
+unresolved application tokens.
 
 ## Catalog entries
 
@@ -70,6 +143,7 @@ API.
 | Key     | Description                                                                      |
 |---------|----------------------------------------------------------------------------------|
 | `slots` | Ordered family references, each with `class` and optional local-key list `only` |
+| `preset_properties` | Required custom properties by slot, mapped to neutral scaffold values |
 
 References can combine declarations from multiple families. Use `only` when an entry owns a defined subset:
 
@@ -87,6 +161,13 @@ consumer happens to appear first.
 
 Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
+
+Use `preset_properties` only when structural CSS consumes a value that every complete preset must define. The registry
+value is the neutral declaration emitted by `hotwire:make-preset`; `hotwire:check` verifies that application presets keep
+the property on the named slot. For example, Sidebar scaffolds zero inset and edge contributions so its icon geometry
+remains valid before the preset author chooses a floating treatment. Those neutral zeros retain the units consumed by
+the structural calculation (`0rem` for inset and `0px` for edge), so each custom property remains a length when combined
+with Sidebar widths through `calc()`.
 
 ## Slots and controller targets
 
@@ -116,12 +197,15 @@ A value belongs to the slot in whose compound it is written, so `[data-slot="sid
 [data-slot="sidebar-content"]` reports the attribute on `sidebar`. This remains useful when inspecting a stylesheet,
 but official presets are not required to expose identical lexical axes.
 
-`PresetAxes::coverage()` reports parser coverage: whether the scanner visited every `data-slot` occurrence it counted.
-It does not prove semantic coverage, state support, accessibility or compatibility with the component contract.
+`PresetAxes::coverage()` reports parser coverage: whether the scanner visited every `[data-slot=…]` selector and
+`data-[slot=…]` Tailwind variant it counted. It does not prove semantic coverage, state support, accessibility or
+compatibility with the component contract. `PresetAxes::inspectCoverage()` additionally reports structural validity
+and the identifiable slot names the parser could not visit, separating complete references from incomplete syntax.
 
-`Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one empty base rule for each
-visual slot projected by the registry. Ancestor state, equivalent selectors and Tailwind variants remain authoring
-decisions documented by the component contract and implementation examples.
+`Support\PresetSkeleton` does not use `PresetAxes` or parse an official preset. It emits one base rule for each visual
+slot projected by the registry; rules stay empty unless the slot declares `preset_properties`. Ancestor state,
+equivalent selectors and Tailwind variants remain authoring decisions documented by the component contract and
+implementation examples.
 
 Slot declarations are verified against every shipped preset in
 [`tests/Registry/SlotCatalogTest.php`](../tests/Registry/SlotCatalogTest.php): every visual slot must participate in a

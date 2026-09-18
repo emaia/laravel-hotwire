@@ -5,6 +5,8 @@ namespace Emaia\LaravelHotwire\Support;
 /** @internal */
 final class CssImports
 {
+    public function __construct(private readonly CssRules $rules = new CssRules) {}
+
     /**
      * Read legal top-level CSS imports in source order.
      *
@@ -25,7 +27,7 @@ final class CssImports
                         |
                         (?<url_path>[^)\s]+)
                     )(?:\s|/\*.*?\*/)*\)
-                )(?<conditions>[^;]*);
+                )(?<conditions>.*);$
             ~isx
             REGEX;
         $imports = [];
@@ -47,7 +49,7 @@ final class CssImports
 
             $imports[] = [
                 'path' => $path,
-                'conditions' => trim(preg_replace('~/\*.*?\*/~s', ' ', (string) $match['conditions']) ?? (string) $match['conditions']),
+                'conditions' => trim($this->rules->maskComments((string) $match['conditions'])),
                 'offset' => $rule['offset'],
                 'length' => $rule['length'],
             ];
@@ -70,132 +72,123 @@ final class CssImports
         return $content;
     }
 
+    /** Detect unconsumed import tokens at any depth, ignoring strings, comments and escaped syntax. */
+    public function contains(string $content): bool
+    {
+        $found = false;
+
+        $this->rules->scan($content, function (array $event) use ($content, &$found): void {
+            if ($event['type'] === 'character' && $event['character'] === '@'
+                && preg_match('/\G@import(?![\w\\\\-]|[^\x00-\x7f])/i', $content, offset: $event['offset']) === 1) {
+                $found = true;
+            }
+        }, additionalCharacters: '@');
+
+        return $found;
+    }
+
     /** @return list<array{content: string, offset: int, length: int}> */
     private function topLevelRules(string $content): array
     {
-        $bomLength = str_starts_with($content, "\xEF\xBB\xBF") ? 3 : 0;
+        $bomLength = strlen($content) - strlen($this->rules->stripBom($content));
         $rules = [];
-        $length = strlen($content);
-        $depth = 0;
-        $ruleStart = true;
+        $start = null;
         $importsAllowed = true;
+        $cursor = $bomLength;
 
-        for ($offset = $bomLength; $offset < $length; $offset++) {
-            if (substr($content, $offset, 2) === '/*') {
-                $offset = $this->skipComment($content, $offset);
-
-                continue;
+        $scan = $this->rules->scan($content, function (array $event) use (
+            $content,
+            $bomLength,
+            &$rules,
+            &$start,
+            &$importsAllowed,
+            &$cursor,
+        ): void {
+            if ($event['offset'] < $bomLength) {
+                return;
             }
 
-            if ($content[$offset] === '"' || $content[$offset] === "'") {
-                if ($depth === 0) {
-                    if ($ruleStart) {
+            if ($start === null && $event['depth'] === 0) {
+                $segment = substr($content, $cursor, $event['offset'] - $cursor);
+                $whitespace = strspn($segment, " \t\n\r\v\f");
+
+                if ($whitespace < strlen($segment)) {
+                    $start = $cursor + $whitespace;
+                }
+            }
+
+            $cursor = $event['offset'] + $event['length'];
+
+            if ($event['type'] === 'comment') {
+                return;
+            }
+
+            $characterEvent = $event['type'] === 'character';
+
+            if ($event['blockDepth'] !== 0) {
+                if ($characterEvent && $event['character'] === '}' && $event['blockDepth'] === 1) {
+                    $start = null;
+                }
+
+                return;
+            }
+
+            $character = $event['character'];
+
+            if ($characterEvent && $character === '{' && $event['depth'] === 0) {
+                $importsAllowed = false;
+                $start = null;
+
+                return;
+            }
+
+            if ($characterEvent && $character === '}' && $event['depth'] === 0) {
+                $importsAllowed = false;
+                $start = null;
+
+                return;
+            }
+
+            if ($characterEvent && $character === ';' && $event['depth'] === 0) {
+                if ($start !== null) {
+                    $ruleLength = $event['offset'] - $start + 1;
+                    $statement = substr($content, $start, $ruleLength);
+                    $isImport = strncasecmp($statement, '@import', 7) === 0;
+                    $boundary = $statement[7] ?? '';
+                    $validImportBoundary = $boundary === '' || ctype_space($boundary)
+                        || $boundary === '"' || $boundary === "'" || substr($statement, 7, 2) === '/*';
+
+                    if ($isImport && $validImportBoundary && $importsAllowed) {
+                        $rules[] = ['content' => $statement, 'offset' => $start, 'length' => $ruleLength];
+                    } elseif (! $isImport && ! $this->startsAllowedPrelude($content, $start)) {
                         $importsAllowed = false;
                     }
-
-                    $ruleStart = false;
                 }
 
-                $offset = $this->skipString($content, $offset);
+                $start = null;
 
-                continue;
+                return;
             }
 
-            if ($content[$offset] === '{') {
-                if ($depth === 0) {
-                    $importsAllowed = false;
-                    $ruleStart = false;
-                }
-
-                $depth++;
-
-                continue;
+            if ($start !== null) {
+                return;
             }
 
-            if ($content[$offset] === '}') {
-                $depth = max(0, $depth - 1);
+            $start = $event['offset'];
+        });
 
-                if ($depth === 0) {
-                    $ruleStart = true;
-                }
-
-                continue;
-            }
-
-            if ($depth !== 0 || ctype_space($content[$offset])) {
-                continue;
-            }
-
-            if ($content[$offset] === ';') {
-                $ruleStart = true;
-
-                continue;
-            }
-
-            if (! $ruleStart) {
-                continue;
-            }
-
-            if (strncasecmp(substr($content, $offset, 7), '@import', 7) !== 0) {
-                if (! $this->startsAllowedPrelude($content, $offset)) {
-                    $importsAllowed = false;
-                }
-
-                $ruleStart = false;
-
-                continue;
-            }
-
-            if (! $importsAllowed) {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $boundary = $content[$offset + 7] ?? '';
-
-            if ($boundary !== '' && ! ctype_space($boundary) && $boundary !== '"' && $boundary !== "'"
-                && substr($content, $offset + 7, 2) !== '/*') {
-                $ruleStart = false;
-
-                continue;
-            }
-
-            $ruleStart = false;
-
-            for ($end = $offset + 7; $end < $length; $end++) {
-                if (substr($content, $end, 2) === '/*') {
-                    $end = $this->skipComment($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === '"' || $content[$end] === "'") {
-                    $end = $this->skipString($content, $end);
-
-                    continue;
-                }
-
-                if ($content[$end] === ';') {
-                    $ruleLength = $end - $offset + 1;
-                    $rules[] = [
-                        'content' => substr($content, $offset, $ruleLength),
-                        'offset' => $offset,
-                        'length' => $ruleLength,
-                    ];
-                    $offset = $end;
-                    $ruleStart = true;
-
-                    break;
-                }
-
-                if ($content[$end] === '{') {
-                    break;
-                }
-            }
+        if ($scan['invalidOffsets'] === []) {
+            return $rules;
         }
 
-        return $rules;
+        // Top-level placement is no longer trustworthy after lexical state breaks. Imports that
+        // completed before the first error remain safe and preserve their original source order.
+        $firstInvalid = min($scan['invalidOffsets']);
+
+        return array_values(array_filter(
+            $rules,
+            fn (array $rule): bool => $firstInvalid >= $rule['offset'] + $rule['length'],
+        ));
     }
 
     private function startsAllowedPrelude(string $content, int $offset): bool
@@ -213,32 +206,5 @@ final class CssImports
         }
 
         return false;
-    }
-
-    private function skipComment(string $content, int $offset): int
-    {
-        $end = strpos($content, '*/', $offset + 2);
-
-        return $end === false ? strlen($content) - 1 : $end + 1;
-    }
-
-    private function skipString(string $content, int $offset): int
-    {
-        $quote = $content[$offset];
-        $length = strlen($content);
-
-        for ($end = $offset + 1; $end < $length; $end++) {
-            if ($content[$end] === '\\') {
-                $end++;
-
-                continue;
-            }
-
-            if ($content[$end] === $quote) {
-                return $end;
-            }
-        }
-
-        return $length - 1;
     }
 }

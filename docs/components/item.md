@@ -33,7 +33,7 @@ trimmed, lowercased, and restricted to `div`, `a`, or `button`; unsupported valu
 `aria-disabled="true"` and `tabindex="-1"`.
 
 Icon media styles a direct SVG child. Packaged and third-party SVG components therefore need no package `data-slot` or
-size class. Nova disables pointer events on that direct SVG, but does not decide its accessible semantics: add
+size class. Shipped presets disable pointer events on that direct SVG, but do not decide its accessible semantics: add
 `aria-hidden="true"` when it is decorative, or give meaningful graphics an accessible name. Wrap an interactive graphic
 or another format in intentional application markup and style that composition yourself.
 

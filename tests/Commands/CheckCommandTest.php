@@ -3,7 +3,12 @@
 use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\LoaderStub;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
@@ -40,7 +45,8 @@ function writeCompleteApplicationPreset(string $name = 'brand'): string
 {
     shippedPresetImportPath();
     $registry = HotwireRegistry::make();
-    $slots = collect([...array_values($registry->components()), ...array_values($registry->controllers())])
+    $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
+    $slots = collect($definitions)
         ->flatMap(fn ($definition): array => $definition->styling->visualSlots())
         ->unique()
         ->sort()
@@ -50,14 +56,26 @@ function writeCompleteApplicationPreset(string $name = 'brand'): string
         fn (string $slot): string => "[data-slot=\"{$slot}\"]",
         $slots,
     ));
+    $propertyRules = [];
+
+    foreach ($definitions as $definition) {
+        foreach ($definition->styling->presetProperties() as $slot => $properties) {
+            $declarations = implode(' ', array_map(
+                fn (string $value, string $property): string => "{$property}: {$value};",
+                $properties,
+                array_keys($properties),
+            ));
+            $propertyRules[] = "[data-slot=\"{$slot}\"] { {$declarations} }";
+        }
+    }
+
     $path = resource_path("css/presets/{$name}.css");
     File::ensureDirectoryExists(dirname($path));
     File::put($path, implode("\n", [
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '',
         $selectors.' { color: var(--foreground); }',
+        ...$propertyRules,
         '',
     ]));
 
@@ -239,6 +257,55 @@ it('accepts visual coverage from any generated CSS bundle', function () {
         ->assertSuccessful();
 });
 
+it('reports generated bundle drift when its official preset entrypoint is invalid', function () {
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $root = resource_path('css/package');
+    File::ensureDirectoryExists($root.'/presets/nova');
+    File::put($root.'/tokens.css', '');
+    File::put($root.'/custom-variants.css', '');
+    File::put($root.'/structural.css', '');
+    File::put($root.'/foundation.css', implode("\n", [
+        '@import "./tokens.css";',
+        '@import "./custom-variants.css";',
+        '@import "./structural.css";',
+    ]));
+    File::put($root.'/presets/nova/theme.css', '[data-slot="fixture"] {}');
+    File::put($root.'/presets/nova.css', implode("\n", [
+        '@import "./nova/theme.css";',
+        '@import "../foundation.css";',
+    ]));
+    $manifest = CssModuleManifest::fromArray([
+        'foundation' => [
+            'properties' => [],
+            'aliases' => [],
+            'contrast_pairs' => [],
+        ],
+        'modules' => [],
+        'presets' => [
+            'nova' => [
+                'base' => ['presets/nova/theme.css'],
+                'properties' => [],
+                'aliases' => [],
+                'contrast_pairs' => [],
+                'sources' => [],
+            ],
+        ],
+    ]);
+    $files = new Filesystem;
+    app()->instance(CssModuleManifest::class, $manifest);
+    app()->instance(
+        CssPresetFiles::class,
+        new CssPresetFiles($files, new PresetSourceResolver($files, $root), $manifest),
+    );
+    $kernel = app(Kernel::class);
+    $getArtisan = new ReflectionMethod($kernel, 'getArtisan');
+    $getArtisan->invoke($kernel)->add(app(CheckCommand::class));
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('generated CSS content does not match its plan')
+        ->assertFailed();
+});
+
 it('accepts a complete preset fallback alongside generated CSS bundles', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
@@ -247,6 +314,43 @@ it('accepts a complete preset fallback alongside generated CSS bundles', functio
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertSuccessful();
+});
+
+it('rejects multiple official presets imported by one stylesheet', function () {
+    $nova = shippedPresetImportPath('nova');
+    $bloom = shippedPresetImportPath('bloom');
+    File::ensureDirectoryExists(resource_path('css'));
+    File::put(resource_path('css/app.css'), "@import \"{$nova}\";\n@import \"{$bloom}\";");
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('imports multiple official presets: nova, bloom')
+        ->assertFailed();
+});
+
+it('does not accept a copied shipped preset with drift inside the foundation facade', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $preset = shippedPresetImportPath();
+    File::append(base_path('vendor/emaia/laravel-hotwire/resources/css/tokens.css'), "\n:root { --drift: true; }");
+    File::put(resource_path('css/app.css'), '@import "'.$preset.'";');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
+        ->assertFailed();
+});
+
+it('detects drift in local stylesheet dependencies imported with conditions', function () {
+    $actual = resource_path('css/actual');
+    $expected = resource_path('css/expected');
+    File::ensureDirectoryExists($actual);
+    File::ensureDirectoryExists($expected);
+    File::put($actual.'/root.css', '@import "./child.css" supports(display: grid);');
+    File::put($expected.'/root.css', '@import "./child.css" supports(display: grid);');
+    File::put($actual.'/child.css', '.actual {}');
+    File::put($expected.'/child.css', '.expected {}');
+    $matches = new ReflectionMethod(app(CheckCommand::class), 'stylesheetTreeMatches');
+
+    expect($matches->invoke(app(CheckCommand::class), $actual.'/root.css', $expected.'/root.css'))->toBeFalse();
 });
 
 it('accepts an unquoted url import of a complete shipped preset', function () {
@@ -323,15 +427,22 @@ it('fails when an imported application preset omits required visual slots', func
     shippedPresetImportPath();
     File::ensureDirectoryExists(resource_path('css/presets'));
     File::put(resource_path('css/presets/brand.css'), implode("\n", [
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         '[data-slot="badge"] { color: red; }',
     ]));
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
     $this->artisan('hotwire:check --no-interaction')
         ->expectsOutputToContain('resources/css/presets/brand.css  missing visual slots')
+        ->assertFailed();
+});
+
+it('fails when a complete application preset omits a required preset property', function () {
+    $path = writeCompleteApplicationPreset();
+    File::put($path, str_replace('--sidebar-floating-edge: 0px;', '', File::get($path)));
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('missing required preset property [--sidebar-floating-edge] on [data-slot="sidebar"]')
         ->assertFailed();
 });
 
@@ -350,6 +461,15 @@ it('accepts a preset filename as an explicit preset name', function () {
     $this->artisan('hotwire:check', ['--preset' => ['brand.css'], '--no-interaction' => true])
         ->expectsOutputToContain('resources/css/presets/brand.css  valid application preset')
         ->assertSuccessful();
+});
+
+it('fails an application preset that uses a Tailwind interpolation underscore in raw CSS', function () {
+    $path = writeCompleteApplicationPreset();
+    File::append($path, "\n[data-slot=\"badge\"] { background: linear-gradient(in_oklch, red, blue); }");
+
+    $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
+        ->expectsOutputToContain('resources/css/presets/brand.css  uses invalid interpolation method [in_oklch] in raw CSS declaration [background: linear-gradient(in_oklch, red, blue)] in [brand.css]')
+        ->assertFailed();
 });
 
 it('does not let an explicit preset disable selective bundle coverage', function () {
@@ -371,7 +491,7 @@ it('reports selective bundle coverage alongside an invalid explicit preset', fun
     File::put(resource_path('css/presets/brand.css'), '[data-slot="badge"] { color: red; }');
 
     $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
-        ->expectsOutputToContain('must import package foundations once in this order')
+        ->expectsOutputToContain('must import package foundation [foundation.css] exactly once')
         ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
         ->assertFailed();
 });
@@ -1823,7 +1943,7 @@ it('does not report drift when stub is hand-written (no auto-generated marker)',
     writePackageJson(['name' => 'app', 'devDependencies' => ['echarts' => '^6.1.0']]);
 
     File::ensureDirectoryExists($this->targetDir);
-    File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../libs/stimulus\";\n");
+    File::put($this->targetDir.'/index.js', "// hand-written user file\nimport { Stimulus } from \"../hotwire/stimulus\";\n");
 
     writeView('page.blade.php', '<x-hw::chart />');
 

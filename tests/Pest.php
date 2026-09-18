@@ -64,51 +64,11 @@ function releaseIsolatedAppPaths(?string $base): void
     }
 }
 
-function syntheticCssPresetFiles(): CssPresetFiles
+function syntheticCssPresetFiles(?string $root = null, ?Filesystem $files = null): CssPresetFiles
 {
-    $files = new Filesystem;
-    $root = __DIR__.'/Fixtures/css/preset-package';
-    $manifest = CssModuleManifest::fromArray([
-        'modules' => [
-            'surfaces' => [
-                'components' => ['panel'],
-                'controllers' => [],
-                'dependencies' => [],
-            ],
-            'actions' => [
-                'components' => ['action'],
-                'controllers' => [],
-                'dependencies' => ['surfaces'],
-            ],
-            'feedback' => [
-                'components' => [],
-                'controllers' => ['status'],
-                'dependencies' => [],
-            ],
-        ],
-        'presets' => [
-            'constellation' => [
-                'sources' => [
-                    [
-                        'path' => 'presets/constellation/layout/surfaces.css',
-                        'modules' => ['surfaces', 'actions'],
-                    ],
-                    [
-                        'path' => 'presets/constellation/feedback.css',
-                        'modules' => ['feedback'],
-                    ],
-                ],
-            ],
-            'orbit' => [
-                'sources' => [
-                    [
-                        'path' => 'presets/orbit/all.css',
-                        'modules' => ['surfaces', 'actions', 'feedback'],
-                    ],
-                ],
-            ],
-        ],
-    ]);
+    $files ??= new Filesystem;
+    $root ??= __DIR__.'/Fixtures/css/preset-package';
+    $manifest = CssModuleManifest::fromArray(require __DIR__.'/Fixtures/css/preset-package/styles.php');
 
     return new CssPresetFiles($files, new PresetSourceResolver($files, $root), $manifest);
 }

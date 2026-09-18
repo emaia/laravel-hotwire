@@ -4,7 +4,7 @@ Coordinate CSS-owned entrance cascades with per-item viewport observation, finit
 safety, and JavaScript effects that must begin when an item is actually shown.
 
 Use [`<hw:reveal>`](../components/reveal.md) for automatic indexing, first-paint structural CSS, validated options, and
-Nova motion presets.
+selected-preset motion.
 
 **Identifier:** `reveal`
 
@@ -57,8 +57,8 @@ or explicit item mode for nested units:
 
 Raw `data-controller="reveal"` markup defaults to the layer-safe `hotwire-reveal-rise` keyframe from structural CSS, so
 it animates without component-only `data-slot` hooks. A preset may redefine that keyframe name in its own `components`
-layer. Nova's `flat` and `fade` variants key on `data-slot="reveal" data-motion="flat|fade"`; for raw markup, either
-include those hooks or set `--reveal-animation: hotwire-reveal-flat|hotwire-reveal-fade` explicitly.
+layer. The structural foundation routes `flat` and `fade` from `data-slot="reveal" data-motion="flat|fade"`; for raw
+markup, either include those hooks or set `--reveal-animation: hotwire-reveal-flat|hotwire-reveal-fade` explicitly.
 
 Explicit items belonging to a nested `data-controller~="reveal"` root are excluded from the outer controller. CSS
 supplies indexes for the first direct children before JavaScript loads; the controller fills missing indexes and keeps

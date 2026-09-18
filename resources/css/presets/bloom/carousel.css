@@ -1,0 +1,22 @@
+@layer components {
+    /* Carousel */
+    [data-slot="carousel"] { @apply relative rounded-2xl; }
+    :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"]) { @apply inline-flex size-10 shrink-0 appearance-none items-center justify-center rounded-[var(--radius-action)] border border-border bg-card p-0 text-lg leading-none text-foreground shadow-md transition-all outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50; }
+    [data-slot="carousel"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"]) { @apply absolute z-10; }
+    [data-slot="carousel"][data-carousel-axis="x"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"]) { @apply top-1/2 -translate-y-1/2; }
+    [data-slot="carousel"][data-carousel-axis="x"] > [data-slot="carousel-prev-button"] { @apply start-2; }
+    [data-slot="carousel"][data-carousel-axis="x"] > [data-slot="carousel-next-button"] { @apply end-2; }
+    [data-slot="carousel"][data-carousel-axis="y"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"]) { @apply left-1/2 -translate-x-1/2 rotate-90; }
+    [data-slot="carousel"][data-carousel-axis="y"] > [data-slot="carousel-prev-button"] { @apply top-2; }
+    [data-slot="carousel"][data-carousel-axis="y"] > [data-slot="carousel-next-button"] { @apply bottom-2; }
+    [data-slot="carousel-dot-list"] { @apply mt-4 flex items-center justify-center gap-2; }
+    [data-slot="carousel-dot-button"] { @apply size-3 shrink-0 appearance-none rounded-full border-0 bg-muted-foreground/30 p-0 transition-colors outline-none hover:bg-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/50; }
+    [data-slot="carousel-dot-button"][aria-current="true"] { @apply bg-primary; }
+    [data-slot="carousel-progress-wrapper"] { @apply mt-3 h-2 w-full overflow-hidden rounded-full bg-muted; }
+    [data-slot="carousel-progress"] { @apply h-full rounded-full bg-primary transition-[width]; }
+    [data-slot="carousel-counter"] { @apply mt-2 text-center text-sm text-muted-foreground tabular-nums; }
+
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *):is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"]) { @apply border-input bg-input/30 hover:bg-input/50; }
+    }
+}

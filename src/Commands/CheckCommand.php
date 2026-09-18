@@ -569,8 +569,19 @@ class CheckCommand extends Command
             $path = 'resources/css/'.ltrim(str_replace('\\', '/', $file->getRelativePathname()), '/');
 
             if ($plan !== null) {
-                $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
-                $modules = $this->styleManifest->modulesFor($plan['components'], $plan['controllers']);
+                try {
+                    $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
+                    $modules = $this->styleManifest->modulesFor($plan['components'], $plan['controllers']);
+                } catch (PresetSourceException $exception) {
+                    $this->problemLines[] = [
+                        'key' => "styles-content-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>({$exception->getMessage()})</>",
+                    ];
+                    $issues++;
+                    $bundleCoverageUnknowable = true;
+
+                    continue;
+                }
 
                 if ($source === null || ! $this->styleBundle->matches($content, $this->styleBundle->render(
                     $path,
@@ -607,7 +618,15 @@ class CheckCommand extends Command
             }
 
             $imports = $this->completePresetImports($content, $stylesheet);
-            $hasCompletePreset = $hasCompletePreset || $imports['official'];
+            $hasCompletePreset = $hasCompletePreset || $imports['official'] !== [];
+
+            if (count($imports['official']) > 1) {
+                $this->problemLines[] = [
+                    'key' => "styles-presets-{$path}",
+                    'line' => "  <error>✗</error>  {$path}  imports multiple official presets: ".implode(', ', $imports['official']).'  <fg=gray>(keep exactly one complete preset import active)</>',
+                ];
+                $issues++;
+            }
 
             foreach ($imports['application'] as $preset) {
                 $key = $this->comparablePath($preset);
@@ -688,16 +707,16 @@ class CheckCommand extends Command
         return $issues;
     }
 
-    /** @return array{official: bool, application: string[]} */
+    /** @return array{official: string[], application: string[]} */
     private function completePresetImports(string $content, string $stylesheet): array
     {
         $presetDirectory = realpath(resource_path('css/presets'));
 
         if ($presetDirectory !== false && $this->containsPath($presetDirectory, realpath($stylesheet) ?: $stylesheet)) {
-            return ['official' => false, 'application' => []];
+            return ['official' => [], 'application' => []];
         }
 
-        $official = false;
+        $official = [];
         $application = [];
 
         foreach ($this->cssImports->parse($content) as $rule) {
@@ -727,7 +746,7 @@ class CheckCommand extends Command
 
             foreach ($this->presetFiles->names() as $preset) {
                 if ($this->matchesShippedPreset($resolved, $preset)) {
-                    $official = true;
+                    $official[] = $preset;
 
                     continue 2;
                 }
@@ -848,8 +867,40 @@ class CheckCommand extends Command
             $actualPath = dirname($resolved, 2).'/'.$foundation;
             $expectedPath = dirname($official, 2).'/'.$foundation;
 
-            if (! is_file($actualPath) || ! is_file($expectedPath)
-                || hash_file('sha256', $actualPath) !== hash_file('sha256', $expectedPath)) {
+            if (! $this->stylesheetTreeMatches($actualPath, $expectedPath)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @param array<string, true> $visited */
+    private function stylesheetTreeMatches(string $actual, string $expected, array &$visited = []): bool
+    {
+        $actual = $this->resolvedPath($actual);
+        $expected = $this->resolvedPath($expected);
+        $key = $actual."\0".$expected;
+
+        if (isset($visited[$key])) {
+            return true;
+        }
+
+        $visited[$key] = true;
+
+        if (! is_file($actual) || ! is_file($expected)
+            || hash_file('sha256', $actual) !== hash_file('sha256', $expected)) {
+            return false;
+        }
+
+        foreach ($this->cssImports->parse($this->files->get($expected)) as $import) {
+            $path = preg_replace('/[?#].*$/', '', $import['path']) ?? $import['path'];
+
+            if (! str_starts_with($path, '.')) {
+                continue;
+            }
+
+            if (! $this->stylesheetTreeMatches(dirname($actual).'/'.$path, dirname($expected).'/'.$path, $visited)) {
                 return false;
             }
         }

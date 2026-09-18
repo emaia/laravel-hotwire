@@ -10,9 +10,9 @@ namespace Emaia\LaravelHotwire\Support;
 final class PresetSkeleton
 {
     /**
-     * Render ordered scaffold groups as empty data-slot CSS rules.
+     * Render ordered scaffold groups as data-slot CSS rules with required neutral defaults.
      *
-     * @param  list<array{id: string, label: string, slots: list<string>}>  $groups
+     * @param  list<array{id: string, label: string, slots: list<string>, properties?: array<string, array<string, string>>}>  $groups
      * @return string[]
      */
     public function render(array $groups): array
@@ -20,8 +20,10 @@ final class PresetSkeleton
         $seen = [];
         $lines = [];
 
-        foreach ($groups as ['label' => $label, 'slots' => $slots]) {
+        foreach ($groups as $group) {
+            ['label' => $label, 'slots' => $slots] = $group;
             $rules = [];
+            $properties = $group['properties'] ?? [];
 
             foreach ($slots as $slot) {
                 if (isset($seen[$slot])) {
@@ -29,7 +31,21 @@ final class PresetSkeleton
                 }
 
                 $seen[$slot] = true;
-                $rules[] = "    [data-slot=\"{$slot}\"] {}";
+                $defaults = $properties[$slot] ?? [];
+
+                if ($defaults === []) {
+                    $rules[] = "    [data-slot=\"{$slot}\"] {}";
+
+                    continue;
+                }
+
+                $rules[] = "    [data-slot=\"{$slot}\"] {";
+
+                foreach ($defaults as $property => $value) {
+                    $rules[] = "        {$property}: {$value};";
+                }
+
+                $rules[] = '    }';
             }
 
             if ($rules !== []) {

@@ -4,20 +4,6 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
     static targets = ["clearButton", "input"];
 
-    styleElement = null;
-
-    initialize() {
-        this.styleElement = document.createElement("style");
-        this.styleElement.innerHTML = `
-            .clear-input--touched:hover + [data-slot="clear-input-button"],
-            .clear-input--touched + [data-slot="clear-input-button"]:hover {
-                display: inline-flex !important;
-            }
-        `;
-
-        document.head.appendChild(this.styleElement);
-    }
-
     connect() {
         this.handleButtonClick = this.handleButtonClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
@@ -88,10 +74,6 @@ export default class extends Controller {
     }
 
     disconnect() {
-        if (this.styleElement && this.styleElement.parentNode) {
-            this.styleElement.parentNode.removeChild(this.styleElement);
-        }
-
         this.clearButtonTarget.removeEventListener("click", this.handleButtonClick);
 
         if (this.hasInputTarget) {

@@ -139,7 +139,13 @@ php artisan hotwire:controllers --outdated --force
 
 ## Styling
 
-`hotwire:install` configures the default preset and Tailwind source scan.
+`hotwire:install` configures Tailwind with Nova by default and lists the other official presets as commented imports in
+`resources/css/app.css`. Uncomment Bloom and comment Nova, or select it while installing, for a chromatic, spacious and
+elevated visual language with restrained surface radii over the same components and controllers:
+
+```bash
+php artisan hotwire:install --preset=bloom
+```
 
 Override semantic hooks after the preset:
 
@@ -154,6 +160,7 @@ Or generate an application-owned preset:
 ```bash
 php artisan hotwire:make-preset brand
 php artisan hotwire:make-preset brand --from=nova
+php artisan hotwire:make-preset brand --from=bloom
 ```
 
 For a layout with an explicit component set, generate a smaller visual bundle while retaining the shared structural
@@ -161,6 +168,7 @@ foundation:
 
 ```bash
 php artisan hotwire:styles \
+  --preset=bloom \
   --components=badge,button,field,input,navbar,pagination \
   --include=tooltip \
   --output=resources/css/hotwire-front.css

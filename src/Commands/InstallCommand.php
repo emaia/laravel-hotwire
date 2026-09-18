@@ -25,7 +25,7 @@ class InstallCommand extends Command
                         {--only= : Install only "js" or "css"}
                         {--with-deps=* : Add npm deps only for these controllers (comma-separated or repeatable). Without this flag (and without --core-only), every catalog dep is added.}
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
-                        {--preset=nova : CSS preset to import in resources/css/app.css (nova).}
+                        {--preset=nova : CSS preset to import in resources/css/app.css (bloom or nova).}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
                         {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
 
@@ -36,6 +36,10 @@ class InstallCommand extends Command
     private const string VITE_ALIAS_PATH = 'vendor/emaia/laravel-hotwire/resources/js/controllers';
 
     private const string CSS_STUB_RELATIVE = 'css/app.css';
+
+    private const string CSS_PRESET_MARKER = '/* Presets: keep exactly one import active. */';
+
+    private const string CSS_APP_MARKER = '/* Your app CSS below: override tokens, add components, or extend a preset. */';
 
     private const array CORE_DEPENDENCIES = [
         '@emaia/stimulus-lazy-loader',
@@ -312,14 +316,24 @@ class InstallCommand extends Command
     {
         $preset = (string) $this->option('preset');
         $stub = $this->files->get(__DIR__.'/../../stubs/resources/css/app.css');
-        $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$preset}.css';";
+        $presetBlockStart = strpos($stub, self::CSS_PRESET_MARKER);
+        $appCssStart = strpos($stub, self::CSS_APP_MARKER);
 
-        return (string) preg_replace(
-            "#@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/[^']+\\.css';#",
-            $import,
-            $stub,
-            1,
-        );
+        if ($presetBlockStart === false || $appCssStart === false) {
+            throw new RuntimeException('The CSS install stub is missing its preset markers.');
+        }
+
+        $presetBlockStart += strlen(self::CSS_PRESET_MARKER);
+        $presets = [$preset, ...array_values(array_diff($this->cssPresets->names(), [$preset]))];
+        $imports = array_map(function (string $name) use ($preset): string {
+            $import = "@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/{$name}.css';";
+
+            return $name === $preset ? $import : "/* {$import} */";
+        }, $presets);
+
+        return substr($stub, 0, $presetBlockStart)
+            ."\n".implode("\n", $imports)."\n\n"
+            .substr($stub, $appCssStart);
     }
 
     /**

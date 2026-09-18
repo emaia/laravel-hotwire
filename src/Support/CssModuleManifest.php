@@ -7,12 +7,16 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 /** @internal */
 final readonly class CssModuleManifest
 {
+    private const array PROPERTY_SCOPES = ['global', 'themed'];
+
     /**
      * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
-     * @param  array<string, array{sources: list<array{path: string, modules: string[]}>}>  $presets
+     * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
+     * @param  array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>  $presets
      */
     private function __construct(
         private array $modules,
+        private array $foundation,
         private array $presets,
     ) {}
 
@@ -33,12 +37,16 @@ final readonly class CssModuleManifest
      */
     public static function fromArray(array $manifest): self
     {
+        $foundation = $manifest['foundation'] ?? null;
         $modules = $manifest['modules'] ?? null;
         $presets = $manifest['presets'] ?? null;
 
         if (! is_array($modules) || ! is_array($presets)) {
             throw new PresetSourceException('CSS module manifest must define modules and presets.');
         }
+
+        $foundation = self::validateTokenMetadata($foundation, 'CSS foundation');
+        self::validateTokenReferences($foundation, 'CSS foundation', array_keys($foundation['properties']));
 
         foreach ($modules as $name => $module) {
             if (! is_string($name) || preg_match('/^[a-z][a-z0-9-]*$/', $name) !== 1 || ! is_array($module)) {
@@ -63,11 +71,131 @@ final readonly class CssModuleManifest
         }
 
         self::validateDependencyCycles($modules);
-        self::validatePresets($presets, $modules);
+        $presets = self::validatePresets($presets, $modules, $foundation);
 
         /** @var array<string, array{components: string[], controllers: string[], dependencies: string[]}> $modules */
-        /** @var array<string, array{sources: list<array{path: string, modules: string[]}>}> $presets */
-        return new self($modules, $presets);
+        /** @var array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}> $presets */
+        return new self($modules, $foundation, $presets);
+    }
+
+    /**
+     * Return official preset names in manifest order.
+     *
+     * @return string[]
+     */
+    public function presetNames(): array
+    {
+        return array_keys($this->presets);
+    }
+
+    /**
+     * Return custom properties owned by the shared foundation.
+     *
+     * @return string[]
+     */
+    public function foundationProperties(): array
+    {
+        return array_keys($this->foundation['properties']);
+    }
+
+    /**
+     * Return declaration scopes owned by the shared foundation.
+     *
+     * @return array<string, 'global'|'themed'>
+     */
+    public function foundationPropertyScopes(): array
+    {
+        return $this->foundation['properties'];
+    }
+
+    /**
+     * Return Tailwind aliases owned by the shared foundation.
+     *
+     * @return array<string, string>
+     */
+    public function foundationAliases(): array
+    {
+        return $this->foundation['aliases'];
+    }
+
+    /**
+     * Return semantic contrast pairs owned by the shared foundation.
+     *
+     * @return array<string, array{foreground: string, background: string}>
+     */
+    public function foundationContrastPairs(): array
+    {
+        return $this->foundation['contrast_pairs'];
+    }
+
+    /**
+     * Return the complete custom-property contract inherited by a preset.
+     *
+     * @return string[]
+     */
+    public function propertiesFor(string $preset): array
+    {
+        return [...$this->foundationProperties(), ...$this->additionalPropertiesFor($preset)];
+    }
+
+    /**
+     * Return custom properties introduced by the preset beyond the shared foundation.
+     *
+     * @return string[]
+     */
+    public function additionalPropertiesFor(string $preset): array
+    {
+        return array_keys($this->preset($preset)['properties']);
+    }
+
+    /**
+     * Return declaration scopes for custom properties introduced by a preset.
+     *
+     * @return array<string, 'global'|'themed'>
+     */
+    public function additionalPropertyScopesFor(string $preset): array
+    {
+        return $this->preset($preset)['properties'];
+    }
+
+    /**
+     * Return the complete Tailwind alias contract inherited by a preset.
+     *
+     * @return array<string, string>
+     */
+    public function aliasesFor(string $preset): array
+    {
+        return [...$this->foundation['aliases'], ...$this->additionalAliasesFor($preset)];
+    }
+
+    /**
+     * Return Tailwind aliases introduced by the preset beyond the shared foundation.
+     *
+     * @return array<string, string>
+     */
+    public function additionalAliasesFor(string $preset): array
+    {
+        return $this->preset($preset)['aliases'];
+    }
+
+    /**
+     * Return the complete semantic contrast contract inherited by a preset.
+     *
+     * @return array<string, array{foreground: string, background: string}>
+     */
+    public function contrastPairsFor(string $preset): array
+    {
+        return [...$this->foundation['contrast_pairs'], ...$this->additionalContrastPairsFor($preset)];
+    }
+
+    /**
+     * Return semantic contrast pairs introduced by the preset beyond the shared foundation.
+     *
+     * @return array<string, array{foreground: string, background: string}>
+     */
+    public function additionalContrastPairsFor(string $preset): array
+    {
+        return $this->preset($preset)['contrast_pairs'];
     }
 
     /**
@@ -103,7 +231,7 @@ final readonly class CssModuleManifest
     }
 
     /**
-     * Return selected private sources in canonical preset order.
+     * Return preset base followed by selected module sources in canonical order.
      *
      * @param  string[]  $modules
      * @return string[]
@@ -120,13 +248,35 @@ final readonly class CssModuleManifest
             }
         }
 
-        return array_values(array_map(
+        $sources = array_values(array_map(
             fn (array $source): string => $source['path'],
             array_filter(
                 $this->presets[$preset]['sources'],
                 fn (array $source): bool => array_intersect($modules, $source['modules']) !== [],
             ),
         ));
+
+        return [...$this->presets[$preset]['base'], ...$sources];
+    }
+
+    /**
+     * Return ordered preset base sources.
+     *
+     * @return string[]
+     */
+    public function baseFor(string $preset): array
+    {
+        return $this->preset($preset)['base'];
+    }
+
+    /**
+     * Return every private source in canonical preset order.
+     *
+     * @return string[]
+     */
+    public function allSourcesFor(string $preset): array
+    {
+        return $this->sourcesFor($preset, array_keys($this->modules));
     }
 
     /** @param mixed[] $values */
@@ -183,22 +333,70 @@ final readonly class CssModuleManifest
     /**
      * @param  array<string, mixed>  $presets
      * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
+     * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
+     * @return array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>
      */
-    private static function validatePresets(array $presets, array $modules): void
+    private static function validatePresets(array $presets, array $modules, array $foundation): array
     {
+        $validated = [];
+
         foreach ($presets as $preset => $definition) {
             if (preg_match('/^[a-z][a-z0-9-]*$/', $preset) !== 1
-                || ! is_array($definition) || ! isset($definition['sources']) || ! is_array($definition['sources'])) {
+                || ! is_array($definition)
+                || ! isset($definition['base'], $definition['sources'])
+                || ! is_array($definition['base'])
+                || ! is_array($definition['sources'])
+                || ! array_is_list($definition['base'])
+                || ! array_is_list($definition['sources'])) {
                 throw new PresetSourceException('CSS module manifest contains an invalid preset definition.');
             }
 
+            $label = "CSS module preset [{$preset}]";
+            $metadata = self::validateTokenMetadata($definition, $label);
+            $foundationNames = [...array_keys($foundation['properties']), ...array_keys($foundation['aliases'])];
+
+            foreach (array_keys($metadata['properties']) as $property) {
+                if (in_array($property, $foundationNames, true)) {
+                    throw new PresetSourceException("{$label} property [{$property}] already belongs to the shared foundation.");
+                }
+            }
+
+            foreach (array_keys($metadata['aliases']) as $alias) {
+                if (in_array($alias, $foundationNames, true)) {
+                    throw new PresetSourceException("{$label} alias [{$alias}] already belongs to the shared foundation.");
+                }
+            }
+
+            foreach (array_keys($metadata['contrast_pairs']) as $pair) {
+                if (isset($foundation['contrast_pairs'][$pair])) {
+                    throw new PresetSourceException("{$label} contrast pair [{$pair}] already belongs to the shared foundation.");
+                }
+            }
+
+            self::validateTokenReferences(
+                $metadata,
+                $label,
+                [...array_keys($foundation['properties']), ...array_keys($metadata['properties'])],
+            );
+
             $paths = [];
             $mappedModules = [];
+            $sources = [];
+
+            self::validateStringList($definition['base'], "CSS module preset [{$preset}] base");
+
+            foreach ($definition['base'] as $path) {
+                if (! self::validSourcePath($path, $preset)) {
+                    throw new PresetSourceException("CSS module preset [{$preset}] contains an invalid base source.");
+                }
+
+                $paths[$path] = true;
+            }
 
             foreach ($definition['sources'] as $source) {
                 if (! is_array($source) || ! isset($source['path'], $source['modules'])
                     || ! is_string($source['path']) || ! is_array($source['modules'])
-                    || preg_match("~^presets/{$preset}/(?:[a-z0-9-]+/)*[a-z0-9-]+\\.css$~", $source['path']) !== 1) {
+                    || ! self::validSourcePath($source['path'], $preset)) {
                     throw new PresetSourceException("CSS module preset [{$preset}] contains an invalid source.");
                 }
 
@@ -209,6 +407,10 @@ final readonly class CssModuleManifest
                 $paths[$source['path']] = true;
                 self::validateStringList($source['modules'], "CSS source [{$source['path']}] modules");
 
+                if ($source['modules'] === []) {
+                    throw new PresetSourceException("CSS source [{$source['path']}] must map at least one module.");
+                }
+
                 foreach ($source['modules'] as $module) {
                     if (! isset($modules[$module])) {
                         throw new PresetSourceException("CSS source [{$source['path']}] references undefined module [{$module}].");
@@ -216,6 +418,11 @@ final readonly class CssModuleManifest
 
                     $mappedModules[$module] = true;
                 }
+
+                $sources[] = [
+                    'path' => $source['path'],
+                    'modules' => array_values($source['modules']),
+                ];
             }
 
             $missingModules = array_diff(array_keys($modules), array_keys($mappedModules));
@@ -225,7 +432,136 @@ final readonly class CssModuleManifest
                     "CSS module preset [{$preset}] does not map modules: ".implode(', ', $missingModules).'.'
                 );
             }
+
+            $validated[$preset] = [
+                'base' => $definition['base'],
+                ...$metadata,
+                'sources' => $sources,
+            ];
         }
+
+        return $validated;
+    }
+
+    /** @return array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>} */
+    private static function validateTokenMetadata(mixed $metadata, string $label): array
+    {
+        if (! is_array($metadata)
+            || ! isset($metadata['properties'], $metadata['aliases'], $metadata['contrast_pairs'])
+            || ! is_array($metadata['properties'])
+            || ! is_array($metadata['aliases'])
+            || ! is_array($metadata['contrast_pairs'])) {
+            throw new PresetSourceException("{$label} token metadata must define properties, aliases, and contrast_pairs.");
+        }
+
+        if ($metadata['properties'] !== [] && array_is_list($metadata['properties'])) {
+            throw new PresetSourceException(
+                "{$label} properties must map each custom property name to global or themed."
+            );
+        }
+
+        $properties = [];
+
+        foreach ($metadata['properties'] as $property => $scope) {
+            if (! is_string($property) || ! self::validCustomProperty($property)) {
+                throw new PresetSourceException("{$label} properties must contain CSS custom property names beginning with --.");
+            }
+
+            if (! is_string($scope) || ! in_array($scope, self::PROPERTY_SCOPES, true)) {
+                throw new PresetSourceException("{$label} property [{$property}] must use scope global or themed.");
+            }
+
+            $properties[$property] = $scope;
+        }
+
+        $aliases = [];
+
+        foreach ($metadata['aliases'] as $alias => $target) {
+            if (! is_string($alias) || ! self::validCustomProperty($alias)) {
+                throw new PresetSourceException("{$label} alias [{$alias}] must be a CSS custom property name beginning with --.");
+            }
+
+            if (! is_string($target) || ! self::validCustomProperty($target)) {
+                throw new PresetSourceException("{$label} alias [{$alias}] must reference a CSS custom property name beginning with --.");
+            }
+
+            if (array_key_exists($alias, $properties)) {
+                throw new PresetSourceException("{$label} custom property [{$alias}] cannot be both a property and an alias.");
+            }
+
+            $aliases[$alias] = $target;
+        }
+
+        $contrastPairs = [];
+
+        foreach ($metadata['contrast_pairs'] as $name => $pair) {
+            if (! is_string($name) || preg_match('/^[a-z][a-z0-9-]*$/', $name) !== 1
+                || ! is_array($pair)
+                || count($pair) !== 2
+                || ! array_key_exists('foreground', $pair)
+                || ! array_key_exists('background', $pair)
+                || ! is_string($pair['foreground'] ?? null)
+                || ! self::validCustomProperty($pair['foreground'])
+                || ! is_string($pair['background'] ?? null)
+                || ! self::validCustomProperty($pair['background'])) {
+                $pairName = (string) $name;
+
+                throw new PresetSourceException("{$label} contrast pair [{$pairName}] must define foreground and background.");
+            }
+
+            $contrastPairs[$name] = [
+                'foreground' => $pair['foreground'],
+                'background' => $pair['background'],
+            ];
+        }
+
+        return [
+            'properties' => $properties,
+            'aliases' => $aliases,
+            'contrast_pairs' => $contrastPairs,
+        ];
+    }
+
+    /** @param string[] $knownProperties */
+    private static function validateTokenReferences(array $metadata, string $label, array $knownProperties): void
+    {
+        foreach ($metadata['aliases'] as $alias => $target) {
+            if (! in_array($target, $knownProperties, true)) {
+                throw new PresetSourceException("{$label} alias [{$alias}] references unknown property [{$target}].");
+            }
+        }
+
+        foreach ($metadata['contrast_pairs'] as $name => $pair) {
+            foreach ($pair as $property) {
+                if (! in_array($property, $knownProperties, true)) {
+                    throw new PresetSourceException("{$label} contrast pair [{$name}] references unknown property [{$property}].");
+                }
+            }
+        }
+    }
+
+    private static function validCustomProperty(mixed $name): bool
+    {
+        return CssCustomPropertyName::isValid($name);
+    }
+
+    /**
+     * Return a validated preset definition.
+     *
+     * @return array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}
+     */
+    private function preset(string $preset): array
+    {
+        if (! isset($this->presets[$preset])) {
+            throw new PresetSourceException("Unknown CSS module preset [{$preset}].");
+        }
+
+        return $this->presets[$preset];
+    }
+
+    private static function validSourcePath(string $path, string $preset): bool
+    {
+        return preg_match("~^presets/{$preset}/(?:[a-z0-9-]+/)*[a-z0-9-]+\\.css$~", $path) === 1;
     }
 
     private function validatePackageContract(): void
@@ -250,9 +586,15 @@ final readonly class CssModuleManifest
         }
 
         foreach ($this->presets as $preset => $definition) {
-            foreach ($definition['sources'] as $source) {
-                if (! is_file($cssRoot.$source['path'])) {
-                    throw new PresetSourceException("CSS module preset [{$preset}] source [{$source['path']}] does not exist.");
+            $entrypoint = "presets/{$preset}.css";
+
+            if (! is_file($cssRoot.$entrypoint)) {
+                throw new PresetSourceException("CSS preset [{$preset}] entrypoint [{$entrypoint}] does not exist.");
+            }
+
+            foreach ($this->allSourcesFor($preset) as $source) {
+                if (! is_file($cssRoot.$source)) {
+                    throw new PresetSourceException("CSS module preset [{$preset}] source [{$source}] does not exist.");
                 }
             }
         }

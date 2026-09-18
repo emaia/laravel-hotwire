@@ -266,7 +266,7 @@ overlay closes do not move it again.
 body; it is not sticky by default. For persistent actions, build an application layout with a dedicated body scrollport
 rather than applying `position: sticky` to `modal.footer`.
 
-The Nova preset gives a footer its edge-to-edge background, border, and rounded lower corners only when it is the last
+The shipped presets give a footer its edge-to-edge background, border, and rounded lower corners only when it is the last
 direct child of `modal.content` or of the component-owned Turbo Frame. A footer followed by other content remains a plain
 action row without negative margins or lower-corner styling. Frame-backed content receives the same spacing as direct
 content, and `size="full"` keeps each row at its natural height while the combined content remains scrollable.

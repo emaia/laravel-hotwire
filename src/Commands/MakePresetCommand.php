@@ -3,8 +3,10 @@
 namespace Emaia\LaravelHotwire\Commands;
 
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssCustomProperties;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
+use Emaia\LaravelHotwire\Support\FoundationFacade;
 use Emaia\LaravelHotwire\Support\PresetSkeleton;
 use Emaia\LaravelHotwire\Support\PresetSkeletonGroups;
 use Emaia\LaravelHotwire\Support\PresetSource;
@@ -25,11 +27,7 @@ class MakePresetCommand extends Command
 
     public $description = 'Create a new CSS preset';
 
-    private const string TOKENS_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";';
-
-    private const string VARIANTS_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";';
-
-    private const string STRUCTURAL_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";';
+    private const string FOUNDATION_IMPORT = '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";';
 
     public function __construct(
         private readonly Filesystem $files,
@@ -37,6 +35,7 @@ class MakePresetCommand extends Command
         private readonly PresetSkeleton $skeleton,
         private readonly PresetSkeletonGroups $skeletonGroups,
         private readonly CssRules $cssRules,
+        private readonly CssCustomProperties $customProperties,
     ) {
         parent::__construct();
     }
@@ -118,10 +117,10 @@ class MakePresetCommand extends Command
      */
     private function tokenTemplate(): ?array
     {
-        $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/tokens.css');
+        $tokens = $this->files->get(dirname(__DIR__, 2).'/resources/css/'.FoundationFacade::TOKEN_SOURCE);
         $sections = ['root' => [], 'light' => [], 'dark' => []];
 
-        foreach ($this->cssRules->parse($this->cssRules->stripComments($tokens)) as $rule) {
+        foreach ($this->cssRules->parse($tokens) as $rule) {
             if (count($rule['chain']) !== 1) {
                 continue;
             }
@@ -150,9 +149,9 @@ class MakePresetCommand extends Command
         }
 
         $selectors = [
-            'root' => ':root',
-            'light' => ":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"]",
-            'dark' => '[data-theme="dark"]',
+            'root' => $this->customProperties->selectorFor('root'),
+            'light' => $this->customProperties->selectorFor('default').",\n".$this->customProperties->selectorFor('light'),
+            'dark' => $this->customProperties->selectorFor('dark'),
         ];
         $blocks = [];
 
@@ -182,9 +181,7 @@ class MakePresetCommand extends Command
         }
 
         $lines = [
-            self::TOKENS_IMPORT,
-            self::VARIANTS_IMPORT,
-            self::STRUCTURAL_IMPORT,
+            self::FOUNDATION_IMPORT,
             '',
             ...$tokenTemplate,
             '',
@@ -197,17 +194,8 @@ class MakePresetCommand extends Command
         return implode("\n", $lines);
     }
 
-    private function containsThemeSelector(string $selector, string $theme): bool
-    {
-        return preg_match('/\[data-theme\s*=\s*(["\']?)'.preg_quote($theme, '/').'\1\]/i', $selector) === 1;
-    }
-
     /**
-     * Classify a token rule by the themes it declares, ignoring themes it merely negates.
-     *
-     * A guard such as `:where(:root:not([data-theme="dark"]))` names dark only to exclude it, so the
-     * negations are dropped before probing. Each branch of the selector list is classified on its
-     * own, since one rule may legitimately declare a value for both themes at once.
+     * Coalesce default and explicit light declarations because the scaffold emits their selectors together.
      *
      * @return string[]
      */
@@ -215,14 +203,9 @@ class MakePresetCommand extends Command
     {
         $sections = [];
 
-        foreach ($this->selectorBranches($selector) as $branch) {
-            $declared = preg_replace('/:not(\((?:[^()]++|(?1))*\))/i', '', $branch) ?? $branch;
-            $section = match (true) {
-                $this->containsThemeSelector($declared, 'dark') => 'dark',
-                $this->containsThemeSelector($declared, 'light') => 'light',
-                trim($branch) === ':root' => 'root',
-                default => null,
-            };
+        foreach ($this->cssRules->splitTopLevel($selector, ',') as $branch) {
+            $scope = $this->customProperties->scopeFor($branch, allowConditions: true);
+            $section = $scope === 'default' ? 'light' : $scope;
 
             if ($section !== null && ! in_array($section, $sections, true)) {
                 $sections[] = $section;
@@ -230,38 +213,6 @@ class MakePresetCommand extends Command
         }
 
         return $sections;
-    }
-
-    /**
-     * Split a selector list on its top-level commas, leaving those inside `:is()`, `:where()` and
-     * `:not()` with the branch they qualify.
-     *
-     * @return string[]
-     */
-    private function selectorBranches(string $selector): array
-    {
-        $branches = [];
-        $branch = '';
-        $depth = 0;
-
-        foreach (str_split($selector) as $character) {
-            match ($character) {
-                '(' => $depth++,
-                ')' => $depth--,
-                default => null,
-            };
-
-            if ($character === ',' && $depth === 0) {
-                $branches[] = $branch;
-                $branch = '';
-
-                continue;
-            }
-
-            $branch .= $character;
-        }
-
-        return array_filter([...$branches, $branch], fn (string $branch): bool => trim($branch) !== '');
     }
 
     private function clonePreset(PresetSource $source): string

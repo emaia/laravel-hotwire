@@ -166,7 +166,7 @@ driven by custom properties you can override anywhere in your own CSS:
 
 | Property                 | Default   | Controls                                              |
 |--------------------------|-----------|-------------------------------------------------------|
-| `--toast-width`          | `24rem`   | Card width in Nova                                    |
+| `--toast-width`          | preset    | Card width (`24rem` in Nova; `26rem` in Bloom)        |
 | `--toast-offset`         | `1rem`    | Distance from the viewport edges                      |
 | `--toast-mobile-offset`  | `1rem`    | Same, below 600px                                     |
 | `--toast-gap`            | `0.75rem` | Space between cards when the stack is expanded        |
@@ -220,7 +220,7 @@ hands it to the manager on connect and removes itself, so it is never visible an
   message.
 - Timers pause while the pointer is over the stack, while focus is inside it, and while the document is hidden.
 - Swipe-to-dismiss is not implemented. Toasts are dismissed by the close button or by their timer.
-- Entry and exit motion is skipped under `prefers-reduced-motion`.
+- All toast movement and fades, including stack and content transitions, are disabled under `prefers-reduced-motion`.
 
 ## Turbo integration
 

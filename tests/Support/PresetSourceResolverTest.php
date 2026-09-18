@@ -54,7 +54,7 @@ it('resolves visual stylesheets depth first in CSS import order', function () {
         ->not->toContain('@import');
 });
 
-it('deduplicates shared foundation imports at first inclusion', function () {
+it('rejects duplicate shared foundation imports', function () {
     writePresetCss($this->root, 'tokens.css', ':root {}');
     writePresetCss($this->root, 'custom-variants.css', '@custom-variant demo {}');
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
@@ -65,11 +65,47 @@ it('deduplicates shared foundation imports at first inclusion', function () {
         @import "./demo/forms.css";
         CSS);
 
-    expect($this->resolver->resolve($entrypoint)->foundationImports())->toBe([
-        'tokens.css',
-        'custom-variants.css',
-    ]);
-});
+    $this->resolver->resolve($entrypoint);
+})->throws(PresetSourceException::class, 'Preset [demo] imports shared foundation [tokens.css] more than once.');
+
+it('requires the public foundation facade to preserve its canonical composition', function (string $foundation) {
+    foreach (['tokens.css', 'custom-variants.css', 'structural.css'] as $file) {
+        writePresetCss($this->root, $file, "/* {$file} */");
+    }
+
+    writePresetCss($this->root, 'foundation.css', $foundation);
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "../foundation.css";');
+
+    $this->resolver->resolve($entrypoint);
+})->with([
+    'old direct order' => <<<'CSS'
+        @import "./custom-variants.css";
+        @import "./tokens.css";
+        @import "./structural.css";
+        CSS,
+    'visual declarations' => <<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+        :root { --unexpected: true; }
+        CSS,
+])->throws(
+    PresetSourceException::class,
+    'foundation.css must import tokens.css, custom-variants.css, and structural.css in canonical order.',
+);
+
+it('requires every internal stylesheet imported by the foundation facade to exist', function () {
+    writePresetCss($this->root, 'tokens.css', '/* tokens */');
+    writePresetCss($this->root, 'custom-variants.css', '/* variants */');
+    writePresetCss($this->root, 'foundation.css', <<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+        CSS);
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "../foundation.css";');
+
+    $this->resolver->resolve($entrypoint);
+})->throws(PresetSourceException::class, 'foundation.css cannot resolve canonical import [./structural.css].');
 
 it('rejects imports that cannot be preserved when visual sources are flattened', function (string $import) {
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', "@import {$import};");
@@ -79,6 +115,7 @@ it('rejects imports that cannot be preserved when visual sources are flattened',
 })->with([
     'bare' => '"tailwindcss"',
     'remote' => 'url("https://example.com/theme.css")',
+    'remote with escape' => '"https://example.com/\\theme.css"',
 ]);
 
 it('ignores imports inside comments and strings', function () {
@@ -90,6 +127,112 @@ it('ignores imports inside comments and strings', function () {
     expect($this->resolver->resolve($entrypoint)->visualCss())
         ->toContain("@import './also-missing.css';");
 });
+
+// --- Shared import parsing and flattening boundaries ---
+
+it('resolves supported import spellings consistently for clones and selections', function (string $import) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] { color: blue; }');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', $import);
+
+    foreach ([null, ['presets/demo/forms.css']] as $selection) {
+        $source = $this->resolver->resolve($entrypoint, $selection);
+
+        expect($source->visualStylesheetPaths())->toBe(['presets/demo/forms.css'])
+            ->and($source->visualCss())->toBe('[data-slot="input"] { color: blue; }');
+    }
+})->with([
+    'comment separator' => '@import/* note */"./demo/forms.css";',
+    'compact' => '@import"./demo/forms.css";',
+    'case insensitive' => '@IMPORT URL("./demo/forms.css");',
+    'comments around url argument' => '@import url(/* path */ "./demo/forms.css" /* end */);',
+    'comment instead of conditions' => '@import "./demo/forms.css" /* unconditional */;',
+    'semicolon inside comment' => '@import "./demo/forms.css" /* ; */;',
+    'UTF-8 BOM' => "\xEF\xBB\xBF".'@import "./demo/forms.css";',
+    'query' => '@import "./demo/forms.css?v=1";',
+    'fragment' => '@import "./demo/forms.css#theme";',
+    'query and fragment' => '@import url("./demo/forms.css?v=1#theme");',
+    'fragment before query' => '@import "./demo/forms.css#theme?v=1";',
+]);
+
+it('rejects malformed and misplaced imports before flattening any source', function (string $css, bool $nested) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $path = $nested ? 'presets/demo/aggregate.css' : 'presets/demo.css';
+    writePresetCss($this->root, $path, str_replace('__PATH__', $nested ? './forms.css' : './demo/forms.css', $css));
+    $entrypoint = $nested
+        ? writePresetCss($this->root, 'presets/demo.css', '@import "./demo/aggregate.css";')
+        : $this->root.'/'.$path;
+
+    foreach ([null, []] as $selection) {
+        expect(fn () => $this->resolver->resolve($entrypoint, $selection))
+            ->toThrow(PresetSourceException::class, "Preset [demo] contains a malformed or misplaced @import in [{$path}].");
+    }
+})->with([
+    'nested media' => '@media (min-width: 1px) { @import "__PATH__"; }',
+    'nested style' => '[data-slot="button"] { @import "__PATH__"; }',
+    'after rule' => '[data-slot="button"] { color: red; } @import "__PATH__";',
+    'after namespace' => '@namespace svg url(http://www.w3.org/2000/svg); @import "__PATH__";',
+    'missing semicolon' => '@import "__PATH__"',
+    'missing path' => '@import;',
+    'unquoted path' => '@import __PATH__;',
+    'after valid import' => '@import "__PATH__"; @import;',
+])->with([false, true]);
+
+it('reports lexical failures instead of blaming a remaining import', function (string $css, bool $nested) {
+    $path = $nested ? 'presets/demo/aggregate.css' : 'presets/demo.css';
+    writePresetCss($this->root, $path, $css);
+    $entrypoint = $nested
+        ? writePresetCss($this->root, 'presets/demo.css', '@import "./demo/aggregate.css";')
+        : $this->root.'/'.$path;
+
+    foreach ([null, []] as $selection) {
+        expect(fn () => $this->resolver->resolve($entrypoint, $selection))
+            ->toThrow(PresetSourceException::class, "Preset [demo] contains invalid CSS syntax in [{$path}].");
+    }
+})->with([
+    'unclosed string' => '@import "./forms.css;',
+    'unmatched delimiter' => '@layer base ); @import "./forms.css";',
+    'unclosed comment' => '@import /* unfinished',
+    'unclosed url' => '@import url("./forms.css";',
+])->with([false, true]);
+
+it('rejects CSS escapes in import paths rather than treating them as filesystem separators', function () {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import ".\\demo\\forms.css";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] import paths cannot contain CSS escapes in [presets/demo.css].');
+});
+
+it('uses canonical file identity for duplicate imports with different URL suffixes', function (string $target, string $diagnostic) {
+    writePresetCss($this->root, $target, '[data-slot="input"] {}');
+    $import = $target === 'tokens.css' ? '../tokens.css' : './demo/forms.css';
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', "@import \"{$import}?v=1\"; @import \"{$import}#theme\";");
+
+    expect(fn () => $this->resolver->resolve($entrypoint))->toThrow(PresetSourceException::class, $diagnostic);
+})->with([
+    'foundation' => ['tokens.css', 'imports shared foundation [tokens.css] more than once.'],
+    'visual' => ['presets/demo/forms.css', 'includes visual stylesheet [presets/demo/forms.css] more than once.'],
+]);
+
+it('retains the original URL in errors after removing its suffix for resolution', function (string $url, string $diagnostic) {
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "'.$url.'";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))->toThrow(PresetSourceException::class, $diagnostic);
+})->with([
+    'missing' => ['./demo/missing.css?v=1#theme', 'cannot resolve local import [./demo/missing.css?v=1#theme] from [presets/demo.css].'],
+    'outside root' => ['../../private.css?v=1#theme', 'local import [../../private.css?v=1#theme] from [presets/demo.css] leaves the package CSS directory.'],
+]);
+
+it('rejects preludes that flattening would move behind imported styles', function (string $css) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '@layer first { [data-slot="input"] {} }');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', $css);
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] cannot flatten CSS prelude rules before imports in [presets/demo.css].');
+})->with([
+    'layer order' => '@layer second, first; @import "./demo/forms.css";',
+    'charset' => '@charset "UTF-8"; @import "./demo/forms.css";',
+]);
 
 it('requires shared foundations before visual sources', function () {
     writePresetCss($this->root, 'tokens.css', ':root {}');
@@ -208,40 +351,28 @@ it('compares Windows drive and UNC paths case-insensitively', function (string $
     ],
 ]);
 
-it('rejects conditions on local imports instead of changing their semantics', function () {
+it('rejects conditions on local imports instead of changing their semantics', function (string $conditions) {
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
-    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css" layer(forms);');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css" '.$conditions.';');
 
     expect(fn () => $this->resolver->resolve($entrypoint))
         ->toThrow(PresetSourceException::class, 'Preset [demo] local import [./demo/forms.css] uses unsupported import conditions.');
-});
+})->with(['layer(forms)', 'layer', 'supports(display: grid)', 'screen and (width > 40rem)', '/* note */ print']);
 
-it('filters visual sources without changing their canonical import order', function () {
-    writePresetCss($this->root, 'tokens.css', ':root {}');
+it('delegates optional source selection to the resolved preset', function () {
     writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
     writePresetCss($this->root, 'presets/demo/button.css', '[data-slot="button"] {}');
-    writePresetCss($this->root, 'presets/demo/carousel.css', '[data-slot="carousel"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
-        @import "../tokens.css";
         @import "./demo/modal.css";
         @import "./demo/button.css";
-        @import "./demo/carousel.css";
         CSS);
 
-    $source = $this->resolver->resolve($entrypoint, [
-        'presets/demo/modal.css',
-        'presets/demo/button.css',
-    ]);
+    $source = $this->resolver->resolve($entrypoint, ['presets/demo/button.css']);
 
-    expect($source->foundationImports())->toBe(['tokens.css'])
-        ->and($source->visualStylesheets())->toBe([
-            '[data-slot="modal"] {}',
-            '[data-slot="button"] {}',
-        ])
-        ->and($source->visualCss())->not->toContain('carousel');
+    expect($source->visualStylesheetPaths())->toBe(['presets/demo/button.css']);
 });
 
-it('rejects visual declarations in an entrypoint used for selective resolution', function () {
+it('preserves entrypoint validation for optional source selection', function () {
     writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
         @import "./demo/modal.css";
@@ -250,21 +381,4 @@ it('rejects visual declarations in an entrypoint used for selective resolution',
 
     expect(fn () => $this->resolver->resolve($entrypoint, ['presets/demo/modal.css']))
         ->toThrow(PresetSourceException::class, 'Selective preset [demo] entrypoint must contain only imports.');
-});
-
-it('rejects selected sources outside canonical import order', function () {
-    writePresetCss($this->root, 'presets/demo/a.css', '[data-slot="a"] {}');
-    writePresetCss($this->root, 'presets/demo/b.css', '[data-slot="b"] {}');
-    $entrypoint = writePresetCss($this->root, 'presets/demo.css', <<<'CSS'
-        @import "./demo/a.css";
-        @import "./demo/b.css";
-        CSS);
-
-    expect(fn () => $this->resolver->resolve($entrypoint, [
-        'presets/demo/b.css',
-        'presets/demo/a.css',
-    ]))->toThrow(
-        PresetSourceException::class,
-        'Selected visual sources for preset [demo] do not follow canonical import order.',
-    );
 });

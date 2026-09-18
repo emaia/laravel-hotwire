@@ -8,17 +8,16 @@ use Illuminate\Filesystem\Filesystem;
 /** @internal */
 final readonly class ApplicationPresetValidator
 {
-    private const array REQUIRED_FOUNDATIONS = [
-        'tokens.css',
-        'custom-variants.css',
-        'structural.css',
-    ];
+    private const array REQUIRED_FOUNDATIONS = ['foundation.css'];
 
     public function __construct(
         private Filesystem $files,
         private CssImports $imports,
+        private CssRules $rules,
+        private CssInterpolationSyntax $interpolationSyntax,
         private CssSlots $slots,
         private PresetAxes $axes,
+        private FoundationFacade $foundationFacade,
     ) {}
 
     /**
@@ -30,8 +29,8 @@ final readonly class ApplicationPresetValidator
     {
         $name = pathinfo($entrypoint, PATHINFO_FILENAME);
         $cssRootPath = $cssRoot ?? resource_path('css');
-        $cssRoot = $this->canonical(realpath($cssRootPath) ?: $cssRootPath);
-        $entrypoint = $this->canonical(realpath($entrypoint) ?: $entrypoint);
+        $cssRoot = CssPath::normalize(realpath($cssRootPath) ?: $cssRootPath);
+        $entrypoint = CssPath::normalize(realpath($entrypoint) ?: $entrypoint);
         $errors = [];
         $warnings = [];
         $visual = [];
@@ -43,7 +42,7 @@ final readonly class ApplicationPresetValidator
             return $this->failed(["Application preset [{$name}] does not exist."]);
         }
 
-        if (! $this->inside($entrypoint, $cssRoot)) {
+        if (! CssPath::contains($cssRoot, $entrypoint)) {
             return $this->failed(['Application preset must be a CSS file under resources/css.']);
         }
 
@@ -63,14 +62,20 @@ final readonly class ApplicationPresetValidator
         }
 
         if ($foundations !== self::REQUIRED_FOUNDATIONS) {
-            $errors[] = "Preset [{$name}] must import package foundations once in this order: ".implode(', ', self::REQUIRED_FOUNDATIONS).'.';
+            $errors[] = "Preset [{$name}] must import package foundation [foundation.css] exactly once.";
         }
 
         $css = implode("\n\n", $visual);
-        $coverage = $this->axes->coverage($css);
+        $coverage = $this->axes->inspectCoverage($css);
+        $unprovenSlots = array_values(array_unique([
+            ...$coverage['unvisitedSlots'],
+            ...$coverage['unprovableScopeSlots'],
+        ]));
 
-        if ($coverage['visited'] !== $coverage['total']) {
-            $warnings[] = "Preset [{$name}] CSS analysis is incomplete ({$coverage['visited']} of {$coverage['total']} slot references parsed).";
+        if (! $coverage['complete']) {
+            $warnings[] = $coverage['visited'] === $coverage['total']
+                ? "Preset [{$name}] CSS analysis is incomplete because the stylesheet contains invalid syntax."
+                : "Preset [{$name}] CSS analysis is incomplete ({$coverage['visited']} of {$coverage['total']} slot references parsed).";
         }
 
         return $this->result(
@@ -79,7 +84,8 @@ final readonly class ApplicationPresetValidator
             $warnings,
             $css,
             $registry,
-            $coverage['visited'] === $coverage['total'] ? [] : $this->axes->unvisitedSlots($css),
+            $unprovenSlots,
+            $coverage['unvisitedReferences'],
         );
     }
 
@@ -133,7 +139,7 @@ final readonly class ApplicationPresetValidator
                 );
             }
 
-            $target = $this->canonical(dirname($path).'/'.$importPath);
+            $target = CssPath::normalize(dirname($path).'/'.$importPath);
 
             if (! $this->files->isFile($target)) {
                 throw new PresetSourceException(
@@ -141,7 +147,7 @@ final readonly class ApplicationPresetValidator
                 );
             }
 
-            $target = $this->canonical(realpath($target) ?: $target);
+            $target = CssPath::normalize(realpath($target) ?: $target);
             $foundation = $this->foundation($target, $cssRoot);
 
             if ($foundation !== null) {
@@ -155,12 +161,16 @@ final readonly class ApplicationPresetValidator
                     );
                 }
 
+                if ($foundation === 'foundation.css') {
+                    $this->foundationFacade->validate($target, dirname($target), $preset);
+                }
+
                 $foundations[] = $foundation;
 
                 continue;
             }
 
-            if (! $this->inside($target, $cssRoot)) {
+            if (! CssPath::contains($cssRoot, $target)) {
                 throw new PresetSourceException(
                     "Preset [{$preset}] local import [{$import['path']}] leaves the application CSS directory."
                 );
@@ -173,13 +183,31 @@ final readonly class ApplicationPresetValidator
         array_pop($stack);
         $stylesheet = trim($this->imports->remove($css, $imports));
 
-        if ($this->containsImport($stylesheet)) {
+        if ($this->imports->contains($stylesheet)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [".basename($path).'].'
+                );
+            }
+
             throw new PresetSourceException(
                 "Preset [{$preset}] contains a malformed or misplaced @import in [".basename($path).'].'
             );
         }
 
         if ($stylesheet !== '') {
+            $violation = $this->interpolationSyntax->invalidDeclarations($stylesheet)[0] ?? null;
+
+            if ($violation !== null) {
+                $method = $violation['method'];
+                $declaration = $violation['declaration'];
+                $replacement = str_replace('_', ' ', $method);
+
+                throw new PresetSourceException(
+                    "Preset [{$preset}] uses invalid interpolation method [{$method}] in raw CSS declaration [{$declaration}] in [".basename($path)."]. Write [{$replacement}]; Tailwind underscores represent spaces only inside arbitrary values ([...])."
+                );
+            }
+
             $visual[] = $stylesheet;
         }
     }
@@ -188,21 +216,13 @@ final readonly class ApplicationPresetValidator
     {
         $applicationRoot = dirname($cssRoot, 2);
         $candidate = $applicationRoot.'/vendor/emaia/laravel-hotwire/resources/css';
-        $packageRoot = $this->canonical(realpath($candidate) ?: $candidate);
+        $packageRoot = CssPath::normalize(realpath($candidate) ?: $candidate);
 
-        if (! $this->inside($path, $packageRoot) || $this->inside($path, $packageRoot.'/presets')) {
+        if (! CssPath::contains($packageRoot, $path) || CssPath::contains($packageRoot.'/presets', $path)) {
             return null;
         }
 
         return ltrim(substr($path, strlen($packageRoot)), '/');
-    }
-
-    private function containsImport(string $css): bool
-    {
-        return preg_match(
-            '~(?:/\*.*?\*/|"(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\')(*SKIP)(*F)|@import\b~is',
-            $css,
-        ) === 1;
     }
 
     /**
@@ -223,6 +243,7 @@ final readonly class ApplicationPresetValidator
      * @param  string[]  $errors
      * @param  string[]  $warnings
      * @param  string[]  $unvisitedSlots
+     * @param  string[]  $unvisitedReferences
      * @return array{errors: string[], warnings: string[], styledSlots: string[], referencedSlots: string[]}
      */
     private function result(
@@ -232,20 +253,29 @@ final readonly class ApplicationPresetValidator
         string $css,
         HotwireRegistry $registry,
         array $unvisitedSlots,
+        array $unvisitedReferences,
     ): array {
         $definitions = [...array_values($registry->components()), ...array_values($registry->controllers())];
         $required = [];
         $declared = [];
+        $requiredProperties = [];
 
         foreach ($definitions as $definition) {
             $required = [...$required, ...$definition->styling->visualSlots()];
             $declared = [...$declared, ...array_keys($definition->styling->slots)];
+
+            foreach ($definition->styling->presetProperties() as $slot => $properties) {
+                $requiredProperties[$slot] = [
+                    ...($requiredProperties[$slot] ?? []),
+                    ...array_keys($properties),
+                ];
+            }
         }
 
         $required = array_values(array_unique($required));
         $declared = array_values(array_unique($declared));
         $styled = $this->slots->withDeclarations($css);
-        $referenced = $this->slots->referenced($css);
+        $referenced = array_values(array_unique([...$this->slots->referenced($css), ...$unvisitedReferences]));
         $missing = array_values(array_diff($required, $styled));
         $unprovenMissing = array_values(array_intersect($missing, $unvisitedSlots));
         $provenMissing = array_values(array_diff($missing, $unprovenMissing));
@@ -266,61 +296,31 @@ final readonly class ApplicationPresetValidator
             $errors[] = "Preset [{$name}] references undeclared slots: ".implode(', ', $unknown).'.';
         }
 
+        foreach ($requiredProperties as $slot => $properties) {
+            $present = $this->slots->customPropertiesFor($css, $slot);
+            $missingProperties = array_values(array_diff(array_unique($properties), $present));
+
+            if ($missingProperties === []) {
+                continue;
+            }
+
+            if (in_array($slot, $unvisitedSlots, true)) {
+                sort($missingProperties);
+                $warnings[] = "Preset [{$name}] could not prove required preset properties on [data-slot=\"{$slot}\"]: ".implode(', ', $missingProperties).'.';
+
+                continue;
+            }
+
+            foreach ($missingProperties as $property) {
+                $errors[] = "Preset [{$name}] is missing required preset property [{$property}] on [data-slot=\"{$slot}\"].";
+            }
+        }
+
         return [
             'errors' => $errors,
             'warnings' => $warnings,
             'styledSlots' => $styled,
             'referencedSlots' => $referenced,
         ];
-    }
-
-    private function canonical(string $path): string
-    {
-        $path = str_replace('\\', '/', $path);
-        $prefix = '';
-
-        if (preg_match('/^([A-Za-z]:)(?:\/(.*))?$/', $path, $matches) === 1) {
-            $prefix = strtoupper($matches[1]).'/';
-            $path = $matches[2] ?? '';
-        } elseif (str_starts_with($path, '//')) {
-            $prefix = '//';
-            $path = ltrim($path, '/');
-        } elseif (str_starts_with($path, '/')) {
-            $prefix = '/';
-            $path = ltrim($path, '/');
-        }
-
-        $segments = [];
-
-        foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment === '..') {
-                array_pop($segments);
-
-                continue;
-            }
-
-            $segments[] = $segment;
-        }
-
-        return $prefix.implode('/', $segments);
-    }
-
-    private function inside(string $path, string $root): bool
-    {
-        $path = $this->comparable($this->canonical($path));
-        $root = rtrim($this->comparable($this->canonical($root)), '/');
-
-        return $path === $root || str_starts_with($path, $root.'/');
-    }
-
-    private function comparable(string $path): string
-    {
-        return preg_match('/^[A-Za-z]:\//', $path) === 1 || str_starts_with($path, '//')
-            ? strtolower($path)
-            : $path;
     }
 }

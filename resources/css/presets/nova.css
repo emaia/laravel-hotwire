@@ -1,6 +1,4 @@
-@import "../tokens.css";
-@import "../custom-variants.css";
-@import "../structural.css";
+@import "../foundation.css";
 
 @import "./nova/accordion.css";
 @import "./nova/alert.css";
@@ -16,7 +14,6 @@
 @import "./nova/card.css";
 @import "./nova/carousel.css";
 @import "./nova/choice-groups.css";
-@import "./nova/color-scheme-toggle.css";
 @import "./nova/drawer.css";
 @import "./nova/floating-presence.css";
 @import "./nova/dropdown.css";
@@ -38,7 +35,6 @@
 @import "./nova/modal-overlay-layout.css";
 @import "./nova/dialog-backdrops.css";
 @import "./nova/modal.css";
-@import "./nova/overlay-motion.css";
 @import "./nova/multi-select.css";
 @import "./nova/sticky.css";
 @import "./nova/navbar.css";
@@ -47,7 +43,6 @@
 @import "./nova/progress.css";
 @import "./nova/read-more.css";
 @import "./nova/reveal-surfaces.css";
-@import "./nova/read-more-reduced-motion.css";
 @import "./nova/rich-text.css";
 @import "./nova/scroll-progress.css";
 @import "./nova/select.css";

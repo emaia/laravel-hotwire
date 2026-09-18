@@ -10,6 +10,8 @@ namespace Emaia\LaravelHotwire\Support;
  */
 final class PresetAxes
 {
+    private const string SLOT_MENTION = '/(?:\[data-slot|data-\[slot)\s*=\s*(["\']?)([a-z0-9-]+)/';
+
     public function __construct(private readonly CssRules $rules = new CssRules) {}
 
     /**
@@ -23,7 +25,7 @@ final class PresetAxes
     {
         $axes = [];
 
-        foreach ($this->rules->parse($this->rules->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($this->rules->parse($css) as ['chain' => $chain, 'declarations' => $declarations]) {
             $selector = (string) end($chain);
             $subject = $this->subject($chain);
 
@@ -39,7 +41,7 @@ final class PresetAxes
     }
 
     /**
-     * Measure parser coverage against every `[data-slot` mention.
+     * Measure parser coverage against every static selector or Tailwind slot variant mention.
      *
      * Include declarations on both sides because restricting the total to selectors would require the same parse this audits.
      *
@@ -47,64 +49,153 @@ final class PresetAxes
      */
     public function coverage(string $css): array
     {
-        $analysis = $this->coverageAnalysis($css);
+        $analysis = $this->inspectCoverage($css);
 
         return ['visited' => $analysis['visited'], 'total' => $analysis['total']];
     }
 
     /**
-     * Return identifiable slot references that the rule parser could not visit.
+     * Return identifiable slot mentions that the rule parser could not visit.
      *
      * @return string[]
      */
     public function unvisitedSlots(string $css): array
     {
-        return $this->coverageAnalysis($css)['unvisitedSlots'];
+        return $this->inspectCoverage($css)['unvisitedSlots'];
     }
 
-    /** @return array{visited: int, total: int, unvisitedSlots: string[]} */
-    private function coverageAnalysis(string $css): array
+    /**
+     * Inspect parser coverage and report whether the structural analysis completed.
+     *
+     * @return array{visited: int, total: int, unvisitedSlots: string[], unvisitedReferences: string[], invalidScopeRoots: string[], unprovableScopeSlots: string[], complete: bool}
+     */
+    public function inspectCoverage(string $css): array
     {
-        $stripped = $this->rules->stripComments($css);
-        $visited = 0;
         $visitedSource = '';
+        $analysis = $this->rules->analyze($css);
 
-        foreach ($this->rules->parse($stripped) as ['chain' => $chain, 'declarations' => $declarations]) {
+        foreach ($analysis['rules'] as ['chain' => $chain, 'declarations' => $declarations]) {
             $source = end($chain).' '.$declarations;
-            $visited += preg_match_all('/\[data-slot\s*=/', $source);
             $visitedSource .= ' '.$source;
         }
 
-        preg_match_all('/@scope\s+([^{}]+)\{/', $stripped, $scopes);
-
-        foreach ($scopes[1] as $scope) {
-            $visited += preg_match_all('/\[data-slot\s*=/', $scope);
-            $visitedSource .= ' '.$scope;
-        }
-
-        $allSlots = $this->slotMentionCounts($stripped);
-        $visitedSlots = $this->slotMentionCounts($visitedSource);
-        $unvisitedSlots = [];
-
-        foreach ($allSlots as $slot => $count) {
-            if ($count > ($visitedSlots[$slot] ?? 0)) {
-                $unvisitedSlots[] = $slot;
+        foreach ($analysis['blocks'] as $block) {
+            if ($this->rules->scopeRoot($block) !== null) {
+                $visitedSource .= ' '.$block;
             }
         }
 
+        $all = $this->slotCounts($css);
+        $visited = $this->slotCounts($visitedSource);
+        $visitedCount = $this->accountedFor($all['mentions'], $visited['mentions']);
+        $unprovableScopeSlots = [];
+
+        foreach ($analysis['invalidScopeRoots'] as $root) {
+            $unprovableScopeSlots = [
+                ...$unprovableScopeSlots,
+                ...array_keys($this->slotCounts($root)['mentions']),
+            ];
+        }
+
         return [
-            'visited' => $visited,
-            'total' => (int) preg_match_all('/\[data-slot\s*=/', $stripped),
-            'unvisitedSlots' => $unvisitedSlots,
+            'visited' => $visitedCount,
+            'total' => array_sum($all['mentions']),
+            'unvisitedSlots' => $this->unvisited($all['mentions'], $visited['mentions']),
+            'unvisitedReferences' => $this->unvisited($all['references'], $visited['references']),
+            'invalidScopeRoots' => $analysis['invalidScopeRoots'],
+            'unprovableScopeSlots' => array_values(array_unique($unprovableScopeSlots)),
+            'complete' => $analysis['valid'] && $visitedCount === array_sum($all['mentions']),
         ];
     }
 
-    /** @return array<string, int> */
-    private function slotMentionCounts(string $css): array
+    /** @return array{mentions: array<string, int>, references: array<string, int>} */
+    private function slotCounts(string $css): array
     {
-        preg_match_all('/\[data-slot\s*=\s*["\']?([a-z0-9-]+)/', $css, $matches);
+        preg_match_all(self::SLOT_MENTION, $css, $matches, PREG_OFFSET_CAPTURE);
+        $masked = [];
+        $candidate = 0;
+        $this->rules->scan($css, function (array $event) use (&$candidate, &$masked, &$matches): void {
+            if (! in_array($event['type'], ['comment', 'string'], true)) {
+                return;
+            }
 
-        return array_count_values($matches[1]);
+            $start = $event['offset'];
+            $end = $start + $event['length'];
+
+            while (isset($matches[0][$candidate]) && $matches[0][$candidate][1] < $start) {
+                $candidate++;
+            }
+
+            while (isset($matches[0][$candidate]) && $matches[0][$candidate][1] < $end) {
+                $masked[$candidate] = true;
+                $candidate++;
+            }
+        });
+
+        $mentions = [];
+        $references = [];
+
+        foreach ($matches[0] as $index => [$match, $offset]) {
+            if (isset($masked[$index])) {
+                continue;
+            }
+
+            $slot = $matches[2][$index][0];
+            $mentions[$slot] = ($mentions[$slot] ?? 0) + 1;
+            $cursor = $offset + strlen($match);
+            $quote = $matches[1][$index][0];
+
+            if ($quote !== '') {
+                if (($css[$cursor] ?? null) !== $quote) {
+                    continue;
+                }
+
+                $cursor++;
+            }
+
+            while (isset($css[$cursor]) && str_contains(" \n\r\t\f", $css[$cursor])) {
+                $cursor++;
+            }
+
+            if (($css[$cursor] ?? null) === ']') {
+                $references[$slot] = ($references[$slot] ?? 0) + 1;
+            }
+        }
+
+        return ['mentions' => $mentions, 'references' => $references];
+    }
+
+    /**
+     * @param  array<string, int>  $all
+     * @param  array<string, int>  $visited
+     * @return string[]
+     */
+    private function unvisited(array $all, array $visited): array
+    {
+        $slots = [];
+
+        foreach ($all as $slot => $count) {
+            if ($count > ($visited[$slot] ?? 0)) {
+                $slots[] = $slot;
+            }
+        }
+
+        return $slots;
+    }
+
+    /**
+     * @param  array<string, int>  $all
+     * @param  array<string, int>  $visited
+     */
+    private function accountedFor(array $all, array $visited): int
+    {
+        $count = 0;
+
+        foreach ($all as $slot => $occurrences) {
+            $count += min($occurrences, $visited[$slot] ?? 0);
+        }
+
+        return $count;
     }
 
     /** Collect axes from a scope root without assigning its limit to the styled subject. */

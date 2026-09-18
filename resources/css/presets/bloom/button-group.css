@@ -1,0 +1,16 @@
+@layer components {
+    /* Button Group */
+    [data-slot="button-group"] { @apply flex w-fit items-stretch; }
+    [data-slot="button-group"] > *:focus-visible { @apply relative z-10; }
+    [data-slot="button-group"] > [data-slot="button"][data-variant="default"][aria-current="page"] { @apply relative z-[1] border-primary; }
+    [data-slot="button-group"]:has(> [data-slot="button-group"]) { @apply gap-2; }
+    [data-slot="button-group"][data-orientation="vertical"] { @apply flex-col; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot] { @apply rounded-e-none; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot]:not(:has(~ [data-slot])) { @apply rounded-e-[var(--radius-action)]; }
+    [data-slot="button-group"][data-orientation="horizontal"] > [data-slot] ~ [data-slot] { @apply -ms-px rounded-s-none; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot] { @apply rounded-b-none; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot]:not(:has(~ [data-slot])) { @apply rounded-b-[var(--radius-action)]; }
+    [data-slot="button-group"][data-orientation="vertical"] > [data-slot] ~ [data-slot] { @apply -mt-px rounded-t-none; }
+    [data-slot="button-group-text"] { @apply flex items-center gap-2 rounded-[var(--radius-action)] border bg-muted px-4 text-sm font-medium [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4; }
+    [data-slot="button-group-separator"] { @apply relative self-stretch bg-input data-[orientation=horizontal]:mx-px data-[orientation=horizontal]:w-auto data-[orientation=vertical]:my-px data-[orientation=vertical]:h-auto; }
+}

@@ -1,0 +1,14 @@
+:root {
+    --fixture-radius: 0.5rem;
+}
+
+:where(:root:not([data-theme="dark"])),
+[data-theme="light"] {
+    --fixture-surface: white;
+    --fixture-surface-foreground: black;
+}
+
+[data-theme="dark"] {
+    --fixture-surface: black;
+    --fixture-surface-foreground: white;
+}

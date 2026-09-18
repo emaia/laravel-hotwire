@@ -3,6 +3,7 @@
 use Emaia\LaravelHotwire\Components\Button;
 use Emaia\LaravelHotwire\Components\Card;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
+use Emaia\LaravelHotwire\Support\CssCustomProperties;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
 use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\CssSlots;
@@ -179,6 +180,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'carousel-nav-wrapper',
         'chart',
         'conditional-field',
+        'color-scheme-icon',
         'drawer',
         'field-label-required',
         'file-upload-announcer',
@@ -288,52 +290,132 @@ it('keeps Sidebar content overflow mechanics in the structural stylesheet', func
         ->not->toContain('md:overflow-hidden');
 })->with('slot catalog presets');
 
-it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
-    $stylesheets = [
-        File::get(__DIR__.'/../../resources/css/structural.css'),
-        app(CssPresetFiles::class)->source($preset)->visualCss(),
+it('keeps corpus-invariant component mechanics in the structural stylesheet', function (string $preset) {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $structuralDeclarations = fn (string $selector): string => cssDeclarationsForSelector($structural, $selector);
+    $visualUtilities = fn (string $slot): array => cssAppliedUtilitiesForSlot($visual, $slot);
+    $forbiddenVisualUtilities = [
+        'attachment' => ['relative'],
+        'attachment-actions' => ['relative', 'z-20'],
+        'attachment-trigger' => ['absolute', 'inset-0', 'z-10'],
+        'table-container' => ['w-full', 'overflow-x-auto'],
+        'sidebar-gap' => ['w-(--sidebar-width)', 'w-0', 'md:w-(--sidebar-width-icon)', 'hidden'],
+        'sidebar-container' => [
+            'w-(--sidebar-width)',
+            'md:w-(--sidebar-width-icon)',
+            'md:w-[calc(var(--sidebar-width-icon)+1rem+2px)]',
+            'data-[side=left]:left-0',
+            'data-[side=right]:right-0',
+            'left-[calc(var(--sidebar-width)*-1)]',
+            'right-[calc(var(--sidebar-width)*-1)]',
+        ],
     ];
-    $matched = 0;
 
-    foreach ($stylesheets as $css) {
-        foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
-            $selector = (string) end($chain);
-
-            if (! str_contains($selector, '[data-slot="sidebar"]')
-                || ! str_contains($selector, '[data-collapsible="icon"]')) {
-                continue;
-            }
-
-            $matched++;
-
-            expect($chain)->toContain(
-                '@scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"])'
-            );
+    foreach ($forbiddenVisualUtilities as $slot => $utilities) {
+        foreach ($utilities as $utility) {
+            expect($visualUtilities($slot))->not->toContain($utility);
         }
     }
 
-    expect($matched)->toBeGreaterThan(0);
+    expect($structuralDeclarations('[data-slot="attachment"]'))
+        ->toContain('position: relative')
+        ->and($structuralDeclarations('[data-slot="attachment-trigger"]'))
+        ->toContain('position: absolute')
+        ->toContain('inset: 0')
+        ->toContain('z-index: 10')
+        ->and($structuralDeclarations('[data-slot="attachment-actions"]'))
+        ->toContain('position: relative')
+        ->toContain('z-index: 20')
+        ->and($structuralDeclarations('[data-slot="table-container"]'))
+        ->toContain('width: 100%')
+        ->toContain('overflow-x: auto')
+        ->and($structuralDeclarations(':where([data-slot="sidebar-gap"])'))
+        ->toContain('width: var(--sidebar-width)')
+        ->and($visualUtilities('table-container'))
+        ->toContain('relative')
+        ->and($structural)
+        ->toContain('@media (width >= 48rem)')
+        ->toContain('@media (width < 48rem)')
+        ->not->toContain('@media (min-width: 768px)')
+        ->not->toContain('@media (max-width: 767px)')
+        ->not->toContain('--sidebar-floating-inset,')
+        ->not->toContain('--sidebar-floating-edge,')
+        ->and($visual)
+        ->toContain('@media (width >= 48rem)')
+        ->toContain('@media (width < 48rem)')
+        ->not->toContain('@media (min-width: 768px)')
+        ->not->toContain('@media (max-width: 767px)')
+        ->and($structuralDeclarations(':where([data-slot="sidebar-container"])'))
+        ->toContain('width: var(--sidebar-width)')
+        ->and(cssDeclarationsForSelector($visual, '[data-slot="sidebar"]'))
+        ->toContain('--sidebar-floating-inset: 0.5rem')
+        ->toContain('--sidebar-floating-edge: 0px')
+        ->and($visualUtilities('sidebar-container'))
+        ->toContain('p-(--sidebar-floating-inset)')
+        ->and(File::get(__DIR__.'/../../docs/components/sidebar.md'))
+        ->toContain('`--sidebar-floating-inset`')
+        ->toContain('`--sidebar-floating-edge`')
+        ->and(cssChainsForSelector($structural, '[data-slot="attachment"]'))
+        ->toContain('@layer components')
+        ->and(cssChainsForSelector($structural, ':where([data-slot="sidebar-gap"])'))
+        ->toContain('@layer components');
 })->with('slot catalog presets');
 
-it('keeps rules that name no slot out of the presets', function (string $preset) {
+it('collects utilities only when the requested slot is the final slot target', function () {
+    $css = <<<'CSS'
+        [data-slot="attachment"] [data-slot="attachment-description"] { @apply relative; }
+        [data-slot="attachment"][data-state="error"] { @apply border-destructive; }
+        CSS;
+
+    expect(cssAppliedUtilitiesForSlot($css, 'attachment'))
+        ->toBe(['border-destructive'])
+        ->and(cssAppliedUtilitiesForSlot($css, 'attachment-description'))
+        ->toBe(['relative']);
+});
+
+it('keeps rules that name no slot out of preset modules', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
-    $css = app(CssPresetFiles::class)->source($preset)->visualCss();
+    $source = app(CssPresetFiles::class)->source($preset);
+    $css = $source->moduleCss();
     $slotless = [];
 
-    foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
+    foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain, 'declarations' => $declarations]) {
         $selector = (string) end($chain);
 
-        if (! str_contains($selector, 'data-slot') && ! str_ends_with($selector, '%')) {
-            $slotless[] = $selector;
+        if (str_contains($selector, 'data-slot') || str_ends_with($selector, '%')) {
+            continue;
         }
+
+        $slotless[] = $selector;
     }
 
     expect($slotless)->toBe([], "Preset [{$preset}] styles something no component owns. Structural rules belong in resources/css/structural.css.")
         ->and(File::get(__DIR__.'/../../resources/css/structural.css'))
         ->toContain(':where([data-hotwire-top-layer][popover])')
         ->and(File::get(app(CssPresetFiles::class)->path($preset)))
-        ->toContain('@import "../structural.css";');
+        ->toContain('@import "../foundation.css";');
 })->with('slot catalog presets');
+
+it('restricts any declared preset base to custom properties in supported theme scopes', function (string $preset) {
+    $css = app(CssPresetFiles::class)->source($preset)->baseCss();
+
+    expect(presetBaseViolations($css))->toBe([]);
+})->with('slot catalog presets');
+
+it('rejects component selectors and global visual properties from preset base', function () {
+    $css = <<<'CSS'
+        @theme inline { --radius-action: var(--radius); }
+        :root { --radius-action: var(--radius); --font-family: "Fixture; Sans"; --escaped: fixture\;value; }
+        [data-slot="button"] { --button-radius: 1rem; }
+        [data-theme="dark"] { accent-color: red; }
+        CSS;
+
+    expect(presetBaseViolations($css))->toEqualCanonicalizing([
+        '[data-slot="button"]',
+        '[data-theme="dark"]',
+    ]);
+});
 
 it('declares every literal slot emitted by any component view', function () {
     // Every view, not only the ones a catalog entry points at. Most package views belong to
@@ -512,6 +594,82 @@ function registryAuditController(array $slots): array
     ];
 }
 
+function cssDeclarationsForSelector(string $css, string $expected): string
+{
+    $rules = new CssRules;
+    $declarations = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $declarations[] = $rule['declarations'];
+        }
+    }
+
+    return implode("\n", $declarations);
+}
+
+/** @return string[] */
+function cssChainsForSelector(string $css, string $expected): array
+{
+    $rules = new CssRules;
+    $chains = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+
+        if ($selector === $expected) {
+            $chains = [...$chains, ...$rule['chain']];
+        }
+    }
+
+    return array_values(array_unique($chains));
+}
+
+/** @return array<string, string[]> */
+function cssAppliedUtilitiesBySelector(string $css): array
+{
+    $rules = new CssRules;
+    $utilities = [];
+
+    foreach ($rules->parse($rules->stripComments($css)) as $rule) {
+        $selector = trim((string) end($rule['chain']));
+        preg_match_all('/@apply\s+([^;}]+)/s', $rule['declarations'], $matches);
+
+        foreach ($matches[1] as $application) {
+            $utilities[$selector] = [
+                ...($utilities[$selector] ?? []),
+                ...(preg_split('/\s+/', trim($application)) ?: []),
+            ];
+        }
+    }
+
+    return $utilities;
+}
+
+/** @return string[] */
+function cssAppliedUtilitiesForSlot(string $css, string $slot): array
+{
+    $rules = new CssRules;
+
+    return collect(cssAppliedUtilitiesBySelector($css))
+        ->filter(function (array $utilities, string $selector) use ($rules, $slot): bool {
+            foreach ($rules->splitTopLevel($selector, ',') as $branch) {
+                preg_match_all('/\[data-slot\s*=\s*["\']?([a-z][a-z0-9-]*)["\']?\s*\]/', $branch, $matches);
+
+                if (($matches[1][array_key_last($matches[1])] ?? null) === $slot) {
+                    return true;
+                }
+            }
+
+            return false;
+        })
+        ->flatten()
+        ->values()
+        ->all();
+}
+
 /** @return string[] */
 function declaredSlots(): array
 {
@@ -595,4 +753,10 @@ function visualSlotsWithDeclarations(string $css): array
 function referencedCssSlots(string $css): array
 {
     return app(CssSlots::class)->referenced($css);
+}
+
+/** @return string[] */
+function presetBaseViolations(string $css): array
+{
+    return app(CssCustomProperties::class)->inspectPresetBase($css)['violations'];
 }

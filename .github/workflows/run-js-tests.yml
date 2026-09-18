@@ -9,9 +9,12 @@ on:
       - 'resources/views/component-views/**'
       - '.github/workflows/run-js-tests.yml'
       - 'package.json'
+      - 'composer.json'
+      - 'composer.lock'
       - 'bun.lock'
       - 'playwright.config.js'
       - 'scripts/run_make_preset_fixture.php'
+      - 'scripts/preset_contrast_manifest.php'
       - 'scripts/run_styles_fixture.php'
       - 'src/Commands/MakePresetCommand.php'
       - 'src/Commands/StylesCommand.php'
@@ -20,6 +23,7 @@ on:
       - 'src/Support/Controller*.php'
       - 'src/Support/Css*.php'
       - 'src/Support/GeneratedStyleBundle.php'
+      - 'src/Support/FoundationFacade.php'
       - 'src/Support/LoaderStub.php'
       - 'src/Support/Preset*.php'
       - 'tests/Css/**'
@@ -32,9 +36,12 @@ on:
       - 'resources/views/component-views/**'
       - '.github/workflows/run-js-tests.yml'
       - 'package.json'
+      - 'composer.json'
+      - 'composer.lock'
       - 'bun.lock'
       - 'playwright.config.js'
       - 'scripts/run_make_preset_fixture.php'
+      - 'scripts/preset_contrast_manifest.php'
       - 'scripts/run_styles_fixture.php'
       - 'src/Commands/MakePresetCommand.php'
       - 'src/Commands/StylesCommand.php'
@@ -43,6 +50,7 @@ on:
       - 'src/Support/Controller*.php'
       - 'src/Support/Css*.php'
       - 'src/Support/GeneratedStyleBundle.php'
+      - 'src/Support/FoundationFacade.php'
       - 'src/Support/LoaderStub.php'
       - 'src/Support/Preset*.php'
       - 'tests/Css/**'
@@ -101,8 +109,17 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          coverage: none
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction
 
       - name: Cache Playwright browsers
         id: playwright-cache

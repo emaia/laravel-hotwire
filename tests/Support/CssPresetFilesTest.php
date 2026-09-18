@@ -3,6 +3,8 @@
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\PresetSourceException;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 
 dataset('shipped css preset names', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -18,6 +20,9 @@ it('discovers shipped css presets in sorted order', function () {
 
     expect($presets->all())->toBe($expected)
         ->and($presets->names())->toBe(array_keys($expected))
+        ->and($presets->names())->toBe(['bloom', 'nova'])
+        ->and($presets->path('bloom'))->toBe($expected['bloom'])
+        ->and($presets->source('bloom')?->visualCss())->toContain('[data-slot="button"]')
         ->and($presets->path('nova'))->toBe($expected['nova'])
         ->and($presets->source('nova')?->visualCss())->toContain('[data-slot="button"]')
         ->and($presets->path('missing'))->toBeNull();
@@ -32,17 +37,30 @@ it('discovers and resolves public entrypoints from the configured css root', fun
         'orbit' => realpath(__DIR__.'/../Fixtures/css/preset-package/presets/orbit.css'),
     ])
         ->and($presets->names())->toBe(['constellation', 'orbit'])
-        ->and($source?->foundationImports())->toBe([
-            'tokens.css',
-            'custom-variants.css',
-            'foundations/metrics.css',
-            'structural.css',
-        ])
+        ->and($source?->foundationImports())->toBe(['foundation.css'])
         ->and($source?->visualStylesheetPaths())->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
             'presets/constellation/layout/surfaces.css',
             'presets/constellation/feedback.css',
         ])
+        ->and($source?->baseStylesheetPaths())->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
+        ])
+        ->and($source?->moduleStylesheetPaths())->toBe([
+            'presets/constellation/layout/surfaces.css',
+            'presets/constellation/feedback.css',
+        ])
+        ->and($source?->baseCss())->toContain('--fixture-radius')
+        ->and($source?->baseCss())->toContain('--color-fixture-surface')
+        ->and($source?->moduleCss())->not->toContain('--fixture-radius')
         ->and($presets->source('orbit')?->visualStylesheetPaths())->toBe(['presets/orbit/all.css']);
+});
+
+it('allows compatible foundation-owned overrides to inherit every other scope', function () {
+    expect(fn () => syntheticCssPresetFiles()->source('constellation'))
+        ->not->toThrow(PresetSourceException::class);
 });
 
 it('selects synthetic sources independently of their grouping and nesting', function () {
@@ -50,16 +68,407 @@ it('selects synthetic sources independently of their grouping and nesting', func
     $grouped = $presets->sourceForSelection('orbit', ['action']);
 
     expect($presets->sourceForSelection('constellation', ['action'])?->visualStylesheetPaths())
-        ->toBe(['presets/constellation/layout/surfaces.css'])
+        ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
+            'presets/constellation/layout/surfaces.css',
+        ])
         ->and($presets->sourceForSelection('constellation', controllers: ['status'])?->visualStylesheetPaths())
-        ->toBe(['presets/constellation/feedback.css'])
+        ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
+            'presets/constellation/feedback.css',
+        ])
         ->and($presets->sourceForSelection('constellation', ['action'], ['status'])?->visualStylesheetPaths())
         ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
             'presets/constellation/layout/surfaces.css',
             'presets/constellation/feedback.css',
         ])
+        ->and($presets->sourceForSelection('constellation')?->visualStylesheetPaths())
+        ->toBe([
+            'presets/constellation/theme.css',
+            'presets/constellation/aliases.css',
+        ])
         ->and($grouped?->visualStylesheetPaths())->toBe(['presets/orbit/all.css'])
         ->and($grouped?->visualCss())->toContain('[data-slot="status"]');
+});
+
+it('validates additional properties and aliases across the complete ordered preset base', function (Closure $mutate, string $message) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-tokens-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $mutate($files, $root);
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, $message);
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'missing property' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/theme.css';
+            $css = preg_replace(
+                '/^\h*--fixture-surface-foreground:\h*(?:black|white);\R?/m',
+                '',
+                $files->get($path),
+            );
+            $files->put($path, (string) $css);
+        },
+        'Preset [constellation] property [--fixture-surface-foreground] is not declared by its base sources.',
+    ],
+    'foundation themed property missing dark scope despite nested inheritance' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/tokens.css';
+            $css = preg_replace('/^\h*--fixture-border:\h*black;\R?/m', '', $files->get($path));
+            $files->put($path, (string) $css);
+        },
+        'Shared foundation property [--fixture-border] is missing required scope [dark] ([data-theme="dark"]) in tokens.css.',
+    ],
+    'preset themed property missing default scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/theme.css';
+            $css = preg_replace('/^\h*--fixture-surface:\h*white;\R?/m', '', $files->get($path));
+            $files->put($path, (string) $css);
+        },
+        'Preset [constellation] property [--fixture-surface] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in its base sources.',
+    ],
+    'preset themed property missing explicit light scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/theme.css';
+            $css = str_replace(["\r\n", "\r"], "\n", $files->get($path));
+            $css = str_replace(
+                ":where(:root:not([data-theme=\"dark\"])),\n[data-theme=\"light\"] {",
+                ':where(:root:not([data-theme="dark"])) {',
+                $css,
+            );
+            $files->put($path, $css);
+        },
+        'Preset [constellation] property [--fixture-surface] is missing required scope [light] ([data-theme="light"]) in its base sources.',
+    ],
+    'foundation themed property missing unthemed default scope' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/tokens.css';
+            $css = str_replace(["\r\n", "\r"], "\n", $files->get($path));
+            $css = str_replace(
+                ":where(:root:not([data-theme=\"dark\"])),\n",
+                '',
+                $css,
+            );
+            $files->put($path, $css);
+        },
+        'Shared foundation property [--fixture-background] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in tokens.css.',
+    ],
+    'preset global property missing root scope' => [
+        function (Filesystem $files, string $root): void {
+            $theme = $root.'/presets/constellation/theme.css';
+            $aliases = $root.'/presets/constellation/aliases.css';
+            $css = preg_replace('/\R?:root\s*\{\s*--fixture-radius:\s*[^;]+;\s*\}\R?/', "\n", $files->get($theme));
+            $files->put($theme, (string) $css);
+            $css = preg_replace('/^\h*--fixture-radius:\h*[^;]+;\R?/m', '', $files->get($aliases));
+            $files->put($aliases, (string) $css);
+
+            $files->append($theme, "\n[data-theme=\"dark\"] { --fixture-radius: 1rem; }\n");
+        },
+        'Preset [constellation] property [--fixture-radius] is missing required scope [root] (:root) in its base sources.',
+    ],
+    'foundation themed property declared in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n:root { --fixture-background: red; }\n");
+        },
+        'Shared foundation themed property [--fixture-background] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'foundation global property declared in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n[data-theme=\"dark\"] { --fixture-spacing: 3rem; }\n");
+        },
+        'Shared foundation global property [--fixture-spacing] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
+    'foundation themed property declared outside supported scopes' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\nhtml { --fixture-background: red; }\n");
+        },
+        'Shared foundation property [--fixture-background] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a nested scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n@layer base { :root { --fixture-spacing: 3rem; } }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a nested conditional' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n:root { @media (width > 0px) { --fixture-spacing: 3rem; } }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'foundation global property declared in a non-inline theme block' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n@theme static { --fixture-spacing: 3rem; }\n");
+        },
+        'Shared foundation property [--fixture-spacing] must not be declared outside supported token scopes.',
+    ],
+    'preset themed property declared in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n:root { --fixture-surface: red; }\n");
+        },
+        'Preset [constellation] themed property [--fixture-surface] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'preset global property declared in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/theme.css', "\n[data-theme=\"dark\"] { --fixture-radius: 1rem; }\n");
+        },
+        'Preset [constellation] global property [--fixture-radius] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
+    'inherited themed property overridden in root' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n:root { --fixture-border: red; }\n");
+        },
+        'Preset [constellation] override of shared foundation themed property [--fixture-border] must not be declared in :root; its unthemed default would never apply.',
+    ],
+    'inherited global property overridden in dark scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/aliases.css', "\n[data-theme=\"dark\"] { --fixture-spacing: 3rem; }\n");
+        },
+        'Preset [constellation] override of shared foundation global property [--fixture-spacing] must not be declared in theme scope [dark] ([data-theme="dark"]).',
+    ],
+    'unregistered foundation alias' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/tokens.css', "\n@theme inline { --color-fixture-extra: var(--fixture-background); }\n");
+        },
+        'Shared foundation @theme inline declares unregistered alias [--color-fixture-extra].',
+    ],
+    'unregistered property' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/aliases.css';
+            $files->append($path, "\n:root { --fixture-unregistered: 1rem; }\n");
+        },
+        'Preset [constellation] base declares unregistered property [--fixture-unregistered].',
+    ],
+    'missing alias' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/aliases.css';
+            $css = preg_replace(
+                '/^\h*--color-fixture-surface:\h*var\(--fixture-surface\);\R?/m',
+                '',
+                $files->get($path),
+            );
+            $files->put($path, (string) $css);
+        },
+        'Preset [constellation] alias [--color-fixture-surface] is not declared in @theme inline.',
+    ],
+    'wrong alias target' => [
+        function (Filesystem $files, string $root): void {
+            $path = $root.'/presets/constellation/aliases.css';
+            $files->put($path, str_replace('var(--fixture-surface)', 'var(--fixture-surface-foreground)', $files->get($path)));
+        },
+        'Preset [constellation] alias [--color-fixture-surface] must reference [--fixture-surface], found [--fixture-surface-foreground].',
+    ],
+    'unsupported base scope' => [
+        function (Filesystem $files, string $root): void {
+            $files->append($root.'/presets/constellation/theme.css', "\n[data-slot=fixture] { --fixture-knob: 1; }\n");
+        },
+        'Preset [constellation] base contains unsupported CSS scope [[data-slot=fixture]].',
+    ],
+]);
+
+it('does not count conditionally nested foundation declarations as global scope', function () {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-foundation-tokens-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $tokens = $root.'/tokens.css';
+    $css = preg_replace('/^\h*--fixture-background:\h*white;\R?/m', '', $files->get($tokens));
+    $files->put($tokens, $css."\n@media (prefers-color-scheme: dark) { :root { --fixture-background: black; } }\n");
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(
+                PresetSourceException::class,
+                'Shared foundation property [--fixture-background] is missing required scope [default] (:where(:root:not([data-theme="dark"]))) in tokens.css.',
+            );
+    } finally {
+        $files->deleteDirectory($root);
+    }
+});
+
+it('reports an unreadable canonical token source as a preset source error', function () {
+    $files = new class extends Filesystem
+    {
+        public function get($path, $lock = false)
+        {
+            if (str_ends_with($path, '/tokens.css')) {
+                throw new FileNotFoundException($path);
+            }
+
+            return parent::get($path, $lock);
+        }
+    };
+
+    expect(fn () => syntheticCssPresetFiles(files: $files)->source('constellation'))
+        ->toThrow(PresetSourceException::class, 'Shared foundation token source [tokens.css] cannot be read.');
+});
+
+it('reports invalid foundation CSS before comparing registered token names', function (Closure $mutate) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-invalid-foundation-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $tokens = $root.'/tokens.css';
+    $files->put($tokens, $mutate($files->get($tokens)));
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, 'Shared foundation token source [tokens.css] has invalid CSS syntax.');
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'unterminated quote' => fn (string $css): string => str_replace(
+        '--fixture-background: white;',
+        '--fixture-background: "oops;',
+        $css,
+    ),
+    'non-custom declaration in theme' => fn (string $css): string => str_replace(
+        '--color-fixture-background: var(--fixture-background);',
+        "--color-fixture-background: var(--fixture-background);\n    color: red;",
+        $css,
+    ),
+]);
+
+it('resolves a preset only once when selecting sources', function () {
+    $files = new class extends Filesystem
+    {
+        public int $reads = 0;
+
+        public function get($path, $lock = false)
+        {
+            $this->reads++;
+
+            return parent::get($path, $lock);
+        }
+    };
+    $presets = syntheticCssPresetFiles(files: $files);
+    $presets->source('constellation');
+    $fullResolutionReads = $files->reads;
+    $files->reads = 0;
+
+    $presets->sourceForSelection('constellation', ['action']);
+
+    expect($files->reads)->toBe($fullResolutionReads);
+});
+
+it('diagnoses foundation facade drift in shipped entrypoints', function (Closure $mutate, string $message) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-files-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $css = str_replace(["\r\n", "\r"], "\n", $files->get($entrypoint));
+    $files->put($entrypoint, $mutate($css));
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, $message);
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'missing' => [
+        fn (string $css): string => str_replace('@import "../foundation.css";'."\n", '', $css),
+        'must import shared foundation [foundation.css] exactly once',
+    ],
+    'duplicate' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";',
+            '@import "../foundation.css";'."\n".'@import "../foundation.css";',
+            $css,
+        ),
+        'imports shared foundation [foundation.css] more than once',
+    ],
+    'after preset base' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";'."\n".'@import "./constellation/theme.css";',
+            '@import "./constellation/theme.css";'."\n".'@import "../foundation.css";',
+            $css,
+        ),
+        'must import shared foundations before visual sources',
+    ],
+    'additional foundation' => [
+        fn (string $css): string => str_replace(
+            '@import "../foundation.css";',
+            '@import "../foundation.css";'."\n".'@import "../foundations/metrics.css";',
+            $css,
+        ),
+        'must import shared foundation [foundation.css] exactly once before preset sources',
+    ],
+]);
+
+it('diagnoses missing, duplicate, and reordered preset sources', function (Closure $mutate, string $message) {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-base-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $css = str_replace(["\r\n", "\r"], "\n", $files->get($entrypoint));
+    $files->put($entrypoint, $mutate($css));
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(PresetSourceException::class, $message);
+    } finally {
+        $files->deleteDirectory($root);
+    }
+})->with([
+    'missing' => [
+        fn (string $css): string => str_replace('@import "./constellation/theme.css";'."\n", '', $css),
+        'does not import declared sources: presets/constellation/theme.css',
+    ],
+    'duplicate' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/theme.css";',
+            '@import "./constellation/theme.css";'."\n".'@import "./constellation/theme.css";',
+            $css,
+        ),
+        'includes visual stylesheet [presets/constellation/theme.css] more than once',
+    ],
+    'after modules' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/theme.css";'."\n"
+                .'@import "./constellation/aliases.css";'."\n"
+                .'@import "./constellation/layout/surfaces.css";',
+            '@import "./constellation/layout/surfaces.css";'."\n"
+                .'@import "./constellation/theme.css";'."\n"
+                .'@import "./constellation/aliases.css";',
+            $css,
+        ),
+        'must import preset base before modules in manifest order',
+    ],
+    'modules outside manifest order' => [
+        fn (string $css): string => str_replace(
+            '@import "./constellation/layout/surfaces.css";'."\n".'@import "./constellation/feedback.css";',
+            '@import "./constellation/feedback.css";'."\n".'@import "./constellation/layout/surfaces.css";',
+            $css,
+        ),
+        'must import module sources in manifest order',
+    ],
+]);
+
+it('rejects visual declarations in a shipped preset entrypoint', function () {
+    $files = new Filesystem;
+    $root = sys_get_temp_dir().'/hotwire-css-preset-entrypoint-'.uniqid();
+    $files->copyDirectory(__DIR__.'/../Fixtures/css/preset-package', $root);
+    $entrypoint = $root.'/presets/constellation.css';
+    $files->append($entrypoint, "\n[data-slot=\"entrypoint\"] {}\n");
+
+    try {
+        expect(fn () => syntheticCssPresetFiles($root)->source('constellation'))
+            ->toThrow(
+                PresetSourceException::class,
+                'entrypoint imports undeclared sources: presets/constellation.css',
+            );
+    } finally {
+        $files->deleteDirectory($root);
+    }
 });
 
 it('resolves every private source once without exposing its organization as presets', function (string $preset) {
@@ -86,15 +495,7 @@ it('resolves every private source once without exposing its organization as pres
         ->each->toStartWith("presets/{$preset}/")
         ->and($resolvedSources)->each->toBeFile()
         ->and($foundations)->toHaveCount(count(array_unique($foundations)))
-        ->and(array_values(array_intersect($foundations, [
-            'tokens.css',
-            'custom-variants.css',
-            'structural.css',
-        ])))->toBe([
-            'tokens.css',
-            'custom-variants.css',
-            'structural.css',
-        ])
+        ->and($foundations)->toBe(['foundation.css'])
         ->and(file_get_contents($presets->path($preset)))
         ->not->toContain('[data-slot=')
         ->and(array_intersect(
@@ -145,7 +546,7 @@ it('resolves Nova modal integrations without unrelated sources', function () {
     expect($modal->visualCss())
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="modal-trigger"]')
-        ->toContain('[data-slot="drawer-overlay"]')
+        ->not->toContain('[data-slot="drawer-overlay"]')
         ->not->toContain('[data-slot="carousel"]');
 });
 
@@ -168,7 +569,6 @@ it('resolves migrated integrations to exact canonical visual sources', function 
         [],
         [
             'presets/nova/button-surfaces.css',
-            'presets/nova/color-scheme-toggle.css',
             'presets/nova/floating-presence.css',
             'presets/nova/kbd.css',
             'presets/nova/tooltip.css',

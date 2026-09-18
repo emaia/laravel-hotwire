@@ -76,4 +76,4 @@ import { attachMorphRecovery } from "@hotwire/_turbo_morph_recovery.js";
 
 When you extend a vendor controller without forking, you typically don't need to import its helpers directly — they're already loaded as part of the parent class. Import them yourself only when you're composing a *new* controller from scratch and want to reuse the package's primitives.
 
-> The alias resolves to `vendor/emaia/laravel-hotwire/resources/js/controllers/` specifically. Files outside that folder (e.g. `resources/js/helpers/test_stimulus.js` or `resources/js/libs/stimulus.js`) are package-internal and aren't exposed via `@hotwire`; import via a vendor-relative path if you genuinely need one of them.
+> The alias resolves to `vendor/emaia/laravel-hotwire/resources/js/controllers/` specifically. Files outside that folder (e.g. `resources/js/helpers/test_stimulus.js` or `resources/js/hotwire/stimulus.js`) are package-internal and aren't exposed via `@hotwire`; import via a vendor-relative path if you genuinely need one of them.

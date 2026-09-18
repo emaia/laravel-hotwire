@@ -1,11 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { compileCssFixture } from "../../scripts/css_build_contract.js";
+import { compileCssFixture, packageSourceEntrypoint } from "../../scripts/css_build_contract.js";
 
+let foundationCss;
 let presetCss;
 
 test.beforeAll(async () => {
-    presetCss = await compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8"));
+    [foundationCss, presetCss] = await Promise.all([
+        compileCssFixture(
+            packageSourceEntrypoint("../../vendor/emaia/laravel-hotwire/resources/css/foundation.css"),
+        ),
+        compileCssFixture(await readFile("stubs/resources/css/app.css", "utf8")),
+    ]);
 });
 
 test("structural top-layer resets yield to preset and application styles", async ({ page }) => {
@@ -61,6 +67,24 @@ test("Side Panel mechanics yield to application overrides", async ({ page }) => 
         .evaluate((element) => getComputedStyle(element, "::before").inlineSize);
 
     expect(railWidth).toBe("3px");
+});
+
+test("Back to Top mechanics yield to application overrides", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            @layer components {
+                [data-slot="back-to-top"][data-visible="true"] {
+                    position: sticky;
+                    opacity: 0.5;
+                }
+            }
+        </style>
+        <button id="back-to-top" data-slot="back-to-top" data-visible="true">Top</button>
+    `);
+
+    await expect(page.locator("#back-to-top")).toHaveCSS("position", "sticky");
+    await expect(page.locator("#back-to-top")).toHaveCSS("opacity", "0.5");
 });
 
 test("compiled structural motion inherits application timing from visual roots", async ({ page }) => {
@@ -138,6 +162,325 @@ test("compiled reduced-motion rules disable the complete structural motion syste
     });
 
     expect(durations).toEqual(["0s", "0s", "0s", "0s", "0s", "0s", "0s"]);
+});
+
+test("Presence opt-outs override later visual motion", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            @keyframes test-motion { from { opacity: 0 } to { opacity: 1 } }
+            [data-slot="tooltip"], [data-slot="modal-positioner"] {
+                transition: opacity 2s;
+                animation: test-motion 2s;
+            }
+        </style>
+        <div id="tooltip" data-slot="tooltip" data-motion="none"></div>
+        <div data-slot="modal-overlay" data-presence="instant">
+            <div id="modal" data-slot="modal-positioner"></div>
+        </div>
+    `);
+
+    for (const selector of ["#tooltip", "#modal"]) {
+        await expect(page.locator(selector)).toHaveCSS("transition-duration", "0s");
+        await expect(page.locator(selector)).toHaveCSS("animation-name", "none");
+    }
+});
+
+test("reduced motion limits component motion and keeps status feedback legible", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div id="back-to-top" data-slot="back-to-top" data-visible="true"></div>
+        <div id="toast" data-slot="toast"><div id="toast-content" data-slot="toast-content"></div></div>
+        <span id="shimmer" data-shimmer="true">Processing</span>
+        <span id="spinner" data-slot="spinner"></span>
+        <span id="pagination-spinner" data-slot="pagination-next-spinner"></span>
+    `);
+
+    await expect(page.locator("#back-to-top")).toHaveCSS("transition-duration", "0s");
+    await expect(page.locator("#toast")).toHaveCSS("transition-duration", "0s");
+    await expect(page.locator("#toast-content")).toHaveCSS("transition-duration", "0s");
+    await expect(page.locator("#shimmer")).toHaveCSS("animation-name", "none");
+    await expect(page.locator("#shimmer")).toHaveCSS("background-image", "none");
+    await expect(page.locator("#shimmer")).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
+    await expect(page.locator("#pagination-spinner")).toHaveCSS("animation-name", "hotwire-status-pulse");
+});
+
+test("application CSS can disable the reduced-motion loading pulse", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>[data-slot="spinner"] { animation: none; }</style>
+        <span id="spinner" data-slot="spinner"></span>
+    `);
+
+    await expect(page.locator("#spinner")).toHaveCSS("animation-name", "none");
+});
+
+test("structural component selectors work before their controllers connect", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <button id="scheme" data-slot="color-scheme-toggle" data-color-scheme-modes-value="light dark system">
+            <span id="light-icon" data-slot="color-scheme-icon" data-scheme-icon="light"></span>
+            <span id="dark-icon" data-slot="color-scheme-icon" data-scheme-icon="dark"></span>
+            <span id="system-icon" data-slot="color-scheme-icon" data-mode-icon="system"></span>
+        </button>
+        <span id="input-wrapper" data-slot="input-wrapper" data-clearable="true">
+            <input id="clearable" class="clear-input--touched" data-slot="input" data-clear-input-target="input" value="Search">
+            <button id="clear" class="hidden" data-slot="clear-input-button" data-clear-input-target="clearButton">Clear</button>
+        </span>
+        <div id="embed" data-slot="oembed"><iframe id="frame" data-slot="oembed-frame"></iframe></div>
+    `);
+
+    await page.locator("html").evaluate((element) => {
+        element.dataset.colorSchemeMode = "dark";
+    });
+    await expect(page.locator("#light-icon")).toHaveCSS("display", "none");
+    await expect(page.locator("#dark-icon")).toHaveCSS("display", "block");
+    await expect(page.locator("#system-icon")).toHaveCSS("display", "none");
+
+    await expect(page.locator("#input-wrapper")).toHaveCSS("position", "relative");
+    await page.locator("#clearable").hover();
+    await expect(page.locator("#clear")).toBeVisible();
+
+    const clearInputCenters = await page.locator("#input-wrapper").evaluate((wrapper) => {
+        const input = wrapper.querySelector('[data-slot="input"]').getBoundingClientRect();
+        const button = wrapper.querySelector('[data-slot="clear-input-button"]').getBoundingClientRect();
+
+        return [input.y + input.height / 2, button.y + button.height / 2];
+    });
+
+    expect(Math.abs(clearInputCenters[0] - clearInputCenters[1])).toBeLessThanOrEqual(1);
+
+    const geometry = await page.locator("#embed").evaluate((embed) => {
+        const frame = embed.querySelector("iframe");
+
+        return {
+            ratio: getComputedStyle(embed).aspectRatio,
+            clipped: getComputedStyle(embed).overflow,
+            sameWidth: frame.getBoundingClientRect().width === embed.getBoundingClientRect().width,
+            sameHeight: frame.getBoundingClientRect().height === embed.getBoundingClientRect().height,
+        };
+    });
+
+    expect(geometry).toEqual({ ratio: "16 / 9", clipped: "hidden", sameWidth: true, sameHeight: true });
+});
+
+test("structural attachment layers preserve the full-card trigger and foreground actions", async ({ page }) => {
+    await page.setContent(`
+        <style>${foundationCss}</style>
+        <div id="attachment" data-slot="attachment" style="width: 240px; height: 80px">
+            <a id="attachment-trigger" data-slot="attachment-trigger" href="#attachment">Open attachment</a>
+            <button id="attachment-action" data-slot="attachment-actions">Remove</button>
+        </div>
+    `);
+
+    const geometry = await page.locator("#attachment").evaluate((attachment) => {
+        const trigger = attachment.querySelector('[data-slot="attachment-trigger"]');
+        const action = attachment.querySelector('[data-slot="attachment-actions"]');
+        const attachmentBox = attachment.getBoundingClientRect();
+        const triggerBox = trigger.getBoundingClientRect();
+        const actionBox = action.getBoundingClientRect();
+
+        return {
+            attachment: [attachmentBox.x, attachmentBox.y, attachmentBox.width, attachmentBox.height],
+            trigger: [triggerBox.x, triggerBox.y, triggerBox.width, triggerBox.height],
+            topmost: document.elementFromPoint(actionBox.x + actionBox.width / 2, actionBox.y + actionBox.height / 2)?.id,
+        };
+    });
+
+    expect(geometry.trigger).toEqual(geometry.attachment);
+    expect(geometry.topmost).toBe("attachment-action");
+
+    await page.locator("#attachment-trigger").focus();
+    await expect(page.locator("#attachment-trigger")).not.toHaveCSS("outline-style", "none");
+});
+
+test("structural table overflow and Sidebar gap geometry work without a visual preset", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 720 });
+    await page.setContent(`
+        <style>${foundationCss}</style>
+        <div id="table-container" data-slot="table-container" style="max-width: 120px">
+            <table style="width: 360px"><tbody><tr><td>Wide table</td></tr></tbody></table>
+        </div>
+        <div
+            id="sidebar"
+            data-slot="sidebar"
+            data-variant="sidebar"
+            style="--sidebar-width: 256px; --sidebar-width-icon: 48px"
+        >
+            <div id="sidebar-gap" data-slot="sidebar-gap"></div>
+        </div>
+    `);
+
+    const table = await page.locator("#table-container").evaluate((container) => ({
+        clientWidth: container.clientWidth,
+        scrollWidth: container.scrollWidth,
+    }));
+
+    expect(table.scrollWidth).toBeGreaterThan(table.clientWidth);
+    await expect(page.locator("#table-container")).toHaveCSS("overflow-x", "auto");
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "256px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.collapsible = "offcanvas";
+    });
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "0px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.collapsible = "icon";
+    });
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "48px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.variant = "floating";
+    });
+    // Missing preset lengths invalidate calc(), so auto width fills the 1024px viewport.
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "1024px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.style.setProperty("--sidebar-floating-inset", "8px");
+        sidebar.style.setProperty("--sidebar-floating-edge", "2px");
+    });
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "64px");
+
+    await page.setViewportSize({ width: 600, height: 720 });
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.mobileState = "closed";
+    });
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("display", "none");
+});
+
+test("compiled presets preserve shared Attachment and Sidebar mechanics", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 720 });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div id="attachment" data-slot="attachment" data-orientation="vertical" style="width: 240px; height: 80px">
+            <div id="attachment-actions" data-slot="attachment-actions">
+                <button id="attachment-action">Remove</button>
+            </div>
+            <a id="attachment-trigger" data-slot="attachment-trigger" href="#attachment">Open attachment</a>
+        </div>
+        <div
+            id="sidebar"
+            data-slot="sidebar"
+            data-collapsible="icon"
+            data-variant="floating"
+            style="--sidebar-width: 256px; --sidebar-width-icon: 48px; --sidebar-floating-inset: 12px"
+        >
+            <div id="sidebar-gap" data-slot="sidebar-gap"></div>
+            <div id="sidebar-container" data-slot="sidebar-container" data-side="left"></div>
+        </div>
+    `);
+
+    await expect(page.locator("#attachment-trigger")).toHaveCSS("position", "absolute");
+    await expect(page.locator("#attachment-actions")).toHaveCSS("position", "absolute");
+    await expect(page.locator("#attachment-actions")).toHaveCSS("z-index", "20");
+    expect(await page.locator("#attachment-action").evaluate((action) => {
+        const box = action.getBoundingClientRect();
+
+        return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.id;
+    })).toBe("attachment-action");
+
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "72px");
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("transition-property", "width");
+    await expect(page.locator("#sidebar-container")).toHaveCSS("width", "72px");
+    await expect(page.locator("#sidebar-container")).toHaveCSS("padding-left", "12px");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.collapsible = "offcanvas";
+        sidebar.dataset.variant = "sidebar";
+    });
+    await expect(page.locator("#sidebar-gap")).toHaveCSS("width", "0px");
+    await expect(page.locator("#sidebar-container")).toHaveCSS("left", "-256px");
+});
+
+test("shared component mechanics yield to later application overrides", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 720 });
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <style>
+            @layer components {
+                [data-slot="attachment-trigger"] { position: relative; }
+                [data-slot="attachment-actions"] { z-index: 30; }
+                [data-slot="table-container"] { overflow-x: visible; }
+                [data-slot="sidebar-gap"] { width: 123px; }
+                [data-slot="sidebar-container"] { left: 42px; width: 111px; }
+            }
+        </style>
+        <div data-slot="attachment">
+            <a id="attachment-trigger" data-slot="attachment-trigger">Open attachment</a>
+            <button id="attachment-actions" data-slot="attachment-actions">Remove</button>
+        </div>
+        <div id="table-container" data-slot="table-container"></div>
+        <div data-slot="sidebar" data-variant="sidebar" data-collapsible="icon" style="--sidebar-width-icon: 48px">
+            <div id="sidebar-icon-gap" data-slot="sidebar-gap"></div>
+        </div>
+        <div data-slot="sidebar" data-variant="sidebar" data-collapsible="offcanvas" style="--sidebar-width: 256px">
+            <div id="sidebar-offcanvas-gap" data-slot="sidebar-gap"></div>
+            <div id="sidebar-offcanvas-container" data-slot="sidebar-container" data-side="left"></div>
+        </div>
+    `);
+
+    await expect(page.locator("#attachment-trigger")).toHaveCSS("position", "relative");
+    await expect(page.locator("#attachment-actions")).toHaveCSS("z-index", "30");
+    await expect(page.locator("#table-container")).toHaveCSS("overflow-x", "visible");
+    await expect(page.locator("#sidebar-icon-gap")).toHaveCSS("width", "123px");
+    await expect(page.locator("#sidebar-offcanvas-gap")).toHaveCSS("width", "123px");
+    await expect(page.locator("#sidebar-offcanvas-container")).toHaveCSS("width", "111px");
+    await expect(page.locator("#sidebar-offcanvas-container")).toHaveCSS("left", "42px");
+});
+
+test("OEmbed inherits an application aspect ratio without losing structural geometry", async ({ page }) => {
+    await page.setContent(`
+        <style>${presetCss}</style>
+        <div style="--oembed-aspect-ratio: 4 / 3">
+            <div id="embed" data-slot="oembed"><iframe data-slot="oembed-frame"></iframe></div>
+        </div>
+    `);
+
+    const geometry = await page.locator("#embed").evaluate((embed) => {
+        const frame = embed.querySelector("iframe");
+
+        return {
+            ratio: getComputedStyle(embed).aspectRatio,
+            clipped: getComputedStyle(embed).overflow,
+            sameWidth: frame.getBoundingClientRect().width === embed.getBoundingClientRect().width,
+            sameHeight: frame.getBoundingClientRect().height === embed.getBoundingClientRect().height,
+        };
+    });
+
+    expect(geometry).toEqual({ ratio: "4 / 3", clipped: "hidden", sameWidth: true, sameHeight: true });
+});
+
+test("clear input visibility supports structural-only slot and target hooks", async ({ page }) => {
+    await page.setContent(`
+        <style>${foundationCss}</style>
+        <span>
+            <input id="slot-input" class="clear-input--touched" value="Slot">
+            <button id="slot-clear" class="hidden" data-slot="clear-input-button">Clear slot</button>
+        </span>
+        <span>
+            <input id="target-input" class="clear-input--touched" value="Target">
+            <button id="target-clear" class="hidden" data-clear-input-target="clearButton">Clear target</button>
+        </span>
+        <span style="--clear-input-button-display: grid">
+            <input id="custom-input" class="clear-input--touched" value="Custom">
+            <button id="custom-clear" class="hidden" data-slot="clear-input-button">Clear custom</button>
+        </span>
+    `);
+
+    for (const hook of ["slot", "target", "custom"]) {
+        const button = page.locator(`#${hook}-clear`);
+
+        await expect(button).toBeHidden();
+        await page.locator(`#${hook}-input`).hover();
+        await expect(button).toBeVisible();
+    }
+
+    await expect(page.locator("#slot-clear")).toHaveCSS("--clear-input-button-display", "");
+    await expect(page.locator("#custom-clear")).toHaveCSS("display", "grid");
 });
 
 test("Accordion mechanics yield to later preset timing", async ({ page }) => {

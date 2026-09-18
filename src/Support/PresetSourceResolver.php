@@ -8,12 +8,18 @@ final class PresetSourceResolver
 {
     private string $cssRoot;
 
+    private readonly FoundationFacade $foundationFacade;
+
     public function __construct(
         private readonly Filesystem $files,
         ?string $cssRoot = null,
+        ?FoundationFacade $foundationFacade = null,
+        private readonly CssImports $imports = new CssImports,
+        private readonly CssRules $rules = new CssRules,
     ) {
-        $cssRoot = $this->normalize($cssRoot ?? dirname(__DIR__, 2).'/resources/css');
-        $this->cssRoot = rtrim($this->normalize(realpath($cssRoot) ?: $cssRoot), '/');
+        $cssRoot = CssPath::normalize($cssRoot ?? dirname(__DIR__, 2).'/resources/css');
+        $this->cssRoot = rtrim(CssPath::normalize(realpath($cssRoot) ?: $cssRoot), '/');
+        $this->foundationFacade = $foundationFacade ?? new FoundationFacade($files, $this->imports);
     }
 
     /** Return the CSS root used to resolve preset entrypoints and imports. */
@@ -26,17 +32,18 @@ final class PresetSourceResolver
      * Resolve a preset entrypoint into ordered foundation imports and visual sources.
      *
      * @param  string[]|null  $selectedSources
+     * @param  string[]  $baseSources
      */
-    public function resolve(string $entrypoint, ?array $selectedSources = null): PresetSource
+    public function resolve(string $entrypoint, ?array $selectedSources = null, array $baseSources = []): PresetSource
     {
-        $entrypoint = $this->normalize($entrypoint);
+        $entrypoint = CssPath::normalize($entrypoint);
         $name = pathinfo($entrypoint, PATHINFO_FILENAME);
 
         if (! $this->files->isFile($entrypoint)) {
             throw new PresetSourceException("Preset [{$name}] entrypoint does not exist.");
         }
 
-        $entrypoint = $this->normalize(realpath($entrypoint) ?: $entrypoint);
+        $entrypoint = CssPath::normalize(realpath($entrypoint) ?: $entrypoint);
 
         if (! $this->insideCssRoot($entrypoint)) {
             throw new PresetSourceException("Preset [{$name}] entrypoint leaves the package CSS directory.");
@@ -61,54 +68,19 @@ final class PresetSourceResolver
             entrypoint: true,
         );
 
-        if ($selectedSources === null) {
-            return new PresetSource(
-                $name,
-                $foundations,
-                $visualStylesheets,
-                array_map($this->relative(...), $visualPaths),
-            );
-        }
-
-        if (in_array($entrypoint, $visualPaths, true)) {
+        if ($selectedSources !== null && in_array($entrypoint, $visualPaths, true)) {
             throw new PresetSourceException("Selective preset [{$name}] entrypoint must contain only imports.");
         }
 
-        $positions = array_flip(array_map($this->relative(...), $visualPaths));
-        $lastPosition = -1;
+        $source = new PresetSource(
+            $name,
+            $foundations,
+            $visualStylesheets,
+            array_map($this->relative(...), $visualPaths),
+            $baseSources,
+        );
 
-        foreach ($selectedSources as $selectedSource) {
-            $position = $positions[$selectedSource] ?? null;
-
-            if ($position === null) {
-                throw new PresetSourceException(
-                    "Selected visual source [{$selectedSource}] is not imported by preset [{$name}]."
-                );
-            }
-
-            if ($position <= $lastPosition) {
-                throw new PresetSourceException(
-                    "Selected visual sources for preset [{$name}] do not follow canonical import order."
-                );
-            }
-
-            $lastPosition = $position;
-        }
-
-        $selected = array_fill_keys($selectedSources, true);
-        $selectedStylesheets = [];
-        $selectedPaths = [];
-
-        foreach ($visualStylesheets as $index => $stylesheet) {
-            $path = $this->relative($visualPaths[$index]);
-
-            if (isset($selected[$path])) {
-                $selectedStylesheets[] = $stylesheet;
-                $selectedPaths[] = $path;
-            }
-        }
-
-        return new PresetSource($name, $foundations, $selectedStylesheets, $selectedPaths);
+        return $selectedSources === null ? $source : $source->select($selectedSources);
     }
 
     /**
@@ -138,13 +110,34 @@ final class PresetSourceResolver
 
         $visited[$path] = true;
         $stack[] = $path;
-        $css = $this->files->get($path);
-        $imports = $this->imports($css);
+        $css = $this->rules->stripBom($this->files->get($path));
+        $imports = $this->imports->parse($css);
+        $visual = trim($this->imports->remove($css, $imports));
+
+        if ($this->imports->contains($visual)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [{$this->relative($path)}]."
+                );
+            }
+
+            throw new PresetSourceException(
+                "Preset [{$preset}] contains a malformed or misplaced @import in [{$this->relative($path)}]."
+            );
+        }
+
+        $this->rejectReorderedPrelude($css, $imports, $path, $preset);
         $hasVisualImport = false;
 
         foreach ($imports as $import) {
-            if (! $import['local']) {
+            if (! str_starts_with($import['path'], '.')) {
                 throw new PresetSourceException("Preset [{$preset}] supports only local CSS imports.");
+            }
+
+            if (str_contains($import['path'], '\\')) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] import paths cannot contain CSS escapes in [{$this->relative($path)}]."
+                );
             }
 
             if ($import['conditions'] !== '') {
@@ -153,7 +146,8 @@ final class PresetSourceResolver
                 );
             }
 
-            $target = $this->normalize(dirname($path).'/'.$import['path']);
+            $importPath = preg_replace('/[?#].*$/', '', $import['path']) ?? $import['path'];
+            $target = CssPath::normalize(dirname($path).'/'.$importPath);
 
             if (! $this->insideCssRoot($target)) {
                 throw new PresetSourceException(
@@ -167,7 +161,7 @@ final class PresetSourceResolver
                 );
             }
 
-            $target = $this->normalize(realpath($target) ?: $target);
+            $target = CssPath::normalize(realpath($target) ?: $target);
 
             if (! $this->insideCssRoot($target)) {
                 throw new PresetSourceException(
@@ -211,15 +205,21 @@ final class PresetSourceResolver
 
             $relative = $this->relative($target);
 
-            if (! isset($foundationSet[$relative])) {
-                $foundations[] = $relative;
-                $foundationSet[$relative] = true;
+            if (isset($foundationSet[$relative])) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] imports shared foundation [{$relative}] more than once."
+                );
             }
+
+            if ($relative === 'foundation.css') {
+                $this->foundationFacade->validate($target, $this->cssRoot, $preset);
+            }
+
+            $foundations[] = $relative;
+            $foundationSet[$relative] = true;
         }
 
         array_pop($stack);
-
-        $visual = trim($this->removeImports($css, $imports));
 
         if ($visual !== '') {
             $visualStylesheets[] = $visual;
@@ -243,127 +243,47 @@ final class PresetSourceResolver
     }
 
     /**
-     * @return array<int, array{path: string, local: bool, conditions: string, offset: int, length: int}>
+     * Reject legal preludes whose position would change when imports are emitted first.
+     *
+     * @param  list<array{offset: int, length: int}>  $imports
      */
-    private function imports(string $css): array
+    private function rejectReorderedPrelude(string $css, array $imports, string $path, string $preset): void
     {
-        $pattern = <<<'REGEX'
-            ~
-                (?:/\*.*?\*/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')(*SKIP)(*F)
-                |
-                @import\s+(?:
-                    (?<quote>["'])(?<quoted_path>[^"']+)\k<quote>
-                    |
-                    url\(\s*(?:
-                        (?<url_quote>["'])(?<url_quoted_path>[^"']+)\k<url_quote>
-                        |
-                        (?<url_path>[^)\s]+)
-                    )\s*\)
-                )(?<conditions>[^;]*);
-            ~sx
-            REGEX;
-
-        preg_match_all($pattern, $css, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);
-
-        $imports = [];
-
-        foreach ($matches as $match) {
-            $import = $match['quoted_path'][0] ?? $match['url_quoted_path'][0] ?? $match['url_path'][0];
-
-            $imports[] = [
-                'path' => $import,
-                'local' => str_starts_with($import, '.'),
-                'conditions' => trim($match['conditions'][0]),
-                'offset' => $match[0][1],
-                'length' => strlen($match[0][0]),
-            ];
+        if ($imports === []) {
+            return;
         }
 
-        return $imports;
-    }
+        $last = $imports[array_key_last($imports)];
+        $prefix = $this->imports->remove(substr($css, 0, $last['offset'] + $last['length']), $imports);
+        $prefix = $this->rules->stripComments($prefix);
 
-    /**
-     * @param  array<int, array{offset: int, length: int}>  $imports
-     */
-    private function removeImports(string $css, array $imports): string
-    {
-        foreach (array_reverse($imports) as $import) {
-            $css = substr_replace($css, '', $import['offset'], $import['length']);
+        if (trim($prefix) !== '') {
+            throw new PresetSourceException(
+                "Preset [{$preset}] cannot flatten CSS prelude rules before imports in [{$this->relative($path)}]."
+            );
         }
-
-        return $css;
     }
 
     private function isVisual(string $path, string $preset): bool
     {
         $root = $this->cssRoot."/presets/{$preset}";
 
-        return $this->comparable($path) !== $this->comparable($root)
-            && $this->inside($path, $root);
+        return CssPath::comparable($path) !== CssPath::comparable($root)
+            && CssPath::contains($root, $path);
     }
 
     private function insidePresetsRoot(string $path): bool
     {
-        return $this->inside($path, $this->cssRoot.'/presets');
+        return CssPath::contains($this->cssRoot.'/presets', $path);
     }
 
     private function insideCssRoot(string $path): bool
     {
-        return $this->inside($path, $this->cssRoot);
-    }
-
-    private function inside(string $path, string $root): bool
-    {
-        $path = $this->comparable($path);
-        $root = $this->comparable($root);
-
-        return $path === $root || str_starts_with($path, $root.'/');
+        return CssPath::contains($this->cssRoot, $path);
     }
 
     private function relative(string $path): string
     {
         return ltrim(substr($path, strlen($this->cssRoot)), '/');
-    }
-
-    private function normalize(string $path): string
-    {
-        $path = str_replace('\\', '/', $path);
-        $prefix = '';
-
-        if (preg_match('/^([A-Za-z]:)(?:\/(.*))?$/', $path, $matches) === 1) {
-            $prefix = strtoupper($matches[1]).'/';
-            $path = $matches[2] ?? '';
-        } elseif (str_starts_with($path, '//')) {
-            $prefix = '//';
-            $path = ltrim($path, '/');
-        } elseif (str_starts_with($path, '/')) {
-            $prefix = '/';
-            $path = ltrim($path, '/');
-        }
-
-        $segments = [];
-
-        foreach (explode('/', $path) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment === '..') {
-                array_pop($segments);
-
-                continue;
-            }
-
-            $segments[] = $segment;
-        }
-
-        return $prefix.implode('/', $segments);
-    }
-
-    private function comparable(string $path): string
-    {
-        return preg_match('/^[A-Za-z]:\//', $path) === 1 || str_starts_with($path, '//')
-            ? strtolower($path)
-            : $path;
     }
 }

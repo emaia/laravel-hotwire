@@ -18,7 +18,7 @@ by `@emaia/stimulus-lazy-loader` via Vite's `import.meta.glob`:
 
 ```javascript
 // resources/js/controllers/index.js
-import { Stimulus } from "../libs/stimulus";
+import { Stimulus } from "../hotwire/stimulus";
 import { registerControllers } from "@emaia/stimulus-lazy-loader";
 
 const controllers = import.meta.glob("./**/*_controller.{js,ts}", {

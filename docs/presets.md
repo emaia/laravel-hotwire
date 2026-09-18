@@ -6,19 +6,34 @@ Laravel Hotwire components render semantic attributes (`data-slot`, `data-varian
 
 ```bash
 php artisan hotwire:install --preset=nova
+php artisan hotwire:install --preset=bloom
 ```
 
-The installer writes a thin `resources/css/app.css` that imports Tailwind and enables one preset:
+Nova remains the default compact, neutral preset. Bloom is the spacious and elevated alternative: a chromatic palette,
+restrained control radii, status-tinted notification surfaces, an offset focus outline and softer motion.
+Both style the same Blade markup, semantic slots, controllers and accessibility states; choose one preset per build.
+Bloom re-declares shared tokens and registers a small set of additional status and geometry tokens; shared application
+overrides work the same under either preset — see [`theming.md`](theming.md#preset-owned-tokens).
+
+The installer writes a thin `resources/css/app.css` that imports Tailwind, enables one preset and keeps the other
+official choices visible beside it:
 
 ```css
 @import "tailwindcss";
 
+/* Presets: keep exactly one import active. */
 @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css';
+/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */
 ```
 
-That public entrypoint aggregates the selected preset's ordered visual sources. Their grouping and internal paths are
-implementation details of that preset; applications should keep importing its public `presets/<name>.css` entrypoint
-rather than individual package files.
+Switch presets by commenting the active import and uncommenting another one. Alternatively, pass `--preset=bloom`
+during installation; the command writes Bloom as the one active import and leaves Nova commented. Do not enable two
+complete presets in the same CSS entrypoint; `hotwire:check` reports the entrypoint and active preset names when it
+finds more than one.
+
+That public entrypoint imports `foundation.css`, then aggregates the selected preset's ordered visual sources. Their
+grouping and internal paths are implementation details; applications should keep importing the public
+`presets/<name>.css` entrypoint rather than individual package files.
 
 The available CSS artifacts have different ownership and upgrade behavior:
 
@@ -27,6 +42,45 @@ The available CSS artifacts have different ownership and upgrade behavior:
 | Official preset import | Package-maintained; updates with Composer and is checked as a complete preset in package CI |
 | `hotwire:make-preset` scaffold or clone | Application-owned snapshot; edit it, validate it and merge relevant package upgrade changes manually |
 | `hotwire:styles` bundle | Package-generated subset; do not edit it, and regenerate it when its recorded plan becomes stale |
+
+### CSS layers and ownership
+
+The cascade has four ordered layers:
+
+1. `foundation.css`, the package-managed public facade over shared `tokens.css`, `custom-variants.css` and
+   `structural.css`;
+2. the preset base, package-managed in an official preset and copied into an application-owned clone;
+3. selectable visual modules owned by components, families or controllers;
+4. application overrides loaded after the preset.
+
+Shared foundations define the common semantic token contract, Tailwind variants, mechanics and accessibility baseline.
+The facade is their only recommended public entrypoint and keeps their internal files and order private. Preset base
+defines defaults belonging to one visual language and is included before modules even when a selective bundle resolves
+no visual module. It may declare custom properties in supported light/dark/root scopes and aliases in `@theme inline`;
+component selectors, structural rules and global visual properties remain outside it.
+
+Official preset authors classify every registered additional property in `styles.php`: `global` requires a top-level
+`:root` declaration, while `themed` requires the top-level unthemed default, explicit light and explicit dark selectors
+across all ordered preset-base sources. A value inherited from another scope does not replace any declaration. Registered
+Tailwind aliases must exist in `@theme inline` and reference their explicit targets. Multiple base sources may override an
+earlier property value intentionally; validation checks the combined declarations of all base sources rather than
+requiring one token file.
+
+For properties owned by that metadata level, `global` and `themed` are exclusive: a global property cannot add theme
+declarations, and a themed property cannot add `:root`. The latter would outrank the zero-specificity unthemed default and
+silently leave that declaration unused.
+
+A shared foundation property used in preset base is an optional override. It may target any subset of the supported
+scopes allowed by its inherited classification: `default`, `light` and `dark` for a themed property, or only `root` for a
+global property. It then inherits the foundation value elsewhere. Overrides do not require theme symmetry; because
+ownership stays with the foundation, the preset must not register them as additions. Additional semantic
+foreground/background pairs are registered explicitly and join the shared foundation pairs in browser contrast checks.
+Scope, aliases and contrast pairs are declared independently; property stems do not create any of them implicitly.
+
+A common semantic value such as `--background` belongs to the shared token foundation. Promote a value to a documented
+preset knob only when it has stable preset-wide meaning, changes the language coherently and has at least two independent
+consumers. Component-specific values stay in their visual module. This avoids turning preset base into a collection of
+repeated literals; only documented knobs are public customization API.
 
 ## Generate a selective bundle
 
@@ -59,14 +113,15 @@ list. Controller identifiers with `--` may also use their publish form, such as 
 under `resources/css`, which is the same boundary `hotwire:check` audits. Paths elsewhere in the application, including
 `vendor`, are rejected.
 
-Tokens, custom variants and structural CSS remain complete foundations and are imported exactly once. The selective
-part is the preset's visual layer, so progressive enhancement and runtime utility coverage do not depend on which
+`foundation.css` and preset base are included exactly once, including when the module closure is empty. Only visual
+modules are selective, so tokens, progressive enhancement and runtime utility coverage do not depend on which
 components were listed.
 
 The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
 after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:styles` bundle is replaceable;
 application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
-dynamic components is not known, keep the public `presets/nova.css` import as the fallback instead of guessing.
+dynamic components is not known, keep the selected public `presets/<name>.css` import as the fallback instead of
+guessing.
 
 Generated bundles also record their canonical component, controller and module selection in a versioned header.
 `hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
@@ -89,10 +144,11 @@ Generate an empty preset scaffold when token overrides are not enough:
 php artisan hotwire:make-preset brand
 ```
 
-The command creates `resources/css/presets/brand.css`. It imports the package token, custom-variant and structural
-layers — the last carrying the runtime utility safelist, so your preset picks up new package mechanics on upgrade
-instead of freezing them — and emits one empty base rule for every visual slot projected by the registry. Component
-rules are grouped under the family that declares each slot; controller-authored anatomy is grouped under its controller.
+The command creates `resources/css/presets/brand.css`. It imports the live package `foundation.css` facade — including
+the runtime utility safelist, so new package mechanics arrive on upgrade instead of freezing — and emits one empty base
+rule for every visual slot projected by the registry. An application preset does not need its own preset-base layer;
+depending only on shared defaults is valid. Component rules are grouped under the family that declares each slot;
+controller-authored anatomy is grouped under its controller.
 The scaffold does not copy selector decomposition from Nova or another shipped preset:
 
 ```css
@@ -118,31 +174,51 @@ Replace the vendor preset import in `resources/css/app.css` with the line printe
 @import './presets/brand.css';
 ```
 
-To customize Nova instead of starting from empty selectors, clone it into the application:
+To customize an official preset instead of starting from empty selectors, clone Nova or Bloom into the application:
 
 ```bash
 php artisan hotwire:make-preset brand --from=nova
+php artisan hotwire:make-preset brand --from=bloom
 ```
 
-The clone is one application-owned file: package foundation imports are rewritten to their vendor paths and the
-selected preset's private visual sources are flattened in its canonical order. It never leaves imports to
-package-internal module paths, regardless of how that preset groups or nests its sources.
+The clone is one application-owned file: the live `foundation.css` import is rewritten to its vendor path, while the
+selected preset's base and private modules are flattened as a snapshot in canonical order. It never leaves imports to
+package-internal preset paths, regardless of how that preset groups or nests its sources.
 
-Both scaffold and clone are snapshots. The vendor files referenced by their existing foundation imports continue to
-update, but copied visual rules and newly introduced foundation imports do not. Review upgrade notes and merge relevant
-changes manually; generating under a temporary name is a safe comparison workflow. `--force` replaces any existing
-target file, including application customizations; it does not merge or patch the existing CSS. Use it only when
-replacement is intentional. The command never edits `resources/css/app.css`, leaving application styles and import
-ordering under your control.
+Both scaffold and clone are application-owned. Their live `foundation.css` import continues to update, but copied preset
+base and visual modules do not. Review upgrade notes and merge relevant changes manually; generating under a temporary
+name is a safe comparison workflow. `--force` replaces any existing target file, including application customizations;
+it does not merge or patch the existing CSS. Use it only when replacement is intentional. The command never edits
+`resources/css/app.css`, leaving application styles and import ordering under your control.
 
 A `--from` clone preserves the source preset's rule order, which is worth keeping. Between equal-specificity rules in
 the same layer, the later one wins; reordering a clone can therefore change which declaration applies.
+
+Clone and selective-bundle generation use the same import parser as application preset validation. Imports must be
+top-level and precede style rules. Compact quoted imports, case-insensitive keywords and comments used as whitespace
+are supported. Nested, late or malformed imports fail explicitly, including in sources excluded from a selection;
+lexically invalid CSS is reported separately. Imports are never promoted to unconditional rules or left behind in
+generated CSS. Query strings and fragments on local import URLs are ignored for filesystem resolution, just as in
+application preset validation; diagnostics retain the original URL. Local imports with `layer`, `supports`
+or media conditions cannot be flattened and are rejected. CSS escapes in import paths are rejected too; this does not
+affect Windows filesystem paths passed to the resolver.
+
+Official-source flattening has a narrower contract than import discovery: `@charset` and statement-form `@layer`
+preludes before or between imports are rejected, even though the shared parser recognizes subsequent imports as legal.
+Moving those preludes behind the imported sources could change encoding or cascade-layer order. Keep layer declarations
+in the ordered visual sources after their imports. These checks do not change the generated CSS of Nova or Bloom.
 
 A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
 publishing package views. Publishing or overriding a component template is instead an application-owned fork of markup
 and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and
 accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
 treatment, must change.
+
+Tailwind converts underscores to spaces only inside arbitrary values. Keep the underscore in a utility such as
+`bg-[color-mix(in_oklch,var(--background),transparent_20%)]`, but use a real space in raw CSS such as
+`background: color-mix(in oklch, var(--background), transparent 20%)`. Raw `in_oklch`, `in_srgb` and equivalent
+interpolation methods are invalid CSS and can silently discard the declaration in the browser; `hotwire:check --preset`
+reports the source file and declaration when it finds one.
 
 ## Validate an application preset
 
@@ -158,9 +234,10 @@ php artisan hotwire:check --preset=resources/css/presets/admin.css --no-interact
 For a complete application preset, static validation proves that:
 
 - local imports resolve without cycles, conditional imports or escapes from `resources/css`;
-- package foundations include `tokens.css`, `custom-variants.css` and `structural.css` once in canonical order;
+- the entrypoint imports package `foundation.css` exactly once before local visual CSS;
 - every visual slot declared by the component/controller registry participates in a rule with declarations;
-- every `data-slot` reference, including Tailwind `data-[slot=...]` variants, is declared by the registry.
+- every `data-slot` reference, including Tailwind `data-[slot=...]` variants, is declared by the registry;
+- Tailwind interpolation underscores remain inside arbitrary values instead of leaking into raw CSS declarations.
 
 A definite contract violation is an error and returns exit code 1. If the CSS scanner cannot account for a slot
 reference, it emits a `warning:` line and downgrades only that slot's unproven coverage; unrelated missing slots remain
@@ -203,9 +280,9 @@ package upgrade that carries preset or markup notes:
 1. Read the release's [upgrade notes](upgrade.md) and identify changed slots, DOM relationships, states, native/ARIA
    attributes, public custom properties and structural rules.
 2. Generate a fresh scaffold or clone under a temporary name and compare it with the maintained preset. Adopt new visual
-   slots and new foundation imports deliberately; do not overwrite the maintained file to discover changes.
-3. Keep the package `tokens.css`, `custom-variants.css` and `structural.css` foundations in canonical order. Preserve
-   the clone's visual source order unless a cascade change is intentional.
+   slots and copied preset-base changes deliberately; do not overwrite the maintained file to discover changes.
+3. Keep the single live `foundation.css` import before visual CSS. Preserve the clone's base and module order unless a
+   cascade change is intentional.
 4. Implement the documented contract with selectors appropriate to the preset. Do not copy Nova's lexical axes merely
    to obtain parity: base rules, grouped values and equivalent selector organizations are valid.
 5. Compile the complete preset and exercise its real components in default, interactive, invalid and disabled states.
@@ -214,7 +291,7 @@ package upgrade that carries preset or markup notes:
 6. Verify keyboard and screen-reader behavior, light and dark themes, left-to-right and right-to-left direction, reduced
    motion, forced colors, floating surfaces and nested overlays where applicable.
 
-Run `hotwire:check --preset=brand` after each package upgrade. It catches missing visual slots, stale foundation imports,
+Run `hotwire:check --preset=brand` after each package upgrade. It catches missing visual slots, a stale foundation facade,
 unknown slot names and broken local import graphs. Then run `npm run build` and the focused browser/component checks from
 the maintenance list above. Static validation cannot prove state semantics, accessibility behavior, contrast or visual
 quality. Selective `hotwire:styles` bundles are different: regenerate them instead of merging changes because their

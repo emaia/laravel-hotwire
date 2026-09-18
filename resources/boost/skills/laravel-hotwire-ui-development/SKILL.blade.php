@@ -98,21 +98,25 @@ Read [styling and preset rules](references/styling.md) before changing appearanc
 - Closed Presence states must remain measurable during exit motion; do not force `display: none` before Presence applies
   `hidden`.
 
-For a registry-derived custom preset without Nova's selector choices:
+For a registry-derived custom preset without a shipped preset's selector choices:
 
 ```bash
 php artisan hotwire:make-preset brand
 ```
 
-This emits empty base rules for visual slots: it is an anatomy checklist, not a styled preset. Add `--from=nova` only
-when Nova's full current structure is the intended starting point. Either output is an application-owned snapshot:
-package upgrades do not merge copied visual rules or new foundation imports, and `--force` replaces the target file.
+This emits neutral base rules for visual slots, including required custom-property defaults: it is an anatomy checklist,
+not a styled preset. Add `--from=nova` or `--from=bloom` only when that preset's full current structure is the intended
+starting point. Either output is an application-owned snapshot: package upgrades do not merge copied visual rules or
+preset-base changes, and `--force` replaces the target file. The live `foundation.css` facade carries shared foundation
+topology changes without modifying the snapshot.
 
 For a selective bundle:
 
 ```bash
 php artisan hotwire:styles --preset=nova --components=button,field,input,modal --include=tooltip --output=resources/css/hotwire.css
 ```
+
+Choose `--preset=bloom` to build the same selection with Bloom instead.
 
 Use `--include` for components/controllers emitted dynamically by Streams or JavaScript because static scanning cannot
 discover them. Do not import a full preset and a selective bundle together, and never hand-edit a generated bundle.

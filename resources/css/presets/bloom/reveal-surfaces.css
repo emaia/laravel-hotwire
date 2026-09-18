@@ -1,0 +1,3 @@
+@layer components {
+    [data-slot="reveal"], [data-slot="sidebar-container"][data-controller~="reveal"], [data-slot="sidebar"][data-controller~="reveal"] { --reveal-blur: 12px; --reveal-shift: 1.25rem; --reveal-duration: 680ms; --reveal-stagger: 90ms; --reveal-easing: cubic-bezier(0.22, 1, 0.36, 1); }
+}

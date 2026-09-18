@@ -14,6 +14,15 @@ it('runs browser contracts for package component template changes', function () 
     expect(substr_count($workflow, "- 'resources/views/component-views/**'"))->toBe(2);
 });
 
+it('provides the PHP manifest bridge to browser contrast tests', function () {
+    $workflow = File::get(__DIR__.'/../../.github/workflows/run-js-tests.yml');
+    $browser = explode('  browser:', $workflow, 2)[1] ?? '';
+
+    expect(substr_count($workflow, "- 'scripts/preset_contrast_manifest.php'"))->toBe(2)
+        ->and($browser)->toContain('shivammathur/setup-php@v2')
+        ->toContain('composer install --prefer-dist --no-interaction');
+});
+
 it('runs CSS contracts for every PHP source that defines preset scaffolds', function (string $path) {
     $workflow = File::get(__DIR__.'/../../.github/workflows/run-js-tests.yml');
 
@@ -23,4 +32,7 @@ it('runs CSS contracts for every PHP source that defines preset scaffolds', func
     'registry contract' => 'src/Registry/**',
     'CSS support' => 'src/Support/Css*.php',
     'preset support' => 'src/Support/Preset*.php',
+    'foundation facade' => 'src/Support/FoundationFacade.php',
+    'Composer manifest' => 'composer.json',
+    'Composer lock' => 'composer.lock',
 ]);

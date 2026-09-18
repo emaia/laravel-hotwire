@@ -145,6 +145,20 @@ Sidebar is collapsed to icons and keeps it disabled while the label is visible o
 | `revealMotion` | `rise`     | Reveal motion: `rise`, `flat`, or `fade`.                |
 | `revealStagger` / `revealDuration` / `revealDelay` / `revealMaxSteps` | preset | Optional Reveal timing overrides. |
 
+### CSS custom properties
+
+The provider emits the three width properties. A custom preset that pads `floating` or `inset` Sidebar containers must
+also define both floating geometry properties; use `0rem` or `0px` when that treatment has no inset or edge. The shared
+geometry deliberately provides no fallback for them, so an incomplete preset cannot reserve mismatched space silently.
+
+| Property | Shipped preset value | Description |
+| --- | --- | --- |
+| `--sidebar-width` | Provider `width` prop | Expanded desktop panel and reserved gap width. |
+| `--sidebar-width-mobile` | Provider `mobileWidth` prop | Mobile drawer width. |
+| `--sidebar-width-icon` | Provider `iconWidth` prop | Collapsed icon rail width. |
+| `--sidebar-floating-inset` | `0.5rem` | Padding on each inline side of floating/inset containers; set by the preset. |
+| `--sidebar-floating-edge` | `0px` | Total inline border contribution: use `2px` for two 1px borders, but `0px` for rings and shadows. |
+
 ### Reveal integration
 
 Use `reveal` when the sidebar chrome should cascade once per document without adding a wrapper around its layout
@@ -171,7 +185,7 @@ first-paint cascade, keep the indexes server-rendered as shown above. Without th
 uses index `0`; a lazy controller may connect only after CSS has already started those items together. Configuring
 `reveal` under `hotwire.controllers.eager` narrows that window but is not the same guarantee as rendering the index.
 
-On a desktop sidebar initially collapsed with `collapsible="icon"`, Nova suppresses Reveal on group labels because that
+On a desktop sidebar initially collapsed with `collapsible="icon"`, shipped presets suppress Reveal on group labels because that
 state already hides the label with `opacity: 0`. The label still consumes its declared cascade index, leaving one timing
 step with no visible animation; reindexing by runtime visibility would add disproportionate complexity. Expanded and
 mobile labels keep their normal Reveal entrance.
@@ -286,19 +300,46 @@ state. `data-mobile-state="open|closed"`, `hidden`, and `inert` coordinate the m
 Clicking a normal link inside the open mobile drawer waits for the actual exit motion before navigation continues.
 Modified clicks, non-`_self` `target` links, downloads and `mailto:`/`tel:` links are not intercepted.
 
-### Nested providers
+### Supported composition
 
-A provider only drives the sidebars and triggers up to the next `data-slot="sidebar-wrapper"` below it, so a collapsible
-panel nested inside the shell sidebar keeps its own state. The boundary is the wrapper slot, not the controller
-identifier, so it holds whether or not the inner provider runs a custom `controller` — `<hw:sidebar>` names its overlay
-targets after the provider it belongs to, so a nested drawer stays wired to its own provider.
+A Sidebar provides navigation for a layout region. A complete `<hw:sidebar>` inside another Sidebar's surface is **not
+supported**, even with its own provider. This includes the outer Sidebar's header, content and footer. The presets do not
+isolate recursive combinations of variants, sides and collapse states, and the package does not define how two such
+Sidebars should coordinate their mobile drawers.
 
-Give each nested provider a distinct `cookieName`. Besides keeping the persisted states apart, it is how a provider
+Use `sidebar.menu-sub` for hierarchical navigation. Use [Side Panel](./side-panel.md) for secondary navigation, filters
+and workspace tools; it stays in normal document flow and supports nesting. A typical application uses:
+
+```blade
+<hw:sidebar.provider>
+    <hw:sidebar>
+        {{-- Application navigation and submenus --}}
+    </hw:sidebar>
+
+    <hw:sidebar.inset>
+        <hw:sidebar.trigger />
+        <hw:side-panel name="workspace-tools">
+            <hw:side-panel.panel>Filters and tools</hw:side-panel.panel>
+            <hw:side-panel.inset>
+                <hw:side-panel.trigger />
+                {{ $slot }}
+            </hw:side-panel.inset>
+        </hw:side-panel>
+    </hw:sidebar.inset>
+</hw:sidebar.provider>
+```
+
+Independent Sidebar layouts, including a provider in the main content area outside the shell Sidebar's surface, retain
+their own state and targets. The controller's ownership boundary is `data-slot="sidebar-wrapper"`, not its identifier,
+so custom controllers and Turbo updates still target the correct provider. That ownership does not enable a Sidebar
+inside another Sidebar's surface.
+
+Give each independent provider a distinct `cookieName`. Besides keeping the persisted states apart, it is how a provider
 recognizes itself in the next page during a Turbo render: providers that share a cookie name are told apart by position
 alone, and a page that drops the outer provider then shifts that position. When no match is found the provider leaves
 the incoming markup as the server rendered it.
 
-Both providers still answer Cmd/Ctrl+B, since that shortcut is bound to the window.
+All providers still answer Cmd/Ctrl+B, since that shortcut is bound to the window.
 
 ## Styling hooks
 

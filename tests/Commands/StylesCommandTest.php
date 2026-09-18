@@ -22,13 +22,26 @@ it('generates a marked selective bundle with shared foundation imports', functio
 
     expect($css)
         ->toStartWith('/* '.PackageMarker::TAG.' */')
-        ->toContain('@import "../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
-        ->toContain('@import "../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";')
-        ->toContain('@import "../../vendor/emaia/laravel-hotwire/resources/css/structural.css";')
+        ->toContain('@import "../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
+        ->not->toContain('/resources/css/tokens.css')
+        ->not->toContain('/resources/css/custom-variants.css')
+        ->not->toContain('/resources/css/structural.css')
         ->toContain('[data-slot="modal-panel"]')
         ->toContain('[data-slot="modal-trigger"]')
         ->not->toContain('[data-slot="carousel"]')
         ->toEndWith("\n");
+});
+
+it('generates foundations when a selection has no visual module closure', function () {
+    $this->artisan('hotwire:styles --include=color-scheme --no-interaction')->assertSuccessful();
+
+    $css = File::get($this->output);
+    $plan = app(GeneratedStyleBundle::class)->planFromContent($css);
+
+    expect($css)
+        ->toContain('@import "../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
+        ->not->toContain('[data-slot=')
+        ->and($plan['modules'])->toBe([]);
 });
 
 it('includes every component-owned Toaster card slot', function () {
@@ -63,7 +76,7 @@ it('includes Tooltip visuals and shared dependencies for component integrations'
         ->toContain('[data-slot="tooltip"]')
         ->toContain('[data-slot="tooltip-arrow"]')
         ->toContain('[data-slot="kbd"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('[data-slot="toast"]')
         ->not->toContain('[data-slot="oembed"]');
 })->with(['button', 'color-scheme.toggle']);
@@ -113,7 +126,26 @@ it('records a canonical regeneration plan with effective modules and controllers
         ->and($plan['components'])->toBe(['modal'])
         ->and($plan['controllers'])->toContain('modal', 'turbo--progress')
         ->and($plan['modules'])->toContain('modal', 'button-surfaces')
+        ->not->toContain('overlay-motion')
         ->not->toContain('overlay-foundation');
+});
+
+it('generates a selective Bloom bundle with its preset recorded', function () {
+    $this->artisan('hotwire:styles --preset=bloom --components=modal --no-interaction')
+        ->assertSuccessful();
+
+    $css = File::get($this->output);
+    $plan = app(GeneratedStyleBundle::class)->planFromContent($css);
+
+    expect($plan)
+        ->not->toBeNull()
+        ->and($plan['preset'])->toBe('bloom')
+        ->and($css)
+        ->toContain('--radius:')
+        ->toContain('--primary:')
+        ->toContain('[data-slot="modal-panel"]')
+        ->toContain('[data-slot="modal-trigger"]')
+        ->not->toContain('[data-slot="carousel"]');
 });
 
 it('treats equivalent selection order as an idempotent generation', function () {
@@ -131,7 +163,7 @@ it('parses comma-separated components and adjusts imports for a custom output de
         ->assertSuccessful();
 
     expect(File::get($output))
-        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";')
+        ->toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";')
         ->toContain('[data-slot="badge"]')
         ->toContain('[data-slot="modal-panel"]');
 });

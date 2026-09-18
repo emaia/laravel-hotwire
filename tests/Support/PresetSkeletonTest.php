@@ -33,6 +33,30 @@ it('keeps global first-wins deduplication as a defensive renderer contract', fun
     ]);
 });
 
+it('renders registry-owned preset property defaults on their slot', function () {
+    expect((new PresetSkeleton)->render([
+        [
+            'id' => 'component:alpha',
+            'label' => 'Alpha',
+            'slots' => ['alpha', 'alpha-child'],
+            'properties' => [
+                'alpha' => [
+                    '--alpha-inset' => '0rem',
+                    '--alpha-edge' => '0px',
+                ],
+            ],
+        ],
+    ]))->toBe([
+        '',
+        '    /* Alpha */',
+        '    [data-slot="alpha"] {',
+        '        --alpha-inset: 0rem;',
+        '        --alpha-edge: 0px;',
+        '    }',
+        '    [data-slot="alpha-child"] {}',
+    ]);
+});
+
 it('keeps the documented scaffold example aligned with the renderer', function () {
     $rules = (new PresetSkeleton)->render([
         [

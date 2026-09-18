@@ -77,8 +77,10 @@ For unrecognized URLs:
 
 ## Styling hooks
 
-The controller emits slots only — aspect ratio, spacing and link appearance come from the preset, so they can be
-overridden like any other component.
+The controller emits slots only. The shared foundation provides the responsive frame geometry and defaults to a 16:9
+ratio; set `--oembed-aspect-ratio` on the wrapper or an ancestor to override it. Spacing and link appearance come from
+the preset. Bloom presents supported media as an elevated card and unsupported links as substantial tinted actions;
+Nova keeps both treatments flatter and more compact.
 
 - `data-slot="oembed"` — the wrapper that replaces the original `<figure>`
 - `data-slot="oembed-frame"` — the generated `<iframe>`

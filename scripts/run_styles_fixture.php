@@ -2,14 +2,18 @@
 
 declare(strict_types=1);
 
+use Emaia\LaravelHotwire\Support\CssModuleManifest;
+use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\PresetSourceResolver;
 use Emaia\LaravelHotwire\Tests\TestCase;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
 if ($argc < 5) {
-    fwrite(STDERR, "Usage: php scripts/run_styles_fixture.php <app-base> <preset> <output> <components> [includes]\n");
+    fwrite(STDERR, "Usage: php scripts/run_styles_fixture.php <app-base> <preset> <output> <components> [includes] [css-root]\n");
     exit(2);
 }
 
@@ -37,6 +41,14 @@ $status = 1;
 try {
     $app = $testCase->boot();
     $app->setBasePath($appBase);
+
+    if (isset($argv[6])) {
+        $files = new Filesystem;
+        $manifest = CssModuleManifest::fromArray(require $argv[6].'/styles.php');
+        $app->instance(CssModuleManifest::class, $manifest);
+        $app->instance(CssPresetFiles::class, new CssPresetFiles($files, new PresetSourceResolver($files, $argv[6]), $manifest));
+    }
+
     $kernel = $app->make(Kernel::class);
     $status = $kernel->call('hotwire:styles', [
         '--preset' => $argv[2],

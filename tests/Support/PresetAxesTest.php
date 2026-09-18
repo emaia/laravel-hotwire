@@ -268,6 +268,18 @@ it('never reads an axis out of a comment', function () {
     expect($axes)->toBe([]);
 });
 
+it('ignores the invalid tail of an open comment', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        [data-slot="badge"][data-variant="outline"] { @apply border; }
+        /* [data-slot="ghost"][data-variant="fake"] { @apply block; }
+        CSS;
+
+    expect($extractor->extract($css))->toBe(['badge' => ['data-variant' => ['outline']]])
+        ->and($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe([]);
+});
+
 it('keeps arbitrary variants that describe another element out', function () {
     // In shipped presets, unquoted attributes occur only inside arbitrary variants that target descendants.
     $axes = (new PresetAxes)->extract(<<<'CSS'
@@ -308,6 +320,147 @@ it('reports how much of the stylesheet it managed to read', function () {
         ->toBe(['visited' => 1, 'total' => 2])
         ->and($extractor->unvisitedSlots('[data-slot="a"] { @apply border; } [data-slot="b"] { @apply border;'))
         ->toBe(['b']);
+});
+
+it('leaves slots in malformed rules unvisited while retaining later valid coverage', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        [data-slot="invalid"] { ); }
+        [data-slot="valid"] { color: red; }
+        CSS;
+
+    expect($extractor->coverage($css))->toBe(['visited' => 1, 'total' => 2])
+        ->and($extractor->unvisitedSlots($css))->toBe(['invalid']);
+});
+
+it('tracks Tailwind slot variants in parser coverage', function () {
+    $extractor = new PresetAxes;
+    $malformed = <<<'CSS'
+        .card { @apply data-[slot=ghost]:hidden; ); }
+        [data-slot="wrapper"] { color: red; }
+        CSS;
+    $control = <<<'CSS'
+        .card { @apply data-[slot=ghost]:hidden; }
+        [data-slot="wrapper"] { color: red; }
+        CSS;
+
+    expect($extractor->inspectCoverage($malformed))->toBe([
+        'visited' => 1,
+        'total' => 2,
+        'unvisitedSlots' => ['ghost'],
+        'unvisitedReferences' => ['ghost'],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => false,
+    ])->and($extractor->inspectCoverage($control))->toBe([
+        'visited' => 2,
+        'total' => 2,
+        'unvisitedSlots' => [],
+        'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => true,
+    ]);
+});
+
+it('reports incomplete analysis even when invalid syntax loses no slot mentions', function () {
+    expect((new PresetAxes)->inspectCoverage(<<<'CSS'
+        .invalid { color: red; ); }
+        [data-slot="wrapper"] { color: green; }
+        CSS))->toBe([
+        'visited' => 1,
+        'total' => 1,
+        'unvisitedSlots' => [],
+        'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => false,
+    ]);
+});
+
+it('distinguishes incomplete slot syntax from complete unvisited references', function () {
+    expect((new PresetAxes)->inspectCoverage('[data-slot="ghost" { color: red; }'))->toBe([
+        'visited' => 0,
+        'total' => 1,
+        'unvisitedSlots' => ['ghost'],
+        'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => false,
+    ]);
+});
+
+it('ignores slot-like strings in discarded rules', function () {
+    expect((new PresetAxes)->inspectCoverage(<<<'CSS'
+        .invalid { content: '[data-slot="static"] data-[slot=variant]'; ); }
+        [data-slot="wrapper"] { color: red; }
+        CSS))->toBe([
+        'visited' => 1,
+        'total' => 1,
+        'unvisitedSlots' => [],
+        'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => false,
+    ]);
+});
+
+it('normalizes comments consistently on both sides of coverage', function () {
+    expect((new PresetAxes)->inspectCoverage(<<<'CSS'
+        .card { @apply data-/**/[slot=ghost]:hidden; }
+        CSS))->toBe([
+        'visited' => 0,
+        'total' => 0,
+        'unvisitedSlots' => [],
+        'unvisitedReferences' => [],
+        'invalidScopeRoots' => [],
+        'unprovableScopeSlots' => [],
+        'complete' => true,
+    ]);
+});
+
+it('leaves slots in malformed scope preludes unvisited', function () {
+    $extractor = new PresetAxes;
+    $css = '@scope ([data-slot="ghost"]]) { color: red; }';
+
+    expect($extractor->coverage($css))->toBe(['visited' => 0, 'total' => 1])
+        ->and($extractor->unvisitedSlots($css))->toBe(['ghost']);
+});
+
+it('retains a valid scope prelude when a later nested rule is malformed', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @scope ([data-slot="root"]) {
+            :scope { color: red; }
+            .invalid { ); }
+        }
+        CSS;
+
+    $analysis = $extractor->inspectCoverage($css);
+
+    expect($analysis['visited'])->toBe(1)
+        ->and($analysis['total'])->toBe(1)
+        ->and($analysis['unvisitedSlots'])->toBe([])
+        ->and($analysis['invalidScopeRoots'])->toBe(['[data-slot="root"]'])
+        ->and($analysis['unprovableScopeSlots'])->toBe(['root']);
+});
+
+it('retains a valid scope prelude after a malformed declaration in its body', function () {
+    $extractor = new PresetAxes;
+    $css = <<<'CSS'
+        @scope ([data-slot="root"]) {
+            invalid: );
+            :scope { color: red; }
+        }
+        CSS;
+
+    $analysis = $extractor->inspectCoverage($css);
+
+    expect($analysis['visited'])->toBe(1)
+        ->and($analysis['total'])->toBe(1)
+        ->and($analysis['unvisitedSlots'])->toBe([])
+        ->and($analysis['invalidScopeRoots'])->toBe(['[data-slot="root"]'])
+        ->and($analysis['unprovableScopeSlots'])->toBe(['root']);
 });
 
 it('reads every slot occurrence of every shipped preset', function () {

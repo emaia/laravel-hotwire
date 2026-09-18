@@ -48,6 +48,9 @@ standalone frame render (`frame-<id>`). Give the form an explicit or model `id` 
 Turbo Frame or Stream, or when it lives in a reorderable collection — otherwise every field id moves along with it and
 Turbo morph persistence degrades.
 
+Stable ids preserve DOM identity; they do not prevent Turbo from applying server-rendered field values. Preserving an
+unsaved draft across a refresh requires a separate application policy.
+
 ## Controllers
 
 Controller props activate Stimulus controllers on `data-controller`. Multiple props compose automatically:

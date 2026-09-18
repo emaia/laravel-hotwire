@@ -2,6 +2,54 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.78.0 - 2026-09-18
+
+### Bloom and more flexible component styling
+
+Introduces Bloom, expands custom preset tooling, and improves component styling while keeping the same Blade components and behavior across presets.
+
+#### Meet Bloom
+
+- A more spacious, colorful alternative to Nova, with elevated surfaces and softer motion.
+- Works with the same components and supports full imports, selective bundles and cloning. Nova remains the default.
+- Get started with `php artisan hotwire:install --preset=bloom`.
+
+See [Presets](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/presets.md) and [Theming](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/theming.md).
+
+#### Create and maintain your own preset
+
+- Start from a neutral scaffold or clone Nova or Bloom, without changing component templates.
+- Share the package's styling foundations through a single `foundation.css` import.
+- Check custom presets with `php artisan hotwire:check --preset=brand`, with clearer diagnostics for missing styles and invalid imports.
+
+See [Custom presets](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/presets.md#generate-a-custom-preset).
+
+#### Easier component composition
+
+- Author Tooltip content in Blade with `<hw:tooltip>`, including integration with Sidebar menu buttons.
+- Use a shared Blade template for Toaster cards while retaining the existing JavaScript, flash and Turbo APIs.
+- Set individual toast durations from server responses.
+- Compose icons with `alert.icon` and `dropdown.trigger-icon`, and use third-party SVGs directly inside Item icon media.
+
+See [Tooltip](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/tooltip.md), [Toaster](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/toaster.md), and [Alert](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/alert.md).
+
+#### Styling refinements
+
+- Keep light and dark surfaces consistent inside nested theme regions.
+- Customize Read More and Side Panel motion through CSS properties.
+- Style Textarea counters independently and fix their named-slot collision.
+- Improve Sidebar sizing, Attachment interaction layers, Table overflow and Nova button-group borders, including RTL layouts.
+
+See [Theming](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/theming.md), [Textarea](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/textarea.md), [Read More](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/read-more.md), and [Side Panel](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/components/side-panel.md).
+
+#### Upgrading from 0.77.0
+
+Review the [upgrade guide](https://github.com/emaia/laravel-hotwire/blob/0.78.0/docs/upgrade.md) before updating maintained presets or published views/controllers. Key changes include the single foundation import, Tooltip and Toaster templates, explicit icon parts, and Textarea's `counter-slot`.
+
+Regenerate selective bundles, merge changes into maintained clones, rebuild assets and fully reload pages using Toaster. Preset checks complement production builds and browser testing; they do not replace them.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.77.0...0.78.0
+
 ## 0.77.0 - 2026-09-05
 
 ### Declarative components, intentional overlay focus and Tiptap 3
@@ -1222,6 +1270,7 @@ Laravel Hotwire now defaults to the `hw` prefix and supports the preferred short
 
 
 
+
 ```
 The configured `hotwire.prefix` remains customizable for apps that want another prefix.
 
@@ -1233,6 +1282,7 @@ Apps can also generate project-specific Stimulus helper metadata with:
 
 ```bash
 php artisan hotwire:ide-json
+
 
 
 
@@ -1475,6 +1525,7 @@ export default class extends CarouselController {
 
 
 
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -1484,6 +1535,7 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
 
 
 
@@ -1684,6 +1736,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -1707,6 +1760,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -1899,6 +1953,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -1965,6 +2020,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
 
 
 
@@ -2115,6 +2171,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -2124,6 +2181,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -2271,6 +2329,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -2284,6 +2343,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -2439,6 +2499,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -2451,6 +2512,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -2532,6 +2594,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -2693,6 +2756,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -2780,6 +2844,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -2789,6 +2854,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -2944,12 +3010,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -3108,12 +3176,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 

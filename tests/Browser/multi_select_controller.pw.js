@@ -48,7 +48,7 @@ test("search clear button is tabbable and Space toggles focused options", async 
     await trigger.click();
     await expect(content).toBeVisible();
 
-    await search.fill("missing");
+    await search.pressSequentially("missing");
     await expect(empty).toBeVisible();
     await expect(empty).toHaveText("No options found.");
     await expect(selectAll).toBeHidden();

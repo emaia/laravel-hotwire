@@ -154,7 +154,7 @@ async function appEntrypointFor(preset) {
 }
 
 export function replacePresetImport(stub, preset) {
-    const presetImport = /@import\s+["'][^"']*\/resources\/css\/presets\/[^"']+\.css["']\s*;/g;
+    const presetImport = /^[ \t]*@import[ \t]+["'][^"']*\/resources\/css\/presets\/[^"']+\.css["'][ \t]*;[ \t]*$/gm;
     const imports = stub.match(presetImport) ?? [];
 
     if (imports.length !== 1) {

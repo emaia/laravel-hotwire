@@ -23,6 +23,63 @@ rendered standalone by a Turbo Frame or Stream — the automatic id is positiona
 frame renders, moving every field id along with it. See
 [Stable component ids](recipes/stable-component-ids.md).
 
+## 0.78.0
+
+These changes apply when upgrading from **0.77.0** to **0.78.0**. The
+[0.77.0 and earlier](#0770-and-earlier) section contains previously shipped migrations, not additional changes in this
+release.
+
+### Upgrade an existing application
+
+1. Keep the public `presets/nova.css` import when using Nova, or switch to `presets/bloom.css` to adopt Bloom. Enable
+   exactly one preset per CSS entrypoint and rebuild the application's assets.
+2. For an application-owned preset or clone, adopt the foundation facade, new visual slots, Sidebar geometry and
+   nearest-theme rules described below. Generate a fresh clone under a temporary name for comparison; do not overwrite
+   a maintained preset with `--force` unless replacing its customizations is intentional.
+3. Regenerate selective bundles with their original `hotwire:styles` selection and `--force`. Include dynamically
+   rendered Tooltip/Toaster content explicitly when static view scanning cannot discover it.
+4. Review published component views and controllers together. Merge the updated icon parts and Tooltip/Toaster
+   templates into customized views, and reconcile published controllers with the corresponding package versions.
+   Run `php artisan hotwire:check --no-interaction` to detect drift and validate imported application presets; use
+   `--preset=brand` for a maintained preset that is not imported yet.
+5. Run the production build and exercise the affected components in the application. Check local themes and direction
+   on portaled content, then perform a full page reload to replace any Turbo-permanent Toaster blueprint.
+
+### Sidebar composition has explicit limits
+
+A complete Sidebar inside another Sidebar's surface is no longer a supported composition. Earlier guidance and
+icon-mode CSS attempted to isolate nested providers inside the navigation surface; that recursive styling support has
+been removed before 1.0. Adding another `sidebar.provider` inside the surface does not restore it.
+
+Replace recursive Sidebars with `sidebar.menu-sub` for hierarchical navigation or [Side Panel](components/side-panel.md)
+for contextual navigation and tools. Independent providers in the main content area remain supported, with their
+controller, Blade context and Turbo identity boundaries preserved. Use distinct cookie names for separate providers.
+
+Maintained presets and published views should follow the [supported Sidebar composition](components/sidebar.md#supported-composition)
+instead of relying on the old Sidebar-specific `@scope` boundaries. Gap and container geometry still uses the common
+direct-child anatomy and remains overridable. This change does not remove nesting support from Side Panel or from
+overlay components generally.
+
+### Shared foundations use one public facade
+
+Official presets, generated selective bundles and application preset scaffolds now import
+`resources/css/foundation.css`. This facade keeps `tokens.css`, `custom-variants.css` and `structural.css` live and in
+canonical order without exposing that internal topology to application CSS.
+
+Maintained application presets must replace the old three imports with one import at the same cascade position:
+
+```css
+@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";
+```
+
+Remove the direct imports of `tokens.css`, `custom-variants.css` and `structural.css`; the pre-1.0 contract does not keep
+both forms canonical. `hotwire:check --preset=brand` validates only the new facade contract. Keep the facade before all
+application-owned visual imports and rules.
+
+Official presets may now declare private preset-base sources before selectable modules. Clones copy and flatten those
+defaults as application-owned CSS, while their `foundation.css` import remains live. Review preset-base changes on future
+package upgrades just as you review copied module changes.
+
 ### Textarea counter uses a collision-free named slot
 
 The Textarea counter example now uses `<x-slot:counter-slot>` instead of `<x-slot:counter>`. The old name shadows the
@@ -53,24 +110,41 @@ clamp transition.
 ### Application presets have a public validation workflow
 
 `hotwire:check` now validates application presets imported from `resources/css/presets`. Use
-`hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails when
-package foundations are missing, duplicated or reordered, when local imports are broken, or when registry visual slots
-are missing or misspelled. The check does not require Nova's selectors or lexical axis vocabulary.
+`hotwire:check --preset=brand --no-interaction` to validate an unimported preset explicitly. A complete preset fails
+when the package foundation facade is missing, duplicated or after visual CSS, when local imports are broken, or when
+registry visual slots or required preset custom properties are missing or misspelled. The check does not require Nova's
+selectors or lexical axis vocabulary.
 
-After upgrading, add newly declared visual slots and foundation imports before expecting a maintained application preset
-to pass. Run the application's production build separately because static validation does not compile Tailwind utilities
-or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded selective plan and may
-omit unrelated components intentionally.
+After upgrading, add newly declared visual slots and adopt foundation facade changes before expecting a maintained
+application preset to pass. Run the application's production build separately because static validation does not compile
+Tailwind utilities or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded
+selective plan and may omit unrelated components intentionally.
+
+Selectors whose subject is a pseudo-element no longer satisfy visual-slot coverage or required preset properties. A rule
+such as `[data-slot="alert"]::before` styles the generated pseudo-element, not the Alert element itself. Maintained presets
+that previously relied on such a rule must add a declaration-bearing rule for the slotted element; the pseudo-element can
+remain as a separate decorative rule. When invalid CSS prevents the check from proving a required property, the check now
+warns instead of silently skipping that contract. The same warning-only behavior applies when invalid CSS prevents the
+check from proving visual-slot coverage. Warnings do not make `hotwire:check` fail, so a preset whose only missing contract
+is hidden inside an unparseable rule can now exit successfully instead of failing CI. Fix the invalid CSS rather than
+depending on that relaxed exit status; CI that treats incomplete analysis as fatal must promote the reported warning in
+its own policy.
 
 ### Blank preset scaffolds are registry-derived
 
-`hotwire:make-preset brand` now emits one empty base rule per visual slot from the package registry. It no longer
-copies Nova's compound selectors, state rules or at-rules into a blank preset. This keeps the starting point neutral as
-additional official presets adopt different valid selector organizations.
+`hotwire:make-preset brand` now emits one base rule per visual slot from the package registry. Rules are empty unless
+shared structural geometry requires a neutral custom property, such as Sidebar's zero floating inset and edge. It no
+longer copies Nova's compound selectors, state rules or at-rules into a blank preset. This keeps the starting point
+neutral as additional official presets adopt different valid selector organizations.
+
+Nova and Bloom now set `--sidebar-floating-edge: 0px` instead of `2px`. Their floating Sidebar treatment uses a ring and
+shadow, which do not contribute to layout width; the old value made the collapsed floating/inset container 2px wider than
+its rendered box treatment. Maintained presets with two physical 1px inline borders should keep `2px`; presets using only
+rings or shadows should use `0px`.
 
 Use `hotwire:make-preset brand --from=nova` when Nova's complete current selector structure is the intended starting
 point. Existing application presets are unchanged. Scaffolds and clones are application-owned snapshots: only their
-already-imported package foundation files update automatically; new foundation imports and copied visual rules require
+live package `foundation.css` import updates automatically; copied preset-base and visual rules require
 manual adoption. Review upgrade notes and merge relevant changes manually. Running the command with `--force` replaces
 the target file and any customizations in it; it does not merge package changes into the existing CSS. See
 [Maintain an application preset](presets.md#maintain-an-application-preset) for the compatibility checklist.
@@ -139,6 +213,39 @@ that manual package hook; wrapped graphics remain application-owned compositions
 Dropdown disclosure indicators can now use `dropdown.trigger-icon`. Replace a manual
 `data-slot="dropdown-trigger-icon"` on the graphic with the wrapper when using Blade composition. The low-level slot
 remains available for raw controller markup, and unrelated trigger icons do not rotate.
+
+### Preset dark surfaces follow the nearest theme
+
+Nova's dark-specific surface and state rules now stop at an explicit light theme boundary. Bloom uses the same policy.
+Semantic tokens and native `color-scheme` already followed the nearest theme in 0.77.0; this release extends that behavior
+to the presets' dark-tuned surfaces. A nested `[data-theme="light"]` island inside a dark page therefore paints complete
+light surfaces, while another nested `[data-theme="dark"]` island restores the dark treatment.
+
+Application-authored `dark:` utilities, including those copied into an application-owned Nova clone, keep Tailwind's
+ancestor-matching behavior and cross nested light boundaries. To adopt nearest-theme behavior, move each dark adjustment
+out of its style rule and into a top-level scope inside the same layer:
+
+```css
+@scope ([data-theme="dark"]) to ([data-theme="light"]) {
+    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
+        @apply border-input bg-input/30 hover:bg-input/50;
+    }
+}
+```
+
+The `:scope` branch includes a component that carries `data-theme="dark"` itself; `:scope *` covers its descendants.
+Keep the `@scope` outside style rules because `@apply` cannot emit a working scoped at-rule from a variant. See the
+[browser requirements](theming.md#colour-space) before adopting these rules in a maintained preset.
+
+This does not carry a trigger's theme or direction into content portaled elsewhere in the document. Put an explicit
+`data-theme` or `dir` on authored Tooltip content when it must preserve a local context, and choose the Toaster viewport's
+theme and direction at its own location.
+
+## 0.77.0 and earlier
+
+The migrations below were already present in 0.77.0 and span several earlier releases. Applications upgrading from
+0.77.0 do not need to repeat them. If upgrading from an older version, consult that version's release notes to determine
+which steps apply.
 
 ### Breadcrumb validates its item descriptors
 
@@ -229,25 +336,10 @@ existing application overrides too — write `:root:not([data-theme="dark"])` th
 `:root` rule after the preset also matches `<html data-theme="dark">` and can override dark values through source order.
 Bare `:root` remains appropriate for theme-independent values such as `--radius`.
 
-The package light token block is guarded as well, without increasing its specificity. Semantic tokens, `color-scheme`
-and Nova's dark-tuned surfaces now follow the nearest explicit theme scope. A nested `[data-theme="light"]` island
-inside a dark page therefore paints complete light surfaces and native controls, while another nested
-`[data-theme="dark"]` island restores the dark treatment.
-
-Application-authored `dark:` utilities, including those copied into an application-owned Nova clone, keep Tailwind's
-ancestor-matching behavior and cross nested light boundaries. To adopt nearest-theme behavior, move each dark adjustment
-out of its style rule and into a top-level scope inside the same layer:
-
-```css
-@scope ([data-theme="dark"]) to ([data-theme="light"]) {
-    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
-        @apply border-input bg-input/30 hover:bg-input/50;
-    }
-}
-```
-
-The `:scope` branch includes a component that carries `data-theme="dark"` itself; `:scope *` covers its descendants.
-Keep the `@scope` outside style rules because `@apply` cannot emit a working scoped at-rule from a variant.
+The package light token block is guarded as well, without increasing its specificity. In 0.77.0, semantic tokens and
+`color-scheme` follow the nearest explicit theme scope, but Nova's `dark:` surface rules still match any dark ancestor.
+See [Preset dark surfaces follow the nearest theme](#preset-dark-surfaces-follow-the-nearest-theme) for the subsequent
+preset migration.
 
 The 11 packaged semantic foreground/background pairs are verified from rendered browser colours at `4.50:1` or higher.
 `hotwire:check` does not parse or restrict application colour syntax; contrast after custom overrides remains an

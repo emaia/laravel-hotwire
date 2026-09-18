@@ -20,6 +20,11 @@ beforeEach(function () {
         $this->files->put($path, "/* {$foundation} */\n");
     }
 
+    $this->files->put(
+        $this->root.'/vendor/emaia/laravel-hotwire/resources/css/foundation.css',
+        "@import \"./tokens.css\";\n@import \"./custom-variants.css\";\n@import \"./structural.css\";\n",
+    );
+
     $this->entrypoint = $this->root.'/resources/css/presets/constellation.css';
     $this->validator = app(ApplicationPresetValidator::class);
     $this->registry = applicationPresetRegistry();
@@ -45,6 +50,14 @@ it('accepts a complete synthetic preset without requiring official selector voca
         ]);
 });
 
+it('resolves local import URLs with query strings and fragments', function () {
+    $this->files->put($this->entrypoint, str_replace('.css";', '.css?v=1#theme";', $this->files->get($this->entrypoint)));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])->and($result['warnings'])->toBe([]);
+});
+
 it('reports missing visual slots and undeclared slot references as proven errors', function () {
     $path = $this->root.'/resources/css/presets/constellation/feedback.css';
     $this->files->put($path, str_replace(
@@ -58,6 +71,186 @@ it('reports missing visual slots and undeclared slot references as proven errors
     expect($result['errors'])
         ->toContain('Preset [constellation] is missing visual slots: fixture-status.')
         ->toContain('Preset [constellation] references undeclared slots: fixture-stauts.');
+});
+
+it('reports each missing registry-owned preset property', function (string $property) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, preg_replace(
+        '/^\s*'.preg_quote($property, '/').':[^;]+;\s*$/m',
+        '',
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        "Preset [constellation] is missing required preset property [{$property}] on [data-slot=\"fixture-panel\"]."
+    );
+})->with(['--fixture-panel-inset', '--fixture-panel-edge']);
+
+it('does not credit required properties declared on a descendant', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        '[data-slot="fixture-panel"] [data-slot="fixture-action"] {',
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+});
+
+it('does not credit required properties declared on a non-element subject', function (string $selector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        "{$selector} {",
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+})->with([
+    'pseudo-element' => '[data-slot="fixture-panel"]::before',
+    'legacy pseudo-element' => '[data-slot="fixture-panel"]:before',
+    'negated slot' => '[data-slot="fixture-action"]:not([data-slot="fixture-panel"])',
+]);
+
+it('does not count a pseudo-element rule as visual coverage for its slot', function (string $css) {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, $css);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain('Preset [constellation] is missing visual slots: fixture-status.')
+        ->and($result['styledSlots'])->not->toContain('fixture-status');
+})->with([
+    'direct subject' => '[data-slot="fixture-status"]::before { color: red; }',
+    'nested subject' => '[data-slot="fixture-status"] { &::before { color: red; } }',
+    'scope subject' => '@scope ([data-slot="fixture-status"]) { :scope::before { color: red; } }',
+]);
+
+it('credits required properties on a functional subject selector', function (string $selector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, str_replace(
+        '[data-slot="fixture-panel"] {',
+        "{$selector} {",
+        $this->files->get($path),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([]);
+})->with([
+    'functional compound' => ':where([data-slot="fixture-panel"]).compact',
+    'functional descendant subject' => '[data-theme] :where([data-slot="fixture-panel"])',
+]);
+
+it('does not credit required properties from a chained functional ancestor', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        :where([data-slot="fixture-panel"]) :where([data-slot="fixture-action"]) {
+            color: red;
+            --fixture-panel-inset: 0rem;
+            --fixture-panel-edge: 0px;
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+});
+
+it('credits required properties in a nested refinement of the slot', function (string $nestedSelector) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $css = (string) preg_replace(
+        '/\[data-slot="fixture-panel"\]\s*\{\s*--fixture-panel-inset:\s*0rem;\s*--fixture-panel-edge:\s*0px;\s*\}/',
+        <<<CSS
+            [data-slot="fixture-panel"] {
+                {$nestedSelector} {
+                    --fixture-panel-inset: 0rem;
+                    --fixture-panel-edge: 0px;
+                }
+            }
+            CSS,
+        $this->files->get($path),
+    );
+    $this->files->put($path, $css);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($css)->toContain($nestedSelector)
+        ->and($result['errors'])->toBe([]);
+})->with([
+    'direct refinement' => '&[data-size="compact"]',
+    'reversed context' => '.theme &',
+    'functional nesting subject' => ':where(&).compact',
+    'selector list retaining the parent' => '&, & > .child',
+]);
+
+it('does not credit required properties on a nested child or scoped pseudo-element', function (string $css) {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, $css."\n[data-slot=\"fixture-action\"] { color: red; }");
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-inset] on [data-slot="fixture-panel"].')
+        ->toContain('Preset [constellation] is missing required preset property [--fixture-panel-edge] on [data-slot="fixture-panel"].');
+})->with([
+    'nested child' => <<<'CSS'
+        [data-slot="fixture-panel"] {
+            color: red;
+            & > .child { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        }
+        CSS,
+    'scope pseudo-element' => <<<'CSS'
+        @scope ([data-slot="fixture-panel"]) {
+            :scope { color: red; }
+            :scope::before { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        }
+        CSS,
+]);
+
+it('warns when required preset properties cannot be proven', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        [data-slot="fixture-panel"] { color: red; }
+        [data-slot="fixture-panel" { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; }
+        [data-slot="fixture-action"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and(implode(' ', $result['warnings']))->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
+});
+
+it('warns when required preset properties are inside a malformed scoped rule', function () {
+    $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
+    $this->files->put($path, <<<'CSS'
+        @scope ([data-slot="fixture-panel"]) {
+            :scope { color: red; }
+            :scope { --fixture-panel-inset: 0rem; --fixture-panel-edge: 0px; ); }
+        }
+        [data-slot="fixture-action"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'])
+        ->toContain('Preset [constellation] could not prove required preset properties on [data-slot="fixture-panel"]: --fixture-panel-edge, --fixture-panel-inset.');
 });
 
 it('does not count empty rules as visual coverage', function () {
@@ -77,7 +270,11 @@ it('counts a scope root styled through the scope pseudo-class as visual coverage
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, <<<'CSS'
         @scope ([data-slot="fixture-panel"]) {
-            :scope { color: red; }
+            :scope {
+                color: red;
+                --fixture-panel-inset: 0rem;
+                --fixture-panel-edge: 0px;
+            }
         }
 
         [data-slot="fixture-action"] { color: red; }
@@ -93,7 +290,11 @@ it('counts functional scope subjects without crediting scoped descendants', func
     $path = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $this->files->put($path, <<<'CSS'
         @scope ([data-slot="fixture-panel"]) {
-            :where(:scope) { color: red; }
+            :where(:scope) {
+                color: red;
+                --fixture-panel-inset: 0rem;
+                --fixture-panel-edge: 0px;
+            }
             :scope:is(.compact, .spacious) [data-slot="fixture-action"] { color: red; }
         }
         CSS);
@@ -141,6 +342,7 @@ it('does not count negated or textual scope mentions as root coverage', function
     'functional descendant' => ':where(:scope [data-slot="fixture-action"])',
     'functional child' => ':is(:scope > [data-slot="fixture-action"])',
     'functional column' => ':where(:scope||[data-slot="fixture-action"])',
+    'functional pseudo-element' => ':where(:scope::before)',
 ]);
 
 it('credits only the nearest root of nested scopes', function () {
@@ -173,52 +375,101 @@ it('ignores slot-like text in comments and declaration strings', function () {
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toBe([])
-        ->and($result['referencedSlots'])->not->toContain(
-            'fixture-comment',
-            'fixture-string',
-            'fixture-variant-string',
-        );
+        ->and($result['referencedSlots'])->not->toContain('fixture-comment')
+        ->and($result['referencedSlots'])->not->toContain('fixture-string')
+        ->and($result['referencedSlots'])->not->toContain('fixture-variant-string');
 });
 
-it('requires package foundations exactly once in canonical order', function (Closure $mutate) {
+it('reports Tailwind arbitrary-value underscores in raw CSS with an actionable declaration', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        [data-slot="fixture-status"] {
+            background: linear-gradient(in_oklch, red, blue);
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([
+        'Preset [constellation] uses invalid interpolation method [in_oklch] in raw CSS declaration [background: linear-gradient(in_oklch, red, blue)] in [feedback.css]. Write [in oklch]; Tailwind underscores represent spaces only inside arbitrary values ([...]).',
+    ]);
+});
+
+it('allows interpolation underscores inside application arbitrary values', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        [data-slot="fixture-status"] {
+            @apply shadow-[0_1px_2px_0_color-mix(in_oklch,var(--foreground),transparent_80%)];
+        }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([]);
+});
+
+it('requires the package foundation facade exactly once', function (Closure $mutate) {
     $this->files->put($this->entrypoint, $mutate($this->files->get($this->entrypoint)));
 
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toContain(
-        'Preset [constellation] must import package foundations once in this order: tokens.css, custom-variants.css, structural.css.'
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
     );
 })->with([
     'missing' => fn (): Closure => fn (string $css): string => str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";'."\n",
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n",
         '',
         $css,
     ),
     'duplicate' => fn (): Closure => fn (string $css): string => str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";'."\n".
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        $css,
-    ),
-    'reordered' => fn (): Closure => fn (string $css): string => str_replace(
-        [
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-        ],
-        [
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
-        ],
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n".
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
         $css,
     ),
 ]);
+
+it('applies the foundation facade contract without legacy topology detection', function () {
+    $this->files->put($this->entrypoint, str_replace(
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        implode("\n", [
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/tokens.css";',
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/custom-variants.css";',
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
+        ]),
+        $this->files->get($this->entrypoint),
+    ));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
+    );
+});
+
+it('validates the package-owned composition behind the foundation facade', function () {
+    $foundation = $this->root.'/vendor/emaia/laravel-hotwire/resources/css/foundation.css';
+    $this->files->put($foundation, <<<'CSS'
+        @import "./structural.css";
+        @import "./tokens.css";
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain(
+        'foundation.css must import tokens.css, custom-variants.css, and structural.css in canonical order.'
+    );
+});
 
 it('rejects additional package stylesheets as foundations', function () {
     $extra = $this->root.'/vendor/emaia/laravel-hotwire/resources/css/extra.css';
     $this->files->put($extra, '/* extra */');
     $this->files->put($this->entrypoint, str_replace(
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";',
-        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/structural.css";'."\n".
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";'."\n".
             '@import "../../../vendor/emaia/laravel-hotwire/resources/css/extra.css";',
         $this->files->get($this->entrypoint),
     ));
@@ -226,7 +477,7 @@ it('rejects additional package stylesheets as foundations', function () {
     $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
 
     expect($result['errors'])->toContain(
-        'Preset [constellation] must import package foundations once in this order: tokens.css, custom-variants.css, structural.css.'
+        'Preset [constellation] must import package foundation [foundation.css] exactly once.'
     );
 });
 
@@ -250,6 +501,19 @@ it('rejects malformed or misplaced imports instead of treating them as visual cs
     expect($result['errors'])->toContain(
         'Preset [constellation] contains a malformed or misplaced @import in [constellation.css].'
     );
+});
+
+it('reports invalid entrypoint syntax instead of blaming later imports', function () {
+    $this->files->put(
+        $this->entrypoint,
+        ".typo { color: red; )\n".$this->files->get($this->entrypoint),
+    );
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([
+        'Preset [constellation] contains invalid CSS syntax in [constellation.css].',
+    ])->and($result['warnings'])->toBe([]);
 });
 
 it('rejects escaped import paths instead of interpreting css escapes as separators', function () {
@@ -331,6 +595,82 @@ it('downgrades unprovable coverage to a warning when CSS parsing is incomplete',
         ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
 });
 
+it('does not accept declarations from a rule with mismatched delimiters as visual coverage', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, '[data-slot="fixture-status"] { ); }');
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
+});
+
+it('does not accept visual coverage enclosed by a malformed ancestor', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, '.invalid] { [data-slot="fixture-status"] { color: red; } }');
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['warnings'][1])->toContain('could not prove visual coverage: fixture-status');
+});
+
+it('reports undeclared Tailwind slot variants from discarded rules', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, <<<'CSS'
+        .card { @apply data-[slot=ghost]:hidden; ); }
+        [data-slot="fixture-status"] { color: red; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toContain('Preset [constellation] references undeclared slots: ghost.')
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete');
+});
+
+it('does not promote incomplete slot syntax to an undeclared reference', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, "\n[data-slot=\"unclosed\" { color: red; }");
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['referencedSlots'])->not->toContain('unclosed');
+});
+
+it('ignores slot-like strings when their rule is discarded', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->append($path, <<<'CSS'
+
+        .invalid { content: '[data-slot="static"] data-[slot=variant]'; ); }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'][0])->toContain('CSS analysis is incomplete')
+        ->and($result['referencedSlots'])->not->toContain('static')
+        ->and($result['referencedSlots'])->not->toContain('variant');
+});
+
+it('reports invalid syntax when every slot mention remains accounted for', function () {
+    $path = $this->root.'/resources/css/presets/constellation/feedback.css';
+    $this->files->put($path, <<<'CSS'
+        .invalid { color: red; ); }
+        [data-slot="fixture-status"] { color: green; }
+        CSS);
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])
+        ->and($result['warnings'])->toBe([
+            'Preset [constellation] CSS analysis is incomplete because the stylesheet contains invalid syntax.',
+        ]);
+});
+
 it('keeps unrelated missing slots as errors when one slot reference is unprovable', function () {
     $surfaces = $this->root.'/resources/css/presets/constellation/surfaces.css';
     $feedback = $this->root.'/resources/css/presets/constellation/feedback.css';
@@ -343,15 +683,6 @@ it('keeps unrelated missing slots as errors when one slot reference is unprovabl
         ->and($result['warnings'])->toContain('Preset [constellation] could not prove visual coverage: fixture-status.');
 });
 
-it('normalizes Windows drive and UNC paths without losing their roots', function (string $path, string $expected) {
-    $canonical = new ReflectionMethod($this->validator, 'canonical');
-
-    expect($canonical->invoke($this->validator, $path))->toBe($expected);
-})->with([
-    'drive' => ['C:\\App\\resources\\css\\presets\\brand.css', 'C:/App/resources/css/presets/brand.css'],
-    'UNC' => ['\\\\Server\\Share\\resources\\css\\presets\\brand.css', '//Server/Share/resources/css/presets/brand.css'],
-]);
-
 function applicationPresetRegistry(): HotwireRegistry
 {
     return HotwireRegistry::fromCatalog([
@@ -361,10 +692,18 @@ function applicationPresetRegistry(): HotwireRegistry
                 'view' => 'fixture',
                 'docs' => 'fixture.md',
                 'category' => 'display',
-                'styling' => ['slots' => [
-                    'fixture-panel' => 'visual',
-                    'fixture-shell' => 'structural',
-                ]],
+                'styling' => [
+                    'slots' => [
+                        'fixture-panel' => 'visual',
+                        'fixture-shell' => 'structural',
+                    ],
+                    'preset_properties' => [
+                        'fixture-panel' => [
+                            '--fixture-panel-inset' => '0rem',
+                            '--fixture-panel-edge' => '0px',
+                        ],
+                    ],
+                ],
             ],
             'fixture-action' => [
                 'class' => Button::class,

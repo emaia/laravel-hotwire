@@ -1,9 +1,12 @@
 <?php
 
+use Emaia\LaravelHotwire\Support\CssInterpolationSyntax;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\CssRules;
 use Emaia\LaravelHotwire\Support\PresetAxes;
 
 $stubPath = realpath(__DIR__.'/../../stubs/resources/css/app.css');
+$foundationPath = realpath(__DIR__.'/../../resources/css/foundation.css');
 $tokensPath = realpath(__DIR__.'/../../resources/css/tokens.css');
 $variantsPath = realpath(__DIR__.'/../../resources/css/custom-variants.css');
 
@@ -17,6 +20,25 @@ function presetVisualCss(string $preset): string
 }
 
 // --- Token system and install stub ---
+
+it('exposes shared foundations through one portable facade in canonical order', function () use ($foundationPath) {
+    expect(file_get_contents($foundationPath))->toBe(<<<'CSS'
+        @import "./tokens.css";
+        @import "./custom-variants.css";
+        @import "./structural.css";
+
+        CSS);
+});
+
+it('imports only the public foundation facade from shipped preset entrypoints', function (string $preset) {
+    $entrypoint = file_get_contents(app(CssPresetFiles::class)->path($preset));
+
+    expect($entrypoint)
+        ->toStartWith('@import "../foundation.css";')
+        ->not->toContain('@import "../tokens.css";')
+        ->not->toContain('@import "../custom-variants.css";')
+        ->not->toContain('@import "../structural.css";');
+})->with('design presets');
 
 it('contains @theme inline block', function () use ($tokensPath) {
     expect(file_get_contents($tokensPath))->toContain('@theme inline');
@@ -66,6 +88,28 @@ it('declares all radius tokens', function () use ($tokensPath) {
     foreach (['--radius-sm', '--radius-md', '--radius-lg', '--radius-xl', '--radius-2xl', '--radius-3xl', '--radius-4xl'] as $token) {
         expect($css)->toContain($token);
     }
+});
+
+it('lets Bloom own its palette and geometry scale without touching the shared defaults', function () use ($tokensPath) {
+    $tokens = file_get_contents($tokensPath);
+    $bloom = presetVisualCss('bloom');
+    $nova = presetVisualCss('nova');
+    $palette = ['--primary:', '--accent:', '--muted:', '--ring:', '--border:', '--sidebar:'];
+
+    expect($tokens)->toContain('--radius: 0.625rem')
+        ->and($bloom)->toContain('--radius:')
+        ->and($nova)->not->toContain('--radius:');
+
+    foreach ($palette as $token) {
+        expect(substr_count($bloom, $token))->toBeGreaterThanOrEqual(2, "Bloom must redefine {$token} for both themes.")
+            ->and($nova)->not->toContain($token);
+    }
+});
+
+it('caps the Bloom control radius so small controls never resolve to a circle', function () {
+    expect(presetVisualCss('bloom'))
+        ->toContain('--radius-control:')
+        ->toContain('min(');
 });
 
 it('uses proportional scaling for radius derivations', function () use ($tokensPath) {
@@ -133,8 +177,9 @@ it('safelists runtime classes applied by Stimulus controllers', function () {
         ->toContain('overflow-hidden');
 });
 
-it('keeps back to top interaction states, reduced motion and shared Button axes', function () {
-    $css = presetVisualCss('nova');
+it('keeps back to top appearance in each preset and mechanics in the structural foundation', function (string $preset) {
+    $css = presetVisualCss($preset);
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
     $axes = (new PresetAxes)->extract($css);
 
     expect(presetDeclaration($css, '[data-slot="back-to-top"][data-visible="false"]'))
@@ -147,15 +192,20 @@ it('keeps back to top interaction states, reduced motion and shared Button axes'
         ->and($axes['back-to-top']['data-size'] ?? [])
         ->not->toBeEmpty()
         ->toEqualCanonicalizing($axes['button']['data-size'] ?? [])
-        ->and($css)
+        ->and(File::get(__DIR__.'/../../resources/css/presets/'.$preset.'/back-to-top.css'))
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($structural)
         ->toContain('@media (prefers-reduced-motion: reduce) {')
-        ->toContain('[data-slot="back-to-top"][data-visible] { transition: none; }')
+        ->toContain('[data-slot="back-to-top"][data-visible]')
+        ->toContain('position: fixed')
+        ->toContain('[data-slot="back-to-top"][data-visible="false"]')
+        ->toContain('transition: none !important')
         ->not->toContain('[data-slot="back-to-top"] { @apply transition-none; }')
         ->not->toContain('motion-reduce:transition-none');
-});
+})->with('design presets');
 
 it('uses the pre-connect color scheme mode to avoid toggle icon flicker', function () {
-    $css = presetVisualCss('nova');
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -165,7 +215,7 @@ it('uses the pre-connect color scheme mode to avoid toggle icon flicker', functi
 });
 
 it('uses resolved icons when system is outside a color scheme toggle cycle', function () {
-    $css = presetVisualCss('nova');
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"] [data-slot="color-scheme-toggle"][data-color-scheme-modes-value~="system"] [data-mode-icon="system"]')
@@ -173,6 +223,10 @@ it('uses resolved icons when system is outside a color scheme toggle cycle', fun
         ->toContain('html[data-color-scheme-mode="system"][data-theme="dark"] [data-slot="color-scheme-toggle"]:not([data-color-scheme-modes-value~="system"]) [data-scheme-icon="dark"]')
         ->toContain('html:not([data-color-scheme-mode]) [data-slot="color-scheme-toggle"][data-mode="system"]:not([data-color-scheme-modes-value~="system"])[data-scheme="light"] [data-scheme-icon="light"]');
 });
+
+it('uses valid color interpolation syntax', function (string $preset) {
+    expect(presetVisualCss($preset))->not->toMatch('/(?<!\[)color-mix\(in_oklch/');
+})->with('design presets');
 
 it('preserves existing @custom-variant rules', function () use ($variantsPath) {
     $css = file_get_contents($variantsPath);
@@ -196,6 +250,7 @@ it('keeps the app css stub thin', function () use ($stubPath) {
     expect($css)
         ->toContain('@import "tailwindcss"')
         ->toContain("@import '../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css'")
+        ->toContain("/* @import '../../vendor/emaia/laravel-hotwire/resources/css/presets/bloom.css'; */")
         ->not->toContain('@source')
         ->not->toContain('resources/views/**/*.blade.php')
         ->not->toContain('src/Components/**/*.php')
@@ -238,6 +293,62 @@ it('rides transition-behavior inside the shorthand, never as its own declaration
     }
 });
 
+it('keeps reduced motion suppression out of preset modules', function (string $preset) {
+    $violations = presetReducedMotionViolations(presetModuleRules($preset));
+
+    expect($violations)->toBe([], "Preset [{$preset}] modules suppress reduced motion instead of inheriting the structural foundation.");
+})->with('design presets');
+
+it('keeps Presence motion kill switches out of preset modules', function (string $preset) {
+    $violations = presetPresenceViolations(presetModuleRules($preset));
+
+    expect($violations)->toBe([], "Preset [{$preset}] modules implement Presence kill switches instead of inheriting the structural foundation.");
+})->with('design presets');
+
+it('detects preset-owned reduced motion declarations', function (string $css) {
+    expect(presetReducedMotionViolations(presetFixtureRules($css)))->not->toBeEmpty();
+})->with([
+    'Tailwind transition none' => ['@media (prefers-reduced-motion: reduce) { .fixture { @apply transition-none; } }'],
+    'Tailwind animation none' => ['@media (prefers-reduced-motion: reduce) { .fixture { @apply animate-none; } }'],
+    'native zero transition duration' => ['@media (prefers-reduced-motion: reduce) { .fixture { transition-duration: 0s; } }'],
+    'native zero animation duration' => ['@media (prefers-reduced-motion: reduce) { .fixture { animation-duration: 0ms; } }'],
+    'native nonzero reduced transition' => ['@media (prefers-reduced-motion: reduce) { .fixture { transition: opacity 150ms ease; } }'],
+    'Tailwind motion variant' => ['.fixture { @apply motion-reduce:transition-none; }'],
+    'nested Tailwind motion variant' => ['.fixture { @apply md:motion-reduce:animate-none; }'],
+    'Tailwind reduced variant block' => ['@variant motion-reduce { .fixture { @apply transition-opacity duration-150; } }'],
+]);
+
+it('allows non-motion reduced fallbacks and ordinary preset motion', function (string $css) {
+    expect(presetReducedMotionViolations(presetFixtureRules($css)))->toBe([]);
+})->with([
+    'legibility fallback' => ['@media (prefers-reduced-motion: reduce) { .fixture { color: inherit; background-image: none; } }'],
+    'no preference media' => ['@media (prefers-reduced-motion: no-preference) { .fixture { transition: opacity 150ms; } }'],
+    'ordinary transition' => ['.fixture { transition: opacity 150ms; }'],
+    'structural custom property' => ['.fixture { --reveal-animation: none; }'],
+    'non-motion reduced utility' => ['.fixture { @apply motion-reduce:opacity-100; }'],
+]);
+
+it('detects quoted, unquoted and Tailwind Presence kill switches', function (string $css) {
+    expect(presetPresenceViolations(presetFixtureRules($css)))->not->toBeEmpty();
+})->with([
+    'double quoted motion' => ['[data-motion="none"] { transition: none; }'],
+    'single quoted motion' => ["[data-motion='none'] { transition: none; }"],
+    'unquoted motion' => ['[data-motion=none] { transition: none; }'],
+    'spaced presence' => ['[data-presence = "instant"] { animation: none; }'],
+    'scoped presence' => ['@scope ([data-presence=instant]) { .fixture { opacity: 1; } }'],
+    'Tailwind motion attribute variant' => ['.fixture { @apply data-[motion=none]:transition-none; }'],
+    'Tailwind presence attribute variant' => ['.fixture { @apply data-[presence=instant]:animate-none; }'],
+]);
+
+it('allows ordinary Presence states and similar values', function (string $css) {
+    expect(presetPresenceViolations(presetFixtureRules($css)))->toBe([]);
+})->with([
+    'default motion' => ['[data-motion="default"] { transition: opacity 150ms; }'],
+    'leaving presence' => ['[data-presence="leaving"] { opacity: 0; }'],
+    'similar value' => ['[data-motion="nonetheless"] { opacity: 1; }'],
+    'quoted content' => ['.fixture::before { content: "[data-motion=none]"; }'],
+]);
+
 it('keeps the Accordion collapse in the structural stylesheet', function () {
     // Mechanics, not looks: a preset left to restate these would ship an accordion that snaps shut.
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/structural.css');
@@ -264,8 +375,14 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->toContain('@keyframes hotwire-reveal-rise')
         ->toContain('@keyframes hotwire-reveal-flat')
         ->toContain('@keyframes hotwire-reveal-fade')
+        ->toContain('[data-motion="flat"]')
+        ->toContain('[data-motion="fade"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"]')
+        ->toContain('[data-slot="oembed"]')
+        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
+        ->toContain('[data-slot="oembed-frame"]')
+        ->toContain('[data-slot="input-wrapper"][data-clearable="true"]')
         ->and($visual)
         ->not->toContain('[data-slot="aspect-ratio"]')
         ->not->toContain('@keyframes hotwire-reveal-')
@@ -320,7 +437,7 @@ it('leaves the runtime safelist to the structural stylesheet', function (string 
     // A preset restating it snapshots the list, and goes stale the next time a controller applies one.
     expect(file_get_contents(app(CssPresetFiles::class)->path($preset)))
         ->not->toContain('@source inline(')
-        ->toContain('@import "../structural.css";');
+        ->toContain('@import "../foundation.css";');
 })->with('design presets');
 
 /**
@@ -367,8 +484,8 @@ it('keeps closed floating surfaces renderable until Presence hides them', functi
         ->not->toMatch('/\[data-state="closed"\][^{]*\{[^}]*\b(?:display:\s*none|@apply[^;}]*\bhidden\b)/s');
 })->with('design presets');
 
-it('uses pre-connect and resolved color scheme hooks', function (string $preset) {
-    $css = presetVisualCss($preset);
+it('uses structural pre-connect and resolved color scheme hooks', function () {
+    $css = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('html[data-color-scheme-mode="system"]')
@@ -378,7 +495,7 @@ it('uses pre-connect and resolved color scheme hooks', function (string $preset)
         ->toContain('[data-mode-icon="system"]')
         ->toContain('[data-scheme-icon="light"]')
         ->toContain('[data-scheme-icon="dark"]');
-})->with('design presets');
+});
 
 it('keeps file upload state and bare dropzone contracts', function (string $preset) {
     $css = presetVisualCss($preset);
@@ -453,10 +570,20 @@ it('keeps the toaster viewport eligible for top-layer stacking from the structur
         ->toContain('pointer-events: none');
 });
 
-it('keeps clear input visibility owned by its controller', function (string $preset) {
+it('keeps clear input visibility in the foundation without prescribing its visual geometry', function (string $preset) {
     $declaration = presetDeclaration(presetVisualCss($preset), '[data-slot="clear-input-button"]');
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $wrapper = presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"]');
 
     expect($declaration)->not->toMatch('/\bhidden\b/');
+    expect($structural)
+        ->toContain('.clear-input--touched:focus + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"])')
+        ->toContain('.clear-input--touched:hover + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"])')
+        ->toContain('display: var(--clear-input-button-display, revert) !important');
+    expect($wrapper)
+        ->toContain('position: relative')
+        ->not->toContain('padding-inline-end')
+        ->not->toContain('inset-inline-end');
 })->with('design presets');
 
 it('styles generated rich text DOM through granular hooks', function (string $preset) {
@@ -485,14 +612,18 @@ it('uses Floating UI geometry tokens instead of css-only offsets', function (str
 })->with('design presets');
 
 it('drives floating presence from semantic state and motion hooks', function (string $preset) {
-    $css = presetVisualCss($preset);
+    $css = File::get(__DIR__.'/../../resources/css/presets/'.$preset.'/floating-presence.css');
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
 
     expect($css)
         ->toContain('[data-state="closed"]')
         ->toContain('[data-state="open"]')
+        ->not->toContain('[data-motion="none"]')
+        ->not->toContain('[data-presence="instant"]')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($structural)
         ->toContain('[data-motion="none"]')
-        ->toContain('[data-presence="instant"]')
-        ->toContain('@media (prefers-reduced-motion: reduce)');
+        ->toContain('[data-presence="instant"]');
 })->with('design presets');
 
 it('drives overlay motion from semantic presence state', function (string $preset) {
@@ -507,6 +638,76 @@ it('drives overlay motion from semantic presence state', function (string $prese
         ->toContain('[data-presence="leaving"]')
         ->not->toContain('data-modal-dialog-hidden-class')
         ->not->toContain('data-drawer-dialog-hidden-class');
+})->with('design presets');
+
+it('keeps overlay and component reduced motion suppression in the structural foundation', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect($structural)
+        ->toContain('[data-slot="modal-overlay"]')
+        ->toContain('[data-slot="modal-positioner"]')
+        ->toContain('[data-slot="read-more-trigger-icon"]')
+        ->toContain('[data-slot="toast-content"]')
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('transition: none !important')
+        ->toContain('animation: none !important');
+});
+
+it('keeps Reveal routing structural while Nova owns its offsets and blur', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/reveal-surfaces.css');
+
+    expect($structural)
+        ->toContain('[data-motion="flat"]')
+        ->toContain('--reveal-animation: hotwire-reveal-flat')
+        ->toContain('[data-motion="fade"]')
+        ->toContain('--reveal-animation: hotwire-reveal-fade')
+        ->and($visual)
+        ->toContain('--reveal-blur: 6px')
+        ->toContain('--reveal-shift: 0.75rem')
+        ->not->toContain('[data-motion="flat"]')
+        ->not->toContain('[data-motion="fade"]');
+});
+
+it('keeps responsive OEmbed geometry structural and its appearance in Nova', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/oembed.css');
+
+    expect(presetDeclaration($structural, '[data-slot="oembed"]'))
+        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
+        ->toContain('width: 100%')
+        ->toContain('overflow: hidden')
+        ->and(presetDeclaration($structural, '[data-slot="oembed-frame"]'))
+        ->toContain('width: 100%')
+        ->toContain('height: 100%')
+        ->and($visual)
+        ->toContain('my-5')
+        ->toContain('rounded-lg')
+        ->toContain('bg-muted')
+        ->toContain('border-0')
+        ->not->toContain('aspect-video')
+        ->not->toContain('size-full');
+});
+
+it('keeps Text Shimmer legible and gives Toaster a zero-motion fallback', function (string $preset) {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $shimmer = File::get(__DIR__."/../../resources/css/presets/{$preset}/text-shimmer.css");
+    $toaster = File::get(__DIR__."/../../resources/css/presets/{$preset}/toaster.css");
+
+    expect($structural)
+        ->toContain('[data-shimmer="true"]')
+        ->toContain('[data-slot="toast-content"]')
+        ->toContain('animation: none !important')
+        ->toContain('transition: none !important')
+        ->toContain('color: inherit')
+        ->toContain('background-image: none')
+        ->and($shimmer)
+        ->not->toContain('color: inherit')
+        ->not->toContain('background-image: none')
+        ->not->toContain('animation: none')
+        ->not->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($toaster)
+        ->not->toContain('@media (prefers-reduced-motion: reduce)');
 })->with('design presets');
 
 it('keeps multi-select state selectors aligned with controller output', function (string $preset) {
@@ -552,6 +753,19 @@ it('preserves component custom-property contracts', function (string $preset) {
 
 // --- Known bug guards ---
 
+it('keeps Tailwind arbitrary-value underscores out of raw preset CSS', function (string $preset) {
+    $source = app(CssPresetFiles::class)->source($preset);
+    $violations = [];
+
+    foreach ($source->visualStylesheets() as $index => $css) {
+        foreach (app(CssInterpolationSyntax::class)->invalidDeclarations($css) as $violation) {
+            $violations[] = $source->visualStylesheetPaths()[$index].': '.$violation['declaration'];
+        }
+    }
+
+    expect($violations)->toBe([], "Preset [{$preset}] uses Tailwind arbitrary-value underscores in raw CSS.");
+})->with('design presets');
+
 it('does not reintroduce known clipping, stacking, sizing or marker bugs', function (string $preset) {
     $css = presetVisualCss($preset);
     $avatar = presetDeclaration($css, '[data-slot="avatar"]');
@@ -585,6 +799,15 @@ it('keeps input-group focus and addon layout owned by the group', function (stri
 it('uses physical inline CSS only for documented physical contracts', function (string $preset) {
     $css = presetVisualCss($preset);
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+    $physical = physicalInlineUtilities($css);
+    $rightRadius = collect($physical)->first(fn (array $occurrence): bool => $occurrence['selector'] === '[data-slot="drawer-popup"][data-direction="right"]'
+        && str_starts_with($occurrence['utility'], 'rounded-l-'))['utility'] ?? null;
+    $leftRadius = collect($physical)->first(fn (array $occurrence): bool => $occurrence['selector'] === '[data-slot="drawer-popup"][data-direction="left"]'
+        && str_starts_with($occurrence['utility'], 'rounded-r-'))['utility'] ?? null;
+
+    expect($rightRadius)->not->toBeNull()
+        ->and($leftRadius)->not->toBeNull();
+
     $allowed = [
         '[data-slot="carousel"][data-carousel-axis="y"] > :is([data-slot="carousel-prev-button"], [data-slot="carousel-next-button"])' => ['left-1/2', '-translate-x-1/2'],
         '[data-slot="sheet-overlay"][data-state="closed"] > [data-slot="sheet-content"][data-side="right"]' => ['translate-x-10'],
@@ -595,11 +818,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="right"]' => ['translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="closed"] > [data-slot="drawer-popup"][data-direction="left"]' => ['-translate-x-full'],
         '[data-slot="drawer-overlay"][data-state="open"] > [data-slot="drawer-popup"]' => ['translate-x-0'],
-        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', 'rounded-l-xl', 'border-l'],
-        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', 'rounded-r-xl', 'border-r'],
-        '[data-slot="sidebar-container"]' => ['left-0', 'right-0'],
-        '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="left"]' => ['left-[calc(var(--sidebar-width)*-1)]'],
-        '[data-slot="sidebar"][data-collapsible="offcanvas"] [data-slot="sidebar-container"][data-side="right"]' => ['right-[calc(var(--sidebar-width)*-1)]'],
+        '[data-slot="drawer-popup"][data-direction="right"]' => ['right-0', $rightRadius, 'border-l'],
+        '[data-slot="drawer-popup"][data-direction="left"]' => ['left-0', $leftRadius, 'border-r'],
         '[data-slot="sidebar"][data-variant="sidebar"][data-side="left"] [data-slot="sidebar-container"]' => ['border-r'],
         '[data-slot="sidebar"][data-variant="sidebar"][data-side="right"] [data-slot="sidebar-container"]' => ['border-l'],
         '[data-slot="sidebar"][data-variant="inset"][data-side="left"] ~ [data-slot="sidebar-inset"]' => ['ml-0'],
@@ -619,7 +839,6 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-2'],
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="open"]' => ['translate-x-0'],
     ];
-    $physical = physicalInlineUtilities($css);
     $unexpected = collect($physical)
         ->reject(fn (array $occurrence): bool => in_array(
             $occurrence['utility'],
@@ -635,6 +854,45 @@ it('uses physical inline CSS only for documented physical contracts', function (
             $utilities,
         ))
         ->reject(fn (array $occurrence): bool => in_array($occurrence, $physical, true))
+        ->values()
+        ->all();
+    $structuralPhysical = physicalInlineDeclarations($structural);
+    $structuralAllowed = [
+        ':where([data-slot="sidebar-container"][data-side="left"])' => ['left: 0'],
+        ':where([data-slot="sidebar-container"][data-side="right"])' => ['right: 0'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],
+        ':where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="right"])' => ['right: calc(var(--sidebar-width) * -1)'],
+        '[data-slot="side-panel-trigger"]' => [
+            'left: var(--side-panel-trigger-left)',
+            'right: var(--side-panel-trigger-right)',
+            'transform: translateX(var(--side-panel-trigger-shift))',
+        ],
+        '[data-slot="side-panel"][data-side="left"]::before' => [
+            'left: var(--side-panel-rail-position)',
+            'transform: translateX(-50%)',
+        ],
+        '[data-slot="side-panel"][data-side="right"]::before' => [
+            'right: var(--side-panel-rail-position)',
+            'transform: translateX(50%)',
+        ],
+        '[data-slot="toast"][data-position$="-center"]' => ['translate: -50% 0'],
+        '[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)' => ['translate: 50% 0'],
+    ];
+    $unexpectedStructural = collect($structuralPhysical)
+        ->reject(fn (array $occurrence): bool => in_array(
+            $occurrence['declaration'],
+            $structuralAllowed[$occurrence['selector']] ?? [],
+            true,
+        ))
+        ->map(fn (array $occurrence): string => "{$occurrence['selector']} uses {$occurrence['declaration']}")
+        ->values()
+        ->all();
+    $missingStructural = collect($structuralAllowed)
+        ->flatMap(fn (array $declarations, string $selector): array => array_map(
+            fn (string $declaration): array => ['selector' => $selector, 'declaration' => $declaration],
+            $declarations,
+        ))
+        ->reject(fn (array $occurrence): bool => in_array($occurrence, $structuralPhysical, true))
         ->values()
         ->all();
     $probe = physicalInlineUtilities(<<<'CSS'
@@ -659,6 +917,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
 
     expect($unexpected)->toBe([])
         ->and($missingAllowed)->toBe([])
+        ->and($unexpectedStructural)->toBe([])
+        ->and($missingStructural)->toBe([])
         ->and($probe)->toBe([
             ['selector' => '[data-slot="probe"]', 'utility' => 'pr-2'],
             ['selector' => '[data-slot="probe"]', 'utility' => '-translate-x-1'],
@@ -690,6 +950,100 @@ function presetDeclaration(string $css, string $selector): string
     preg_match('/'.preg_quote($selector, '/').'\s*\{([^}]*)\}/s', $css, $matches);
 
     return $matches[1] ?? '';
+}
+
+/** @return list<array{path: string, chain: string[], declarations: string}> */
+function presetModuleRules(string $preset): array
+{
+    $source = app(CssPresetFiles::class)->source($preset);
+    $modulePaths = array_fill_keys($source->moduleStylesheetPaths(), true);
+    $rules = new CssRules;
+    $parsed = [];
+
+    foreach ($source->visualStylesheetPaths() as $index => $path) {
+        if (! isset($modulePaths[$path])) {
+            continue;
+        }
+
+        $css = $rules->stripComments($source->visualStylesheets()[$index]);
+
+        foreach ($rules->parse($css) as $rule) {
+            $parsed[] = ['path' => $path, ...$rule];
+        }
+    }
+
+    return $parsed;
+}
+
+/**
+ * @param  list<array{path: string, chain: string[], declarations: string}>  $rules
+ * @return string[]
+ */
+function presetReducedMotionViolations(array $rules): array
+{
+    $violations = [];
+
+    foreach ($rules as $rule) {
+        $reducedContext = collect($rule['chain'])->contains(
+            fn (string $block): bool => preg_match('/^@media\b.*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/i', $block) === 1
+                || preg_match('/^@variant\s+motion-reduce\b/i', $block) === 1,
+        );
+        $nativeMotion = preg_match('/(?:^|;)\s*(?:animation|transition)(?:-[a-z-]+)?\s*:/i', $rule['declarations']) === 1;
+        $tailwindMotion = false;
+
+        preg_match_all('/@apply\s+([^;}]+)/i', $rule['declarations'], $applications);
+        foreach ($applications[1] as $application) {
+            foreach (preg_split('/\s+/', trim($application)) ?: [] as $utility) {
+                $base = substr($utility, (strrpos($utility, ':') ?: -1) + 1);
+                $isMotionUtility = preg_match('/^(?:animate|transition)(?:-|$)|^(?:duration|delay|ease)-/i', $base) === 1;
+
+                if ($isMotionUtility && ($reducedContext || str_contains($utility, 'motion-reduce:'))) {
+                    $tailwindMotion = true;
+                    break 2;
+                }
+            }
+        }
+
+        if (($reducedContext && $nativeMotion) || $tailwindMotion) {
+            $violations[] = $rule['path'].': '.end($rule['chain']);
+        }
+    }
+
+    return $violations;
+}
+
+/**
+ * @param  list<array{path: string, chain: string[], declarations: string}>  $rules
+ * @return string[]
+ */
+function presetPresenceViolations(array $rules): array
+{
+    $violations = [];
+
+    foreach ($rules as $rule) {
+        $selector = (string) end($rule['chain']);
+        $context = implode(' ', $rule['chain']);
+        $presenceAttribute = '/\[\s*data-(?:motion\s*=\s*(?:"none"|\'none\'|none)|presence\s*=\s*(?:"instant"|\'instant\'|instant))\s*\]/i';
+        $tailwindPresence = '/data-\[\s*(?:motion\s*=\s*(?:"none"|\'none\'|none)|presence\s*=\s*(?:"instant"|\'instant\'|instant))\s*\]:/i';
+
+        if (preg_match($presenceAttribute, $context) === 1
+            || preg_match($tailwindPresence, $rule['declarations']) === 1) {
+            $violations[] = $rule['path'].': '.$selector;
+        }
+    }
+
+    return $violations;
+}
+
+/** @return list<array{path: string, chain: string[], declarations: string}> */
+function presetFixtureRules(string $css): array
+{
+    $rules = new CssRules;
+
+    return array_map(
+        fn (array $rule): array => ['path' => 'fixture.css', ...$rule],
+        $rules->parse($rules->stripComments($css)),
+    );
 }
 
 /**

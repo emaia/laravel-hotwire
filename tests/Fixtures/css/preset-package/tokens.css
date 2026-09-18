@@ -1,3 +1,21 @@
+@theme inline {
+    --color-fixture-background: var(--fixture-background);
+    --color-fixture-foreground: var(--fixture-foreground);
+}
+
 :root {
+    --fixture-spacing: 1rem;
+}
+
+:where(:root:not([data-theme="dark"])),
+[data-theme="light"] {
+    --fixture-background: white;
     --fixture-foreground: black;
+    --fixture-border: silver;
+}
+
+[data-theme="dark"] {
+    --fixture-background: black;
+    --fixture-foreground: white;
+    --fixture-border: black;
 }
