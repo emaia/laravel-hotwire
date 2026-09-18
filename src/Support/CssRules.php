@@ -397,6 +397,12 @@ final class CssRules
         ];
     }
 
+    /** Remove a leading UTF-8 byte order mark without touching the stylesheet content. */
+    public function stripBom(string $css): string
+    {
+        return str_starts_with($css, "\xEF\xBB\xBF") ? substr($css, 3) : $css;
+    }
+
     /** Drop comments while leaving anything that merely looks like one inside a string. */
     public function stripComments(string $css): string
     {

@@ -14,10 +14,12 @@ final class PresetSourceResolver
         private readonly Filesystem $files,
         ?string $cssRoot = null,
         ?FoundationFacade $foundationFacade = null,
+        private readonly CssImports $imports = new CssImports,
+        private readonly CssRules $rules = new CssRules,
     ) {
         $cssRoot = CssPath::normalize($cssRoot ?? dirname(__DIR__, 2).'/resources/css');
         $this->cssRoot = rtrim(CssPath::normalize(realpath($cssRoot) ?: $cssRoot), '/');
-        $this->foundationFacade = $foundationFacade ?? new FoundationFacade($files, new CssImports);
+        $this->foundationFacade = $foundationFacade ?? new FoundationFacade($files, $this->imports);
     }
 
     /** Return the CSS root used to resolve preset entrypoints and imports. */
@@ -108,13 +110,34 @@ final class PresetSourceResolver
 
         $visited[$path] = true;
         $stack[] = $path;
-        $css = $this->files->get($path);
-        $imports = $this->imports($css);
+        $css = $this->rules->stripBom($this->files->get($path));
+        $imports = $this->imports->parse($css);
+        $visual = trim($this->imports->remove($css, $imports));
+
+        if ($this->imports->contains($visual)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [{$this->relative($path)}]."
+                );
+            }
+
+            throw new PresetSourceException(
+                "Preset [{$preset}] contains a malformed or misplaced @import in [{$this->relative($path)}]."
+            );
+        }
+
+        $this->rejectReorderedPrelude($css, $imports, $path, $preset);
         $hasVisualImport = false;
 
         foreach ($imports as $import) {
-            if (! $import['local']) {
+            if (! str_starts_with($import['path'], '.')) {
                 throw new PresetSourceException("Preset [{$preset}] supports only local CSS imports.");
+            }
+
+            if (str_contains($import['path'], '\\')) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] import paths cannot contain CSS escapes in [{$this->relative($path)}]."
+                );
             }
 
             if ($import['conditions'] !== '') {
@@ -123,7 +146,8 @@ final class PresetSourceResolver
                 );
             }
 
-            $target = CssPath::normalize(dirname($path).'/'.$import['path']);
+            $importPath = preg_replace('/[?#].*$/', '', $import['path']) ?? $import['path'];
+            $target = CssPath::normalize(dirname($path).'/'.$importPath);
 
             if (! $this->insideCssRoot($target)) {
                 throw new PresetSourceException(
@@ -197,8 +221,6 @@ final class PresetSourceResolver
 
         array_pop($stack);
 
-        $visual = trim($this->removeImports($css, $imports));
-
         if ($visual !== '') {
             $visualStylesheets[] = $visual;
             $visualPaths[] = $path;
@@ -221,55 +243,25 @@ final class PresetSourceResolver
     }
 
     /**
-     * @return array<int, array{path: string, local: bool, conditions: string, offset: int, length: int}>
+     * Reject legal preludes whose position would change when imports are emitted first.
+     *
+     * @param  list<array{offset: int, length: int}>  $imports
      */
-    private function imports(string $css): array
+    private function rejectReorderedPrelude(string $css, array $imports, string $path, string $preset): void
     {
-        $pattern = <<<'REGEX'
-            ~
-                (?:/\*.*?\*/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')(*SKIP)(*F)
-                |
-                @import\s+(?:
-                    (?<quote>["'])(?<quoted_path>[^"']+)\k<quote>
-                    |
-                    url\(\s*(?:
-                        (?<url_quote>["'])(?<url_quoted_path>[^"']+)\k<url_quote>
-                        |
-                        (?<url_path>[^)\s]+)
-                    )\s*\)
-                )(?<conditions>[^;]*);
-            ~sx
-            REGEX;
-
-        preg_match_all($pattern, $css, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);
-
-        $imports = [];
-
-        foreach ($matches as $match) {
-            $import = $match['quoted_path'][0] ?? $match['url_quoted_path'][0] ?? $match['url_path'][0];
-
-            $imports[] = [
-                'path' => $import,
-                'local' => str_starts_with($import, '.'),
-                'conditions' => trim($match['conditions'][0]),
-                'offset' => $match[0][1],
-                'length' => strlen($match[0][0]),
-            ];
+        if ($imports === []) {
+            return;
         }
 
-        return $imports;
-    }
+        $last = $imports[array_key_last($imports)];
+        $prefix = $this->imports->remove(substr($css, 0, $last['offset'] + $last['length']), $imports);
+        $prefix = $this->rules->stripComments($prefix);
 
-    /**
-     * @param  array<int, array{offset: int, length: int}>  $imports
-     */
-    private function removeImports(string $css, array $imports): string
-    {
-        foreach (array_reverse($imports) as $import) {
-            $css = substr_replace($css, '', $import['offset'], $import['length']);
+        if (trim($prefix) !== '') {
+            throw new PresetSourceException(
+                "Preset [{$preset}] cannot flatten CSS prelude rules before imports in [{$this->relative($path)}]."
+            );
         }
-
-        return $css;
     }
 
     private function isVisual(string $path, string $preset): bool

@@ -183,7 +183,7 @@ final readonly class ApplicationPresetValidator
         array_pop($stack);
         $stylesheet = trim($this->imports->remove($css, $imports));
 
-        if ($this->containsImport($stylesheet)) {
+        if ($this->imports->contains($stylesheet)) {
             if (! $this->rules->scan($css)['valid']) {
                 throw new PresetSourceException(
                     "Preset [{$preset}] contains invalid CSS syntax in [".basename($path).'].'
@@ -223,14 +223,6 @@ final readonly class ApplicationPresetValidator
         }
 
         return ltrim(substr($path, strlen($packageRoot)), '/');
-    }
-
-    private function containsImport(string $css): bool
-    {
-        return preg_match(
-            '~(?:/\*.*?\*/|"(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\')(*SKIP)(*F)|@import\b~is',
-            $css,
-        ) === 1;
     }
 
     /**

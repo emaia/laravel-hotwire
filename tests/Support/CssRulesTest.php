@@ -2,6 +2,13 @@
 
 use Emaia\LaravelHotwire\Support\CssRules;
 
+it('strips only the leading UTF-8 byte order mark', function () {
+    $css = '[data-slot="input"] { content: "'."\xEF\xBB\xBF".'"; }';
+
+    expect((new CssRules)->stripBom("\xEF\xBB\xBF".$css))->toBe($css)
+        ->and((new CssRules)->stripBom($css))->toBe($css);
+});
+
 it('tokenizes syntax outside strings and comments with delimiter state', function () {
     $events = [];
     $scan = (new CssRules)->scan(<<<'CSS'

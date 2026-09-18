@@ -2,6 +2,34 @@
 
 use Emaia\LaravelHotwire\Support\CssImports;
 
+it('retains comment-like text inside quoted import conditions', function () {
+    $imports = (new CssImports)->parse('@import "./theme.css" supports(font-family: "/* literal */") /* comment */;');
+
+    expect($imports[0]['conditions'])->toBe('supports(font-family: "/* literal */")');
+});
+
+it('preserves original offsets and remaining content when parsing after a BOM', function () {
+    $parser = new CssImports;
+    $css = "\xEF\xBB\xBF".'@import "./theme.css"; body {}';
+    $imports = $parser->parse($css);
+
+    expect($imports[0]['offset'])->toBe(3)
+        ->and($parser->remove($css, $imports))->toBe("\xEF\xBB\xBF".' body {}');
+});
+
+it('detects remaining import tokens independently of placement without reading strings or comments', function (string $css, bool $expected) {
+    expect((new CssImports)->contains($css))->toBe($expected);
+})->with([
+    'nested' => ['@media print { @import "./theme.css"; }', true],
+    'late' => ['.example {} @IMPORT "./theme.css";', true],
+    'missing path' => ['@import;', true],
+    'unclosed path' => ['@import "./theme.css', true],
+    'comment' => ['/* @import "./theme.css"; */', false],
+    'string' => ['.example { content: "@import"; }', false],
+    'escaped at sign' => ['.\\@import {}', false],
+    'longer name' => ['@import-theme;', false],
+]);
+
 it('parses compact imports and preserves opposite quotes in paths', function (string $css, string $path) {
     expect((new CssImports)->parse($css)[0])->toMatchArray([
         'path' => $path,
@@ -12,6 +40,8 @@ it('parses compact imports and preserves opposite quotes in paths', function (st
     'compact single quoted' => ["@import'./theme.css';", './theme.css'],
     'apostrophe in double quoted path' => ['@import "./designer\'s-theme.css";', "./designer's-theme.css"],
     'quote in single quoted path' => ['@import \'./say"hello.css\';', './say"hello.css'],
+    'comment separator' => ['@import/* note */"./theme.css";', './theme.css'],
+    'semicolon inside comment' => ['@import "./theme.css" /* ; */;', './theme.css'],
 ]);
 
 it('keeps import order and ignores nested, late, quoted, and commented imports', function () {
