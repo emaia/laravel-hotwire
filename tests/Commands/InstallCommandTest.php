@@ -33,9 +33,9 @@ it('copies all stub files to resources directory', function () {
         'css/app.css',
         'js/app.js',
         'js/controllers/index.js',
-        'js/libs/index.js',
-        'js/libs/stimulus.js',
-        'js/libs/turbo.js',
+        'js/hotwire/index.js',
+        'js/hotwire/stimulus.js',
+        'js/hotwire/turbo.js',
     ];
 
     foreach ($expectedFiles as $file) {
@@ -58,7 +58,8 @@ it('creates necessary subdirectories', function () {
     $this->artisan('hotwire:install --no-interaction')
         ->assertSuccessful();
 
-    expect(File::isDirectory(resource_path('js/libs')))->toBeTrue()
+    expect(File::isDirectory(resource_path('js/hotwire')))->toBeTrue()
+        ->and(File::isDirectory(resource_path('js/libs')))->toBeFalse()
         ->and(File::isDirectory(resource_path('js/controllers')))->toBeTrue()
         ->and(File::isDirectory(resource_path('css')))->toBeTrue();
 });

@@ -107,7 +107,7 @@ final class LoaderStub
             {$marker}
             {$metadataLine}
             // Re-run `php artisan hotwire:install` (or `hotwire:check --fix`) to regenerate.
-            import { Stimulus } from "../libs/stimulus";
+            import { Stimulus } from "../hotwire/stimulus";
             import { registerControllers } from "@emaia/stimulus-lazy-loader";
 
             {$blocks}
