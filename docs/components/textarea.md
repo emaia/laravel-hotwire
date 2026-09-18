@@ -95,7 +95,8 @@ Textareas submit with debounce by default when `auto-submit` is set:
 
 ## Controller integrations
 
-`hotwire:check` looks for `auto-resize`, `char-counter`, and `auto-submit`. Only the ones you use need to be published.
+`hotwire:check` detects the enabled `auto-resize`, `char-counter`, and `auto-submit` integrations. These controllers
+auto-load from the package; publish one only when you want to customize its source.
 
 ## Styling hooks
 

@@ -13,16 +13,16 @@ use Illuminate\Filesystem\Filesystem;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
 
-class StylesCommand extends Command
+class BundlePresetCommand extends Command
 {
-    public $signature = 'hotwire:styles
+    public $signature = 'hotwire:bundle-preset
                         {--preset=nova : Shipped preset to use}
                         {--components=* : Component keys to include (comma-separated or repeated)}
                         {--include=* : Additional component or controller keys}
                         {--output=resources/css/hotwire.css : Output path under resources/css}
                         {--force : Replace an existing generated bundle}';
 
-    public $description = 'Generate a selective Hotwire CSS bundle';
+    public $description = 'Bundle selected components and controllers from a CSS preset';
 
     public function __construct(
         private readonly Filesystem $files,

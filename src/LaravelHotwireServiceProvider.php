@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire;
 
 use Closure;
+use Emaia\LaravelHotwire\Commands\BundlePresetCommand;
 use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Commands\DocsCommand;
 use Emaia\LaravelHotwire\Commands\IdeJsonCommand;
@@ -11,7 +12,6 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\MakePresetCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
-use Emaia\LaravelHotwire\Commands\StylesCommand;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\ComponentId;
@@ -40,7 +40,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         InstallCommand::class,
         MakeControllerCommand::class,
         MakePresetCommand::class,
-        StylesCommand::class,
+        BundlePresetCommand::class,
         PublishControllersCommand::class,
         ListComponentsCommand::class,
         CheckCommand::class,

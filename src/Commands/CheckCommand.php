@@ -595,7 +595,7 @@ class CheckCommand extends Command
                 ))) {
                     $this->problemLines[] = [
                         'key' => "styles-content-{$path}",
-                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:styles` selection and --force)</>",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:bundle-preset` selection and --force)</>",
                     ];
                     $issues++;
                     $bundleCoverageUnknowable = true;
@@ -611,7 +611,7 @@ class CheckCommand extends Command
             if ($this->styleBundle->looksGenerated($content)) {
                 $this->problemLines[] = [
                     'key' => "styles-metadata-{$path}",
-                    'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:styles` selection and --force)</>",
+                    'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:bundle-preset` selection and --force)</>",
                 ];
                 $issues++;
                 $bundleCoverageUnknowable = true;
@@ -688,7 +688,7 @@ class CheckCommand extends Command
             if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
                 $this->problemLines[] = [
                     'key' => "styles-component-{$key}",
-                    'line' => "  <error>✗</error>  {$tag}  not covered by any generated CSS bundle  <fg=gray>(add `{$key}` to the appropriate `hotwire:styles` selection and regenerate with --force)</>",
+                    'line' => "  <error>✗</error>  {$tag}  not covered by any generated CSS bundle  <fg=gray>(add `{$key}` to the appropriate `hotwire:bundle-preset` selection and regenerate with --force)</>",
                 ];
                 $issues++;
             }

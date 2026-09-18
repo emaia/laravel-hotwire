@@ -41,7 +41,7 @@ The available CSS artifacts have different ownership and upgrade behavior:
 |----------|---------------------------|
 | Official preset import | Package-maintained; updates with Composer and is checked as a complete preset in package CI |
 | `hotwire:make-preset` scaffold or clone | Application-owned snapshot; edit it, validate it and merge relevant package upgrade changes manually |
-| `hotwire:styles` bundle | Package-generated subset; do not edit it, and regenerate it when its recorded plan becomes stale |
+| `hotwire:bundle-preset` bundle | Package-generated subset; do not edit it, and regenerate it when its recorded plan becomes stale |
 
 ### CSS layers and ownership
 
@@ -88,7 +88,7 @@ The complete preset is the safe default. For a layout that uses a known subset o
 entrypoint without unrelated visual sources:
 
 ```bash
-php artisan hotwire:styles \
+php artisan hotwire:bundle-preset \
   --preset=nova \
   --components=badge,button,field,input,navbar,pagination,popover \
   --include=tooltip \
@@ -118,7 +118,7 @@ modules are selective, so tokens, progressive enhancement and runtime utility co
 components were listed.
 
 The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
-after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:styles` bundle is replaceable;
+after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:bundle-preset` bundle is replaceable;
 application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
 dynamic components is not known, keep the selected public `presets/<name>.css` import as the fallback instead of
 guessing.
@@ -245,7 +245,7 @@ errors. The command does not compare the preset with Nova, require explicit sele
 values that intentionally share one appearance. Base rules, grouped selectors, scoped roots, ancestor state and
 equivalent selector organization remain valid.
 
-When `--preset` points to a generated `hotwire:styles` bundle, complete-preset validation is skipped explicitly and the
+When `--preset` points to a generated `hotwire:bundle-preset` bundle, complete-preset validation is skipped explicitly and the
 file remains governed by its recorded selective plan. Selecting an unimported complete preset never suppresses missing
 bundle coverage for the application's rendered components; only a complete preset imported by application CSS does.
 
@@ -294,7 +294,7 @@ package upgrade that carries preset or markup notes:
 Run `hotwire:check --preset=brand` after each package upgrade. It catches missing visual slots, a stale foundation facade,
 unknown slot names and broken local import graphs. Then run `npm run build` and the focused browser/component checks from
 the maintenance list above. Static validation cannot prove state semantics, accessibility behavior, contrast or visual
-quality. Selective `hotwire:styles` bundles are different: regenerate them instead of merging changes because their
+quality. Selective `hotwire:bundle-preset` bundles are different: regenerate them instead of merging changes because their
 recorded plan is their source of truth.
 
 ## Structural and visual CSS

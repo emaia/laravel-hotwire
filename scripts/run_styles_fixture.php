@@ -50,7 +50,7 @@ try {
     }
 
     $kernel = $app->make(Kernel::class);
-    $status = $kernel->call('hotwire:styles', [
+    $status = $kernel->call('hotwire:bundle-preset', [
         '--preset' => $argv[2],
         '--output' => $argv[3],
         '--components' => $values($argv[4]),

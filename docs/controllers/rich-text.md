@@ -163,8 +163,8 @@ export default class extends RichTextController {
 `options` is `{ placeholder }` — pass it back to `defaultExtensions` so the Placeholder extension
 still picks up the configured text. Returning `null` (the default) uses the built-in stack.
 
-`hotwire:make-controller` is the easiest way to scaffold this subclass — pick a kebab-case name
-like `rich-text-extended` and reference it from the component as `controller="rich-text-extended"`.
+`php artisan hotwire:make-controller editor/rich-text-extended` is the easiest way to scaffold this subclass. Reference
+the generated namespaced identifier from the component as `controller="editor--rich-text-extended"`.
 
 When a custom atom serializes to empty structural HTML, server-side validation cannot infer its ProseMirror schema.
 The packaged rich-text rules recognize common standard media elements; add application validation for other empty atom

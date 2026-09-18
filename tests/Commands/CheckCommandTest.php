@@ -239,7 +239,7 @@ it('does not rewrite application token values with fix', function () {
 
 it('reports a visual component not covered by any generated CSS bundle', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 
@@ -249,8 +249,8 @@ it('reports a visual component not covered by any generated CSS bundle', functio
 
 it('accepts visual coverage from any generated CSS bundle', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --output=resources/css/front.css --no-interaction')->assertSuccessful();
-    $this->artisan('hotwire:styles --components=badge --output=resources/css/admin.css --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --output=resources/css/front.css --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --output=resources/css/admin.css --no-interaction')->assertSuccessful();
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
@@ -258,7 +258,7 @@ it('accepts visual coverage from any generated CSS bundle', function () {
 });
 
 it('reports generated bundle drift when its official preset entrypoint is invalid', function () {
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $root = resource_path('css/package');
     File::ensureDirectoryExists($root.'/presets/nova');
     File::put($root.'/tokens.css', '');
@@ -308,7 +308,7 @@ it('reports generated bundle drift when its official preset entrypoint is invali
 
 it('accepts a complete preset fallback alongside generated CSS bundles', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '@import "'.shippedPresetImportPath().'";');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -329,7 +329,7 @@ it('rejects multiple official presets imported by one stylesheet', function () {
 
 it('does not accept a copied shipped preset with drift inside the foundation facade', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $preset = shippedPresetImportPath();
     File::append(base_path('vendor/emaia/laravel-hotwire/resources/css/tokens.css'), "\n:root { --drift: true; }");
     File::put(resource_path('css/app.css'), '@import "'.$preset.'";');
@@ -355,7 +355,7 @@ it('detects drift in local stylesheet dependencies imported with conditions', fu
 
 it('accepts an unquoted url import of a complete shipped preset', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '@import url('.shippedPresetImportPath().');');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -365,7 +365,7 @@ it('accepts an unquoted url import of a complete shipped preset', function () {
 
 it('accepts comments as whitespace in a complete preset import', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '@import /* preset */ url('.shippedPresetImportPath().') /* complete */;');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -375,7 +375,7 @@ it('accepts comments as whitespace in a complete preset import', function () {
 
 it('does not treat a complete preset imported into a cascade layer as complete coverage', function (string $layer) {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '@import "'.shippedPresetImportPath().'" '.$layer.';');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
@@ -391,7 +391,7 @@ it('does not treat a complete preset imported into a cascade layer as complete c
 
 it('accepts a complete preset import after a UTF-8 BOM', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), "\xEF\xBB\xBF".'@import "'.shippedPresetImportPath().'";');
 
     $this->artisan('hotwire:check --no-interaction')
@@ -401,7 +401,7 @@ it('accepts a complete preset import after a UTF-8 BOM', function () {
 
 it('accepts complete preset imports after allowed CSS prelude rules', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $css = '@charset "UTF-8"; @layer theme; @import "'.shippedPresetImportPath().'";';
     File::put(resource_path('css/app.css'), $css);
 
@@ -412,7 +412,7 @@ it('accepts complete preset imports after allowed CSS prelude rules', function (
 
 it('validates an imported complete application preset against the public slot contract', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     writeCompleteApplicationPreset();
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
@@ -474,7 +474,7 @@ it('fails an application preset that uses a Tailwind interpolation underscore in
 
 it('does not let an explicit preset disable selective bundle coverage', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     writeCompleteApplicationPreset();
 
     $this->artisan('hotwire:check', ['--preset' => ['brand'], '--no-interaction' => true])
@@ -485,7 +485,7 @@ it('does not let an explicit preset disable selective bundle coverage', function
 
 it('reports selective bundle coverage alongside an invalid explicit preset', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     shippedPresetImportPath();
     File::ensureDirectoryExists(resource_path('css/presets'));
     File::put(resource_path('css/presets/brand.css'), '[data-slot="badge"] { color: red; }');
@@ -530,7 +530,7 @@ it('reports static-analysis uncertainty as a warning without failing', function 
 });
 
 it('does not reinterpret an explicitly selected generated bundle as a complete preset', function () {
-    $this->artisan('hotwire:styles --components=badge --output=resources/css/presets/layout.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge --output=resources/css/presets/layout.css --no-interaction')
         ->assertSuccessful();
 
     $this->artisan('hotwire:check', [
@@ -543,7 +543,7 @@ it('does not reinterpret an explicitly selected generated bundle as a complete p
 });
 
 it('validates the recorded plan of a generated bundle selected as a preset', function () {
-    $this->artisan('hotwire:styles --components=badge --output=resources/css/presets/layout.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge --output=resources/css/presets/layout.css --no-interaction')
         ->assertSuccessful();
     $path = resource_path('css/presets/layout.css');
     File::put($path, strstr(File::get($path), '[data-slot="badge"]', true));
@@ -589,7 +589,7 @@ it('renders preset paths relative to a resolved symbolic base without prefix col
 
 it('keeps a generated bundle under the presets directory in selective mode', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --output=resources/css/presets/layout.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --output=resources/css/presets/layout.css --no-interaction')
         ->assertSuccessful();
 
     $this->artisan('hotwire:check --no-interaction')
@@ -600,7 +600,7 @@ it('keeps a generated bundle under the presets directory in selective mode', fun
 
 it('does not treat conditional remote or quoted preset references as complete coverage', function (string $css) {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), str_replace('__PRESET__', shippedPresetImportPath(), $css));
 
     $exit = Artisan::call('hotwire:check --no-interaction');
@@ -620,7 +620,7 @@ it('does not treat conditional remote or quoted preset references as complete co
 
 it('does not treat an existing impostor path as a shipped preset', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $impostor = resource_path('css/fake/resources/css/presets/nova.css');
     File::ensureDirectoryExists(dirname($impostor));
     File::put($impostor, '');
@@ -634,7 +634,7 @@ it('does not treat an existing impostor path as a shipped preset', function () {
 
 it('does not treat a preset-named directory as complete coverage', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::ensureDirectoryExists(resource_path('css/presets/brand.css'));
     File::put(resource_path('css/app.css'), '@import "./presets/brand.css";');
 
@@ -646,7 +646,7 @@ it('does not treat a preset-named directory as complete coverage', function () {
 
 it('does not treat imports inside preset files as application entrypoints', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $this->artisan('hotwire:make-preset brand --from=nova --no-interaction')->assertSuccessful();
     File::put(resource_path('css/presets/internal.css'), '@import "./brand.css";');
 
@@ -658,7 +658,7 @@ it('does not treat imports inside preset files as application entrypoints', func
 
 it('ignores commented complete preset imports', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     File::put(resource_path('css/app.css'), '/* @import "'.shippedPresetImportPath().'"; */');
 
     $exit = Artisan::call('hotwire:check --no-interaction');
@@ -669,7 +669,7 @@ it('ignores commented complete preset imports', function () {
 
 it('does not require preset coverage for the standalone Toaster controller', function () {
     writeView('page.blade.php', '<div data-controller="toaster"></div>');
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 
@@ -679,7 +679,7 @@ it('does not require preset coverage for the standalone Toaster controller', fun
 
 it('does not require preset coverage for the application-styled Tooltip controller', function () {
     writeView('page.blade.php', '<button data-controller="tooltip">Help</button>');
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
 
     $exit = Artisan::call('hotwire:check --no-interaction');
 
@@ -692,7 +692,7 @@ it('reports generated CSS without readable metadata once', function () {
     File::ensureDirectoryExists(resource_path('css'));
     File::put(resource_path('css/hotwire.css'), implode("\n", [
         '/* @hotwire-package */',
-        '/* Generated by `php artisan hotwire:styles`. Regenerate instead of editing. */',
+        '/* Generated by `php artisan hotwire:bundle-preset`. Regenerate instead of editing. */',
     ]));
 
     $this->artisan('hotwire:check --no-interaction')
@@ -703,7 +703,7 @@ it('reports generated CSS without readable metadata once', function () {
 
 it('reports generated CSS whose content no longer matches its metadata', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
     $css = File::get(resource_path('css/hotwire.css'));
     File::put(resource_path('css/hotwire.css'), strstr($css, '[data-slot="badge"]', true));
 
@@ -715,7 +715,7 @@ it('reports generated CSS whose content no longer matches its metadata', functio
 
 it('accepts canonical generated CSS checked out with CRLF line endings', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
     $path = resource_path('css/hotwire.css');
     $css = str_replace(["\r\n", "\r"], "\n", File::get($path));
     File::put($path, str_replace("\n", "\r\n", $css));
@@ -727,7 +727,7 @@ it('accepts canonical generated CSS checked out with CRLF line endings', functio
 
 it('does not alter selective CSS while fixing and keeps drift failing', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
-    $this->artisan('hotwire:styles --components=modal --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $before = File::get(resource_path('css/hotwire.css'));
 
     $this->artisan('hotwire:check --fix --no-interaction')->assertFailed();

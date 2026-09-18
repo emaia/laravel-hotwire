@@ -113,7 +113,7 @@ topology changes without modifying the snapshot.
 For a selective bundle:
 
 ```bash
-php artisan hotwire:styles --preset=nova --components=button,field,input,modal --include=tooltip --output=resources/css/hotwire.css
+php artisan hotwire:bundle-preset --preset=nova --components=button,field,input,modal --include=tooltip --output=resources/css/hotwire.css
 ```
 
 Choose `--preset=bloom` to build the same selection with Bloom instead.
