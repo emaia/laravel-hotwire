@@ -77,12 +77,15 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        if ($filter !== 'css') {
+        $coreDependencies = $filter === 'css' ? [] : $this->coreDependencies();
+        $loaderVersion = $coreDependencies['@emaia/stimulus-lazy-loader'] ?? null;
+
+        if ($loaderVersion !== null) {
             try {
                 $this->packageInstaller->validateDependency(
                     $this->files,
                     '@emaia/stimulus-lazy-loader',
-                    $this->coreDependencies()['@emaia/stimulus-lazy-loader'],
+                    $loaderVersion,
                     allowMissing: true,
                 );
             } catch (RuntimeException $exception) {
@@ -101,7 +104,7 @@ class InstallCommand extends Command
         $depsAdded = 0;
         $aliasResult = null;
         if ($filter !== 'css') {
-            $depsAdded = $this->addNpmDependencies();
+            $depsAdded = $this->addNpmDependencies($coreDependencies);
             $aliasResult = $this->packageInstaller->addViteAlias(
                 $this->files,
                 self::VITE_ALIAS_KEY,
@@ -398,13 +401,13 @@ class InstallCommand extends Command
     {
         $path = realpath(__DIR__.'/../../package.json');
 
-        if (! $path) {
+        if (! $path || ! $this->files->exists($path)) {
             warning('Could not read package.json from the laravel-hotwire package — core dependencies (stimulus, turbo, dynamic-loader) were not added.');
 
             return [];
         }
 
-        $json = json_decode(file_get_contents($path), true);
+        $json = json_decode($this->files->get($path), true);
         $all = $json['dependencies'] ?? [];
 
         return array_intersect_key($all, array_flip(self::CORE_DEPENDENCIES));
@@ -485,7 +488,8 @@ class InstallCommand extends Command
         return $identifiers;
     }
 
-    private function addNpmDependencies(): int
+    /** @param array<string, string> $coreDependencies */
+    private function addNpmDependencies(array $coreDependencies): int
     {
         $packageJsonPath = base_path('package.json');
 
@@ -495,7 +499,6 @@ class InstallCommand extends Command
             return 0;
         }
 
-        $deps = $this->coreDependencies();
         $registry = HotwireRegistry::make();
         $configuration = ControllerLoadConfiguration::fromConfig();
         $configuredCatalogDependencies = $this->configuredCatalogDependencyControllerIdentifiers($registry, $configuration);
@@ -510,7 +513,7 @@ class InstallCommand extends Command
             )));
         }
 
-        $deps = array_merge($deps, $this->catalogDependencies($filter));
+        $deps = array_merge($coreDependencies, $this->catalogDependencies($filter));
 
         return count($this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false));
     }

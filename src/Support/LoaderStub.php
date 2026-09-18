@@ -141,7 +141,7 @@ final class LoaderStub
         $metadata = json_decode($match[1], true);
 
         if (! is_array($metadata)
-            || ! in_array($metadata['version'] ?? null, [2, 3], true)
+            || ($metadata['version'] ?? null) !== 3
             || ! is_bool($metadata['includeAllComDepControllers'] ?? null)
         ) {
             return null;
@@ -157,8 +157,7 @@ final class LoaderStub
             }
         }
 
-        // Schema 2 records the selection explicitly, but predates eager path tracking.
-        $paths = $metadata['version'] === 3 ? ($metadata['eagerControllerPaths'] ?? null) : [];
+        $paths = $metadata['eagerControllerPaths'] ?? null;
 
         if (! is_array($paths) || array_filter(
             $paths,

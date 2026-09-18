@@ -1,6 +1,7 @@
 <?php
 
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 dataset('css presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -193,6 +194,42 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
+it('warns once and continues scaffolding when the package manifest is missing', function () {
+    File::put($this->packageJsonPath, '{"name":"test"}');
+    $packageManifest = realpath(__DIR__.'/../../package.json');
+    $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
+        $mock->shouldReceive('exists')->with($packageManifest)->once()->andReturnFalse();
+    });
+
+    $exit = Artisan::call('hotwire:install --skip-install --no-interaction');
+
+    expect($exit)->toBe(0)
+        ->and(substr_count(Artisan::output(), 'Could not read package.json from the laravel-hotwire package'))->toBe(1)
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue()
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+    expect($json['devDependencies'])->toHaveKey('echarts')
+        ->not->toHaveKey('@emaia/stimulus-lazy-loader');
+});
+
+it('reads core dependencies once and tolerates a missing loader version', function () {
+    File::put($this->packageJsonPath, '{"name":"test"}');
+    $packageManifest = realpath(__DIR__.'/../../package.json');
+    $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
+        $mock->shouldReceive('get')->with($packageManifest)->once()->andReturn(
+            '{"dependencies":{"@hotwired/stimulus":"^3.2.2"}}',
+        );
+    });
+
+    $this->artisan('hotwire:install --skip-install --no-interaction')->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+    expect($json['devDependencies']['@hotwired/stimulus'])->toBe('^3.2.2')
+        ->and($json['devDependencies'])->not->toHaveKey('@emaia/stimulus-lazy-loader')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue();
+});
+
 it('installs core + all catalog dependencies by default', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
@@ -312,6 +349,28 @@ it('warns when package.json does not exist', function () {
 
     // Should not crash — files should still be copied
     expect(File::exists(resource_path('js/app.js')))->toBeTrue();
+});
+
+it('refuses malformed application package.json before writing scaffolding', function () {
+    File::put($this->packageJsonPath, '{');
+
+    $this->artisan('hotwire:install --skip-install --no-interaction')
+        ->expectsOutputToContain('Restore a valid package.json')
+        ->assertFailed();
+
+    expect(File::get($this->packageJsonPath))->toBe('{')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::exists(resource_path('css/app.css')))->toBeFalse();
+});
+
+it('allows a CSS-only install with malformed application package.json', function () {
+    File::put($this->packageJsonPath, '{');
+
+    $this->artisan('hotwire:install --only=css --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->packageJsonPath))->toBe('{')
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue()
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse();
 });
 
 it('does not resolve controller policy during a CSS-only install', function () {

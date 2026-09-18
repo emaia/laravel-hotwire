@@ -16,11 +16,14 @@ tooling change for the next **pre-1.0 minor**, not a patch; an equivalent remova
   constraint is incompatible. It also fails when `package.json` is missing or invalid. It does not add or upgrade the
   loader dependency, and the failure occurs before applying fixes.
 - `hotwire:install` adds the dependency when absent, but refuses an incompatible existing constraint before writing
-  scaffolding or dependencies. `--only=css` does not require the JavaScript dependency.
-- Loader metadata schemas **2 and 3** remain readable; schema **3** is emitted. Schema numbers are independent of the npm
-  package version. Schema 2 already records the dependency selection explicitly and remains supported in this release;
-  it needs no v1 runtime migration. Regeneration records the eager paths introduced by schema 3.
-- Generated stubs without metadata, with schema **1**, or with malformed/unknown metadata are no longer inferred from
+  scaffolding or dependencies. It now also fails before writing files when the application's `package.json` contains
+  invalid JSON; earlier versions silently skipped dependency changes and continued scaffolding. An absent application
+  manifest still produces a warning and allows scaffolding. `--only=css` does not validate the JavaScript manifest or
+  dependencies.
+- Loader metadata schema **3** is the only supported format, both for reading and writing. Metadata was first shipped
+  with schema 3 in **0.67.0**; schemas 1 and 2 were never emitted by a released package and have no compatibility window.
+  Schema numbers are independent of the npm package version.
+- Generated stubs without metadata or with malformed/unsupported metadata are no longer inferred from
   JavaScript globs. `--fix` fails with recovery instructions rather than guessing which controllers to include.
 
 To upgrade an existing application:

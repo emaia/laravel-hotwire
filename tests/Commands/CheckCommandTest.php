@@ -1410,6 +1410,7 @@ it('refuses to infer policy from an unsupported generated loader', function (str
 })->with([
     'no metadata' => '',
     'schema 1' => '// hotwire-loader-plan: {"version":1,"includedComDepControllers":[],"preloadControllers":[]}',
+    'never-emitted schema 2' => '// hotwire-loader-plan: {"version":2,"includeAllComDepControllers":false,"includedComDepControllers":[],"preloadControllers":[],"eagerControllers":[]}',
     'future schema' => '// hotwire-loader-plan: {"version":4,"includedComDepControllers":[],"preloadControllers":[]}',
     'invalid JSON' => '// hotwire-loader-plan: {',
 ]);
@@ -1431,15 +1432,16 @@ it('rejects an incompatible lazy loader even when no view uses Hotwire', functio
     expect(readPackageJson()['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^1.1.0');
 });
 
-it('regenerates schema 2 metadata while preserving its dependency selection', function (bool $includeAll) {
+it('regenerates the loading policy while preserving its dependency selection', function (bool $includeAll) {
     writePackageJson(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^2.0.0']]);
     File::ensureDirectoryExists($this->targetDir);
     $metadata = json_encode([
-        'version' => 2,
+        'version' => 3,
         'includeAllComDepControllers' => $includeAll,
         'includedComDepControllers' => ['chart'],
         'preloadControllers' => [],
-        'eagerControllers' => ['modal'],
+        'eagerControllers' => [],
+        'eagerControllerPaths' => [],
     ]);
     File::put($this->targetDir.'/index.js', LoaderStub::MARKER."\n// hotwire-loader-plan: ".$metadata);
     config()->set('hotwire.controllers.eager', ['modal']);

@@ -148,9 +148,11 @@ controllers with the same Stimulus identifier.
 
 The generated loader requires `@emaia/stimulus-lazy-loader` 2.0.0 or later (new installs use `^2.0.0`). The installer
 adds a missing dependency but does not upgrade an incompatible existing constraint: update it manually, install the
-dependency, then re-run the command. Metadata schemas 2 and 3 are readable, and new stubs emit schema 3. Stubs without
-metadata or with schema 1 must be regenerated with an explicit dependency selection; `hotwire:check --fix` does not
-infer selections from old globs. See the [upgrade procedure](upgrade.md#end-of-automatic-lazy-loader-v1-migration).
+dependency, then re-run the command. Invalid application `package.json` JSON stops a JavaScript install before any files
+are written; an absent manifest warns and still allows scaffolding. CSS-only installs skip that validation. Metadata
+schema 3 is the only supported format. Stubs without metadata or with an unsupported schema must be regenerated with
+an explicit dependency selection; `hotwire:check --fix` does not infer selections from old globs. See the
+[upgrade procedure](upgrade.md#end-of-automatic-lazy-loader-v1-migration).
 
 ---
 

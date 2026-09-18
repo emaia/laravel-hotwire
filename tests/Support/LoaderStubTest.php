@@ -297,33 +297,19 @@ it('does not assume include-all mode without metadata', function () {
     expect(LoaderStub::policyFromContent($legacy))->toBeNull();
 });
 
-it('reads schema 2 policy independently from the npm package version', function (bool $includeAll) {
-    $metadata = json_encode([
-        'version' => 2,
-        'includeAllComDepControllers' => $includeAll,
-        'includedComDepControllers' => ['chart'],
-        'preloadControllers' => ['chart'],
-        'eagerControllers' => ['modal'],
-    ]);
-    $policy = LoaderStub::policyFromContent(LoaderStub::MARKER."\n// hotwire-loader-plan: ".$metadata);
-
-    expect($policy->includeAllComDepControllers)->toBe($includeAll)
-        ->and($policy->includedComDepControllers)->toBe(['chart'])
-        ->and($policy->preloadControllers)->toBe(['chart'])
-        ->and($policy->eagerControllers)->toBe(['modal'])
-        ->and($policy->eagerControllerPaths)->toBe([]);
-})->with([true, false]);
-
 it('rejects unsupported metadata instead of inferring a policy from JavaScript', function (int $version) {
     $metadata = json_encode([
         'version' => $version,
+        'includeAllComDepControllers' => false,
         'includedComDepControllers' => ['chart'],
         'preloadControllers' => [],
+        'eagerControllers' => [],
+        'eagerControllerPaths' => [],
     ]);
     $content = LoaderStub::MARKER."\n// hotwire-loader-plan: ".$metadata;
 
     expect(LoaderStub::policyFromContent($content))->toBeNull();
-})->with([1, 4]);
+})->with([1, 2, 4]);
 
 it('rejects malformed supported metadata without silently changing the selection', function (array $override) {
     $metadata = array_replace([

@@ -1356,7 +1356,6 @@ class CheckCommand extends Command
             self::LAZY_LOADER_PACKAGE,
             self::LAZY_LOADER_VERSION,
         );
-
     }
 
     private function emitScanOutput(): void
