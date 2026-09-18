@@ -105,7 +105,7 @@ return [
             'view' => 'hotwire::component-views.accordion',
             'docs' => 'docs/components/accordion.md',
             'category' => 'display',
-            'description' => 'Native details/summary accordion with an items shortcut and single or multiple item coordination',
+            'description' => 'Native disclosure accordion with single or multiple open items and disabled-item support',
             'controllers' => ['accordion'],
             'styling' => [
                 'slots' => [
@@ -118,7 +118,7 @@ return [
             'view' => 'hotwire::component-views.alert',
             'docs' => 'docs/components/alert.md',
             'category' => 'feedback',
-            'description' => 'Inline alert with title, description, action and semantic variants',
+            'description' => 'Inline alert with title, description, icon, action and semantic variants',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -131,7 +131,7 @@ return [
             'view' => 'hotwire::component-views.alert-dialog',
             'docs' => 'docs/components/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Accessible inline or shared alert dialog that intercepts clicks before proceeding',
+            'description' => 'Accessible inline or shared confirmation dialog for links, forms and Turbo actions',
             'controllers' => ['alert-dialog'],
             'styling' => [
                 'slots' => [
@@ -144,7 +144,7 @@ return [
             'view' => 'hotwire::component-views.aspect-ratio',
             'docs' => 'docs/components/aspect-ratio.md',
             'category' => 'display',
-            'description' => 'Static media wrapper that preserves a configurable aspect ratio',
+            'description' => 'JavaScript-free media container with a configurable or intrinsic aspect ratio',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -157,7 +157,7 @@ return [
             'view' => 'hotwire::component-views.attachment',
             'docs' => 'docs/components/attachment.md',
             'category' => 'display',
-            'description' => 'Composable file attachment primitive with media, metadata, state and actions',
+            'description' => 'Composable file card with media, metadata, states, actions and an optional full-card trigger',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -170,7 +170,7 @@ return [
             'view' => 'hotwire::component-views.avatar',
             'docs' => 'docs/components/avatar.md',
             'category' => 'display',
-            'description' => 'User avatar with image, generated initials fallback, badge and grouped display primitives',
+            'description' => 'User avatar with image, initials fallback, status badge and overlapping groups',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -183,7 +183,7 @@ return [
             'view' => 'hotwire::component-views.back-to-top',
             'docs' => 'docs/components/back-to-top.md',
             'category' => 'utility',
-            'description' => 'Fixed accessible button that appears after scrolling and returns the page to the top',
+            'description' => 'Accessible button revealed after a scroll threshold to return to the page top',
             'controllers' => ['back-to-top'],
             'styling' => [
                 'slots' => [
@@ -196,7 +196,7 @@ return [
             'view' => 'hotwire::component-views.badge',
             'docs' => 'docs/components/badge.md',
             'category' => 'display',
-            'description' => 'Compact status label with semantic variants and optional link rendering',
+            'description' => 'Compact status or metadata label with semantic variants and optional link rendering',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -209,7 +209,7 @@ return [
             'view' => 'hotwire::component-views.breadcrumb',
             'docs' => 'docs/components/breadcrumb.md',
             'category' => 'navigation',
-            'description' => 'Semantic navigation trail with composed subcomponents and an items shortcut',
+            'description' => 'Semantic navigation trail with composable items, ellipses and Turbo Frame targets',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -222,7 +222,7 @@ return [
             'view' => 'hotwire::component-views.button',
             'docs' => 'docs/components/button.md',
             'category' => 'display',
-            'description' => 'Displays a button or a component that looks like a button.',
+            'description' => 'Button or link action with variants, sizes, Turbo Frame targets, hotkeys and tooltips',
             'controllers' => ['hotkey', 'tooltip'],
             'styling' => [
                 'slots' => [
@@ -235,7 +235,7 @@ return [
             'view' => 'hotwire::component-views.button-group',
             'docs' => 'docs/components/button-group.md',
             'category' => 'display',
-            'description' => 'Groups related buttons and button-like controls with shared borders and orientation state',
+            'description' => 'Horizontal or vertical group for related buttons, text and separators',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -248,7 +248,7 @@ return [
             'view' => 'hotwire::component-views.card',
             'docs' => 'docs/components/card.md',
             'category' => 'display',
-            'description' => 'Composable content container with header, action, content and footer slots',
+            'description' => 'Composable content card with header, title, description, action, body and footer',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -261,7 +261,7 @@ return [
             'view' => 'hotwire::component-views.carousel',
             'docs' => 'docs/components/carousel.md',
             'category' => 'display',
-            'description' => 'Carousel/slider (Embla) with navigation, dots, responsive options and CSS-variable sizing',
+            'description' => 'Embla carousel with responsive options, navigation, dots, progress and slide counter',
             'controllers' => ['carousel'],
             'styling' => [
                 'slots' => [
@@ -274,7 +274,7 @@ return [
             'view' => 'hotwire::component-views.chart',
             'docs' => 'docs/components/chart.md',
             'category' => 'display',
-            'description' => 'Apache ECharts wrapper — inline option or URL-fetched, theme + sizing props, controller swap for subclass extensibility',
+            'description' => 'Apache ECharts visualization from inline options or a JSON endpoint with optional polling',
             'controllers' => ['chart'],
             'styling' => [
                 'slots' => [
@@ -287,7 +287,7 @@ return [
             'view' => 'hotwire::component-views.checkbox',
             'docs' => 'docs/components/checkbox.md',
             'category' => 'forms',
-            'description' => 'Standalone native checkbox with old input restore, unchecked hidden value and optional indeterminate state',
+            'description' => 'Native checkbox with old input, validation, unchecked values and indeterminate state',
             'controllers' => ['checkbox', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -300,7 +300,7 @@ return [
             'view' => 'hotwire::component-views.checkbox-group',
             'docs' => 'docs/components/checkbox-group.md',
             'category' => 'forms',
-            'description' => 'Checkbox group with options, rich item composition and optional select-all master checkbox',
+            'description' => 'Native checkbox set with generated or rich items, validation and optional select-all control',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -313,7 +313,7 @@ return [
             'view' => 'hotwire::component-views.checkbox-group-item',
             'docs' => 'docs/components/checkbox-group.md',
             'category' => 'forms',
-            'description' => 'Rich checkbox-group item that inherits name, selected state, validation and select-all wiring',
+            'description' => 'Nested checkbox option with inherited selection, validation and select-all support',
             'controllers' => ['checkbox-select-all', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -326,7 +326,7 @@ return [
             'view' => 'hotwire::component-views.color-scheme-script',
             'docs' => 'docs/components/color-scheme.md',
             'category' => 'utility',
-            'description' => 'Inline anti-flash script that applies the initial light or dark color scheme before CSS paints',
+            'description' => 'Initial light, dark or system color scheme selection with persisted preference',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -337,7 +337,7 @@ return [
             'view' => 'hotwire::component-views.color-scheme-toggle',
             'docs' => 'docs/components/color-scheme.md',
             'category' => 'utility',
-            'description' => 'Button that cycles persisted light, dark and system color scheme modes',
+            'description' => 'Button for cycling persisted light, dark and system color schemes with optional transitions',
             'controllers' => ['color-scheme', 'tooltip'],
             'styling' => [
                 'slots' => [
@@ -350,7 +350,7 @@ return [
             'view' => 'hotwire::component-views.conditional-field',
             'docs' => 'docs/components/conditional-field.md',
             'category' => 'forms',
-            'description' => 'Renders a dependent block for the conditional-fields controller — single source of truth for the show/hide rule on both client and server',
+            'description' => 'Dependent form block with declarative server and client visibility rules',
             'controllers' => ['conditional-fields'],
             'styling' => [
                 'slots' => [
@@ -363,7 +363,7 @@ return [
             'view' => 'hotwire::component-views.controller-preloads',
             'docs' => 'docs/components/controller-preloads.md',
             'category' => 'utility',
-            'description' => 'Emits Vite modulepreload links for selected application or package Stimulus controllers',
+            'description' => 'Production module preloads for selected application or package Stimulus controllers',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -374,7 +374,7 @@ return [
             'view' => 'hotwire::component-views.drawer',
             'docs' => 'docs/components/drawer.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
+            'description' => 'Accessible directional drawer with focus management and optional Turbo Frame content',
             'controllers' => ['drawer', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -387,7 +387,7 @@ return [
             'view' => 'hotwire::component-views.dropdown',
             'docs' => 'docs/components/dropdown.md',
             'category' => 'overlay',
-            'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
+            'description' => 'Accessible disclosure dropdown with responsive positioning and native tab-order navigation',
             'controllers' => ['dropdown'],
             'styling' => [
                 'slots' => [
@@ -400,7 +400,7 @@ return [
             'view' => 'hotwire::component-views.slot',
             'docs' => 'docs/components/empty-state.md',
             'category' => 'display',
-            'description' => 'Composable empty state with media, title, description and action content slots',
+            'description' => 'Composable empty state for zero-result, first-run and unavailable-content screens',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -413,7 +413,7 @@ return [
             'view' => 'hotwire::component-views.field',
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
-            'description' => 'Wraps label, input, description and error — propagates scoped name/id/errorKey/required context',
+            'description' => 'Laravel-aware field composition with labels, help text, validation errors and set semantics',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -426,7 +426,7 @@ return [
             'view' => 'hotwire::component-views.field-error',
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
-            'description' => 'Always-present error container bound to a form field via name/errorKey',
+            'description' => 'Persistent accessible validation error container for one or multiple messages',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -439,7 +439,7 @@ return [
             'view' => 'hotwire::component-views.slot',
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
-            'description' => 'Groups form fields and enables responsive field orientation layout',
+            'description' => 'Vertical layout stack for related fields and form sections',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -452,7 +452,7 @@ return [
             'view' => 'hotwire::component-views.field-label',
             'docs' => 'docs/components/field.md',
             'category' => 'forms',
-            'description' => 'Form label with auto-derived for/id and optional required marker',
+            'description' => 'Form label for controls or control sets with derived association and required marker',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -465,7 +465,7 @@ return [
             'view' => 'hotwire::component-views.file',
             'docs' => 'docs/components/file.md',
             'category' => 'forms',
-            'description' => 'File input with auto id/errorKey, ARIA, optional current file display and Turbo morph reset',
+            'description' => 'Native file input with validation, current-file links, failed Turbo submit restore and optional reset',
             'controllers' => ['file-preserve', 'reset-files'],
             'styling' => [
                 'slots' => [
@@ -478,7 +478,7 @@ return [
             'view' => 'hotwire::component-views.file-upload',
             'docs' => 'docs/components/file-upload.md',
             'category' => 'forms',
-            'description' => 'Attachment-backed native upload protocol with managed JSON and server-owned Turbo Stream modes',
+            'description' => 'App-integrated drag-and-drop uploader with progress and JSON or Turbo Stream output',
             'controllers' => ['file-upload'],
             'styling' => [
                 'slots' => [
@@ -494,7 +494,7 @@ return [
             'view' => 'hotwire::component-views.form',
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
-            'description' => 'Form wrapper with optional Stimulus behaviors, CSRF, and Turbo Frame redirect support',
+            'description' => 'Laravel form with CSRF, method spoofing, Turbo Frames, auto-submit and unsaved-change protection',
             'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'conditional-fields'],
             'styling' => [
                 'slots' => [
@@ -507,7 +507,7 @@ return [
             'view' => 'hotwire::component-views.frame',
             'docs' => 'docs/components/frame.md',
             'category' => 'turbo',
-            'description' => 'DX-friendly Turbo Frame wrapper with lazy, advance and replace aliases',
+            'description' => 'Turbo Frame with lazy loading, history control, polling, transitions and scroll preservation',
             'controllers' => ['turbo--polling', 'turbo--view-transition', 'turbo--preserve-scroll'],
             'styling' => [
                 'slots' => $slots(),
@@ -518,7 +518,7 @@ return [
             'view' => 'hotwire::component-views.frame-or-page',
             'docs' => 'docs/components/frame-or-page.md',
             'category' => 'turbo',
-            'description' => 'Renders shared and lazy contextual content as one of several Turbo Frames or as a page layout',
+            'description' => 'Shared Turbo Frame payload and full-layout page rendering from one view',
             'controllers' => ['turbo--polling', 'turbo--view-transition'],
             'styling' => [
                 'slots' => $slots(),
@@ -529,7 +529,7 @@ return [
             'view' => 'hotwire::component-views.frame-or-page-branch',
             'docs' => 'docs/components/frame-or-page.md',
             'category' => 'turbo',
-            'description' => 'Lazily renders contextual content only for a matching Frame Or Page frame request',
+            'description' => 'Lazy contextual content for the active configured Turbo Frame branch',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -540,7 +540,7 @@ return [
             'view' => 'hotwire::component-views.frame-or-page-branch',
             'docs' => 'docs/components/frame-or-page.md',
             'category' => 'turbo',
-            'description' => 'Lazily renders contextual content only for the Frame Or Page full-page branch',
+            'description' => 'Lazy contextual content for the full-page or unmatched Turbo Frame branch',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -551,7 +551,7 @@ return [
             'view' => 'hotwire::component-views.hover-card',
             'docs' => 'docs/components/hover-card.md',
             'category' => 'overlay',
-            'description' => 'Anchored hover/focus preview card with delayed Floating UI positioning and state-driven presence',
+            'description' => 'Hover- or focus-triggered preview card for lightweight, mostly non-interactive context',
             'controllers' => ['hover-card'],
             'styling' => [
                 'slots' => [
@@ -564,7 +564,7 @@ return [
             'view' => 'hotwire::component-views.icon',
             'docs' => 'docs/components/icon.md',
             'category' => 'display',
-            'description' => 'Inline SVG icon from the embedded Lucide subset (~21 icons)',
+            'description' => 'Inline SVG icon from the package-bundled Lucide icon set',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -577,7 +577,7 @@ return [
             'view' => 'hotwire::component-views.input',
             'docs' => 'docs/components/input.md',
             'category' => 'forms',
-            'description' => 'Form input with auto id/errorKey, ARIA, optional mask/clear/auto-select',
+            'description' => 'Laravel-aware input with validation, masks, clearing, selection and auto-submit',
             'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -590,7 +590,7 @@ return [
             'view' => 'hotwire::component-views.input-group',
             'docs' => 'docs/components/input-group.md',
             'category' => 'forms',
-            'description' => 'Composable input shell for addons, actions, shortcuts and helper content',
+            'description' => 'Composable control shell with addons, actions, shortcuts and helper content',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -603,7 +603,7 @@ return [
             'view' => 'hotwire::component-views.item',
             'docs' => 'docs/components/item.md',
             'category' => 'display',
-            'description' => 'Composable list item primitive with media, content, actions, header, footer and separator slots',
+            'description' => 'Composable list row with media, content, actions and link or button semantics',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -616,7 +616,7 @@ return [
             'view' => 'hotwire::component-views.slot',
             'docs' => 'docs/components/kbd.md',
             'category' => 'display',
-            'description' => 'Keyboard input hint with optional grouped shortcut rendering',
+            'description' => 'Keyboard input hint for shortcuts and grouped key combinations',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -629,7 +629,7 @@ return [
             'view' => 'hotwire::component-views.map',
             'docs' => 'docs/components/map.md',
             'category' => 'display',
-            'description' => 'Leaflet wrapper — inline center/markers or GeoJSON URL, OSM tiles by default, subclass-friendly tile/handler hooks',
+            'description' => 'Leaflet map with OpenStreetMap tiles, inline markers or GeoJSON and automatic fitting',
             'controllers' => ['map'],
             'styling' => [
                 'slots' => [
@@ -642,7 +642,7 @@ return [
             'view' => 'hotwire::component-views.marker',
             'docs' => 'docs/components/marker.md',
             'category' => 'display',
-            'description' => 'Lightweight visual primitive for timelines, activity feeds and lists',
+            'description' => 'Visual marker with icon and content variants for timelines, activity feeds and lists',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -655,7 +655,7 @@ return [
             'view' => 'hotwire::component-views.meta',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Composes the Hotwire head metas, rendering only the ones the application opts into',
+            'description' => 'Opt-in bundle of validated Hotwire meta tags with practical defaults',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -666,7 +666,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares turbo-cache-control to opt a page out of the cache or its preview',
+            'description' => 'Turbo cache policy for disabling page caching or preview caching',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -677,7 +677,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Advertises supported color schemes before application CSS loads',
+            'description' => 'Document color-scheme metadata for supported light and dark modes',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -688,7 +688,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares csrf-token, which the File Upload controller reads for its requests',
+            'description' => 'CSRF token metadata consumed by File Upload requests',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -699,7 +699,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares turbo-prefetch, the link hover prefetching switch',
+            'description' => 'Turbo Drive link-prefetch policy with explicit enabled or disabled state',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -710,7 +710,7 @@ return [
             'view' => 'hotwire::component-views.meta-refresh',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares turbo-refresh-method and turbo-refresh-scroll for page refreshes',
+            'description' => 'Turbo page-refresh method and scroll policy for replace or morph updates',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -721,7 +721,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares turbo-root, the path prefix Turbo Drive is allowed to navigate within',
+            'description' => 'Turbo Drive navigation boundary for a configurable path prefix',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -732,7 +732,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares view-transition so same-origin navigations animate',
+            'description' => 'Same-origin view-transition opt-in for page navigations',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -743,7 +743,7 @@ return [
             'view' => 'hotwire::component-views.meta-tag',
             'docs' => 'docs/components/meta.md',
             'category' => 'turbo',
-            'description' => 'Declares turbo-visit-control to force a full reload when visiting the page',
+            'description' => 'Turbo visit policy that forces a full page reload',
             'controllers' => [],
             'styling' => [
                 'slots' => $slots(),
@@ -754,7 +754,7 @@ return [
             'view' => 'hotwire::component-views.modal',
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
+            'description' => 'Accessible modal dialog with focus management and optional Turbo Frame content',
             'controllers' => ['modal', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -767,7 +767,7 @@ return [
             'view' => 'hotwire::component-views.multi-select',
             'docs' => 'docs/components/multi-select.md',
             'category' => 'forms',
-            'description' => 'Searchable multi-value select with state-driven floating presence and native form submission',
+            'description' => 'Searchable multi-value form control with selection limits and native submission',
             'controllers' => ['multi-select', 'clear-input'],
             'styling' => [
                 'slots' => [
@@ -780,7 +780,7 @@ return [
             'view' => 'hotwire::component-views.navbar',
             'docs' => 'docs/components/navbar.md',
             'category' => 'navigation',
-            'description' => 'Horizontal or vertical navigation bar with an items shortcut, current-page state and optional sticky sugar',
+            'description' => 'Horizontal or vertical navigation with current state, Turbo Frame targets and sticky layout',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -794,7 +794,7 @@ return [
             'view' => 'hotwire::component-views.navbar-item',
             'docs' => 'docs/components/navbar.md',
             'category' => 'navigation',
-            'description' => 'Navbar item that renders as a link or button with current and disabled semantics',
+            'description' => 'Navigation link, button or text item with current, disabled and Turbo Frame states',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -807,7 +807,7 @@ return [
             'view' => 'hotwire::component-views.optimistic',
             'docs' => 'docs/components/optimistic.md',
             'category' => 'turbo',
-            'description' => 'Declares an inline optimistic Turbo Stream action for any Turbo trigger',
+            'description' => 'Inline optimistic Turbo Stream payload for forms, links and custom Turbo triggers',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -820,7 +820,7 @@ return [
             'view' => 'hotwire::component-views.pagination',
             'docs' => 'docs/components/pagination.md',
             'category' => 'navigation',
-            'description' => 'Pagination navigation primitives with Laravel paginator display modes and Turbo Frame support',
+            'description' => 'Laravel pagination with Turbo Frame, Turbo Stream, load-more and infinite modes',
             'controllers' => ['pagination'],
             'styling' => [
                 'slots' => [
@@ -833,7 +833,7 @@ return [
             'view' => 'hotwire::component-views.popover',
             'docs' => 'docs/components/popover.md',
             'category' => 'overlay',
-            'description' => 'Anchored click-triggered popover with state-driven presence for rich arbitrary content',
+            'description' => 'Anchored click-triggered panel for interactive content with adaptive positioning',
             'controllers' => ['popover'],
             'styling' => [
                 'slots' => [
@@ -846,7 +846,7 @@ return [
             'view' => 'hotwire::component-views.progress',
             'docs' => 'docs/components/progress.md',
             'category' => 'feedback',
-            'description' => 'Server-rendered progress primitive with label, value, track and indicator slots',
+            'description' => 'Composable progress display with ARIA semantics, label, value, track and indicator',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -859,7 +859,7 @@ return [
             'view' => 'hotwire::component-views.radio-group',
             'docs' => 'docs/components/radio-group.md',
             'category' => 'forms',
-            'description' => 'Native radio group with options, rich item composition, old input restore and validation wiring',
+            'description' => 'Native radio group with generated or rich items, validation and auto-submit',
             'controllers' => ['auto-submit'],
             'styling' => [
                 'slots' => [
@@ -872,7 +872,7 @@ return [
             'view' => 'hotwire::component-views.radio-group-item',
             'docs' => 'docs/components/radio-group.md',
             'category' => 'forms',
-            'description' => 'Rich radio-group item that inherits name, selected state and validation wiring',
+            'description' => 'Nested radio option with inherited selection, form and validation context',
             'controllers' => ['auto-submit'],
             'styling' => [
                 'slots' => [
@@ -885,7 +885,7 @@ return [
             'view' => 'hotwire::component-views.read-more',
             'docs' => 'docs/components/read-more.md',
             'category' => 'display',
-            'description' => 'Overflow-aware content preview with accessible expansion and first-paint clamping',
+            'description' => 'Overflow-aware content preview with first-paint clamping and accessible expansion',
             'controllers' => ['read-more'],
             'styling' => [
                 'slots' => [
@@ -898,7 +898,7 @@ return [
             'view' => 'hotwire::component-views.reveal',
             'docs' => 'docs/components/reveal.md',
             'category' => 'display',
-            'description' => 'Progressively enhanced staggered entrance cascade for direct children or explicit items',
+            'description' => 'Staggered entrance for direct or nested content with load or scroll triggers',
             'controllers' => ['reveal'],
             'styling' => [
                 'slots' => [
@@ -911,7 +911,7 @@ return [
             'view' => 'hotwire::component-views.reveal-item',
             'docs' => 'docs/components/reveal.md',
             'category' => 'display',
-            'description' => 'Explicit nested item with an automatically shared cascade index',
+            'description' => 'Nested reveal item with parent-assigned stagger ordering',
             'controllers' => ['reveal'],
             'styling' => [
                 'slots' => [
@@ -924,7 +924,7 @@ return [
             'view' => 'hotwire::component-views.rich-text',
             'docs' => 'docs/components/rich-text.md',
             'category' => 'forms',
-            'description' => 'Tiptap-backed rich text editor with optional default toolbar, output as HTML or JSON, and image-upload event hook',
+            'description' => 'Tiptap editor with optional toolbar, HTML or JSON submission and app-managed image uploads',
             'controllers' => ['rich-text', 'rich-text-toolbar'],
             'styling' => [
                 'slots' => [
@@ -937,7 +937,7 @@ return [
             'view' => 'hotwire::component-views.scroll-progress',
             'docs' => 'docs/components/scroll-progress.md',
             'category' => 'utility',
-            'description' => 'Fixed scroll progress bar that fills as the page scrolls',
+            'description' => 'Fixed page-scroll progress indicator with configurable update throttling',
             'controllers' => ['scroll-progress'],
             'styling' => [
                 'slots' => [
@@ -950,7 +950,7 @@ return [
             'view' => 'hotwire::component-views.select',
             'docs' => 'docs/components/select.md',
             'category' => 'forms',
-            'description' => 'Select dropdown with auto id/errorKey, ARIA, old() merge and placeholder support',
+            'description' => 'Native select with placeholders, old input, validation and auto-submit',
             'controllers' => ['auto-submit'],
             'styling' => [
                 'slots' => [
@@ -963,7 +963,7 @@ return [
             'view' => 'hotwire::component-views.separator',
             'docs' => 'docs/components/separator.md',
             'category' => 'display',
-            'description' => 'Horizontal or vertical visual separator with semantic orientation hooks',
+            'description' => 'Semantic horizontal or vertical separator for content sections',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -976,7 +976,7 @@ return [
             'view' => 'hotwire::component-views.sheet',
             'docs' => 'docs/components/sheet.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
+            'description' => 'Accessible off-canvas dialog on any edge with optional Turbo Frame content',
             'controllers' => ['sheet', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -989,7 +989,7 @@ return [
             'view' => 'hotwire::component-views.side-panel',
             'docs' => 'docs/components/side-panel.md',
             'category' => 'navigation',
-            'description' => 'Composable collapsible panel for secondary navigation and workspace tools',
+            'description' => 'Nestable in-flow side panel for navigation, filters and workspace tools',
             'controllers' => ['side-panel'],
             'styling' => [
                 'slots' => [
@@ -1002,7 +1002,7 @@ return [
             'view' => 'hotwire::component-views.sidebar',
             'docs' => 'docs/components/sidebar.md',
             'category' => 'navigation',
-            'description' => 'Composable app sidebar with provider state, mobile Presence and navigation primitives',
+            'description' => 'Responsive app sidebar with collapse modes, mobile overlay and persisted state',
             'controllers' => ['sidebar', 'reveal', 'tooltip'],
             'styling' => [
                 'slots' => [
@@ -1021,7 +1021,7 @@ return [
             'view' => 'hotwire::component-views.slot',
             'docs' => 'docs/components/skeleton.md',
             'category' => 'feedback',
-            'description' => 'Animated placeholder block for loading states',
+            'description' => 'Animated loading placeholder with reusable shimmer styling',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -1034,7 +1034,7 @@ return [
             'view' => 'hotwire::component-views.slider',
             'docs' => 'docs/components/slider.md',
             'category' => 'forms',
-            'description' => 'Native scalar range input with Laravel field integration and progressive visual fill',
+            'description' => 'Native single-thumb range input with vertical support, validation and auto-submit',
             'controllers' => ['slider', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1047,7 +1047,7 @@ return [
             'view' => 'hotwire::component-views.spinner',
             'docs' => 'docs/components/spinner.md',
             'category' => 'feedback',
-            'description' => 'Animated SVG spinner — no JavaScript required',
+            'description' => 'Accessible CSS-only loading indicator with reduced-motion behavior',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -1060,7 +1060,7 @@ return [
             'view' => 'hotwire::component-views.sticky',
             'docs' => 'docs/components/sticky.md',
             'category' => 'navigation',
-            'description' => 'Generic top or bottom sticky surface primitive with configurable offset and tag',
+            'description' => 'Top or bottom sticky surface for navigation, persistent actions and summary content',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -1073,7 +1073,7 @@ return [
             'view' => 'hotwire::component-views.switch',
             'docs' => 'docs/components/switch.md',
             'category' => 'forms',
-            'description' => 'Native checkbox rendered as an accessible switch with old input restore and unchecked hidden value',
+            'description' => 'Native ARIA switch with old input, optional unchecked value and auto-submit',
             'controllers' => ['auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1086,7 +1086,7 @@ return [
             'view' => 'hotwire::component-views.table',
             'docs' => 'docs/components/table.md',
             'category' => 'display',
-            'description' => 'Responsive table wrapper with semantic row, cell, header, footer and caption primitives',
+            'description' => 'Responsive semantic table primitives for headers, bodies, footers, captions, rows and cells',
             'controllers' => [],
             'styling' => [
                 'slots' => [
@@ -1099,7 +1099,7 @@ return [
             'view' => 'hotwire::component-views.tabs',
             'docs' => 'docs/components/tabs.md',
             'category' => 'display',
-            'description' => 'Accessible tab primitives backed by the tabs controller, with server-rendered active state',
+            'description' => 'ARIA tab set with horizontal or vertical keyboard navigation and server-selected state',
             'controllers' => ['tabs'],
             'styling' => [
                 'slots' => [
@@ -1112,7 +1112,7 @@ return [
             'view' => 'hotwire::component-views.textarea',
             'docs' => 'docs/components/textarea.md',
             'category' => 'forms',
-            'description' => 'Textarea with auto-resize and optional char counter',
+            'description' => 'Textarea with optional auto-resize, character counter, validation and auto-submit',
             'controllers' => ['auto-resize', 'char-counter', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1125,7 +1125,7 @@ return [
             'view' => 'hotwire::component-views.timeago',
             'docs' => 'docs/components/timeago.md',
             'category' => 'utility',
-            'description' => 'Self-refreshing relative timestamp element wrapping the timeago controller',
+            'description' => 'Localized relative timestamp with server fallback and optional automatic refresh',
             'controllers' => ['timeago'],
             'styling' => [
                 'slots' => [
@@ -1138,7 +1138,7 @@ return [
             'view' => 'hotwire::component-views.toast',
             'docs' => 'docs/components/toast.md',
             'category' => 'feedback',
-            'description' => 'Fires a toast notification from the Laravel session or from explicit props',
+            'description' => 'Toast notification from props, session flash or Turbo Streams into a Toaster',
             'controllers' => ['toast'],
             'styling' => [
                 'slots' => [
@@ -1151,7 +1151,7 @@ return [
             'view' => 'hotwire::component-views.toaster',
             'docs' => 'docs/components/toaster.md',
             'category' => 'feedback',
-            'description' => 'Hosts the toast stack, reads the session flash and persists across Turbo Drive navigations',
+            'description' => 'Persistent toast stack for session flash, Turbo Streams and JavaScript notifications',
             'controllers' => ['toaster', 'toast'],
             'styling' => [
                 'slots' => [
@@ -1165,7 +1165,7 @@ return [
             'view' => 'hotwire::component-views.toggle',
             'docs' => 'docs/components/toggle.md',
             'category' => 'forms',
-            'description' => 'Accessible two-state button with optional hidden input and auto-submit integration',
+            'description' => 'ARIA-pressed two-state button with optional form value and auto-submit',
             'controllers' => ['toggle', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1178,7 +1178,7 @@ return [
             'view' => 'hotwire::component-views.toggle-group',
             'docs' => 'docs/components/toggle-group.md',
             'category' => 'forms',
-            'description' => 'Single or multiple pressed-button group with options and hidden-input form submission',
+            'description' => 'Pressed-button group with single or multiple selection, optional form submission and auto-submit',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1191,7 +1191,7 @@ return [
             'view' => 'hotwire::component-views.toggle-group-item',
             'docs' => 'docs/components/toggle-group.md',
             'category' => 'forms',
-            'description' => 'Button item for toggle groups with aria-pressed and hidden-input synchronization',
+            'description' => 'Nested pressed button with inherited group selection, form and disabled state',
             'controllers' => ['toggle-group', 'toggle', 'auto-submit'],
             'styling' => [
                 'slots' => [
@@ -1204,7 +1204,7 @@ return [
             'view' => 'hotwire::component-views.tooltip',
             'docs' => 'docs/components/tooltip.md',
             'category' => 'overlay',
-            'description' => 'Provides the package-styled inert template cloned by the tooltip controller for accessible anchored help',
+            'description' => 'Accessible non-interactive help for hover and focus triggers with anchored positioning',
             'controllers' => ['tooltip'],
             'styling' => [
                 'slots' => [
@@ -1218,31 +1218,31 @@ return [
             'source' => 'resources/js/controllers/accordion_controller.js',
             'docs' => 'docs/controllers/accordion.md',
             'category' => 'display',
-            'description' => 'Coordinates native details/summary accordion items for single, multiple and disabled behavior',
+            'description' => 'Coordinates native disclosure items in single or multiple mode and blocks disabled items',
         ],
         'alert-dialog' => [
             'source' => 'resources/js/controllers/alert_dialog_controller.js',
             'docs' => 'docs/controllers/alert-dialog.md',
             'category' => 'overlay',
-            'description' => 'Intercepts clicks and waits for state-driven dialog confirmation before proceeding',
+            'description' => 'Guards click actions with an accessible confirmation dialog',
         ],
         'animated-number' => [
             'source' => 'resources/js/controllers/animated_number_controller.js',
             'docs' => 'docs/controllers/animated-number.md',
             'category' => 'display',
-            'description' => 'Animates a number from start to end value, with scroll-triggered lazy mode',
+            'description' => 'Animates numeric content immediately or once it enters the viewport',
         ],
         'auto-resize' => [
             'source' => 'resources/js/controllers/auto_resize_controller.js',
             'docs' => 'docs/controllers/auto-resize.md',
             'category' => 'forms',
-            'description' => 'Expands a textarea to fit its content as the user types',
+            'description' => 'Resizes a textarea to fit its content after input, window resize and Turbo renders',
         ],
         'auto-save' => [
             'source' => 'resources/js/controllers/auto_save_controller.js',
             'docs' => 'docs/controllers/auto-save.md',
             'category' => 'forms',
-            'description' => 'Automatically saves a form after changes, with debounce and status feedback',
+            'description' => 'Saves changed forms with debouncing, status feedback and queued follow-up saves',
         ],
         'auto-select' => [
             'source' => 'resources/js/controllers/auto_select_controller.js',
@@ -1254,200 +1254,200 @@ return [
             'source' => 'resources/js/controllers/auto_submit_controller.js',
             'docs' => 'docs/controllers/auto-submit.md',
             'category' => 'forms',
-            'description' => 'Submits a form automatically on input or change events, with debounce support',
+            'description' => 'Submits forms through immediate or debounced actions without duplicate IME commits',
         ],
         'autofocus' => [
             'source' => 'resources/js/controllers/autofocus_controller.js',
             'docs' => 'docs/controllers/autofocus.md',
             'category' => 'forms',
-            'description' => 'Focuses the first matching field on connect and on turbo:frame-load, with autofocus-attribute, first-focusable and target strategies',
+            'description' => 'Focuses a configured field initially and after relevant Turbo Frame loads',
         ],
         'back-to-top' => [
             'source' => 'resources/js/controllers/back_to_top_controller.js',
             'docs' => 'docs/controllers/back-to-top.md',
             'category' => 'utility',
-            'description' => 'Toggles a data-visible attribute on the element as the page scrolls past a threshold, and exposes a scrollToTop action that respects prefers-reduced-motion',
+            'description' => 'Reveals a control after a scroll threshold and returns to the top with reduced-motion support',
         ],
         'carousel' => [
             'source' => 'resources/js/controllers/carousel_controller.js',
             'docs' => 'docs/controllers/carousel.md',
             'category' => 'display',
-            'description' => 'Carousel/slider — wraps Embla Carousel with navigation, dots and Turbo-friendly lifecycle',
+            'description' => 'Runs Embla carousels with navigation, dots, progress, responsive options and dynamic slides',
             'npm' => ['embla-carousel' => '^8.6.0'],
         ],
         'char-counter' => [
             'source' => 'resources/js/controllers/char_counter_controller.js',
             'docs' => 'docs/controllers/char-counter.md',
             'category' => 'forms',
-            'description' => 'Shows a live character count with count-up or countdown mode',
+            'description' => 'Displays typed or remaining character counts with live updates',
         ],
         'chart' => [
             'source' => 'resources/js/controllers/chart_controller.js',
             'docs' => 'docs/controllers/chart.md',
             'category' => 'display',
-            'description' => 'Apache ECharts wrapper — server-rendered option, optional URL fetch, ResizeObserver, subclass-friendly defaults',
+            'description' => 'Renders responsive Apache ECharts from inline or fetched options with optional polling',
             'npm' => ['echarts' => '^6.1.0'],
         ],
         'checkbox' => [
             'source' => 'resources/js/controllers/checkbox_controller.js',
             'docs' => 'docs/controllers/checkbox.md',
             'category' => 'forms',
-            'description' => 'Applies native checkbox indeterminate state from Stimulus values and re-syncs after Turbo renders',
+            'description' => 'Synchronizes native checkbox indeterminate state across changes and Turbo renders',
         ],
         'checkbox-select-all' => [
             'source' => 'resources/js/controllers/checkbox_select_all_controller.js',
             'docs' => 'docs/controllers/checkbox-select-all.md',
             'category' => 'forms',
-            'description' => 'Select-all checkbox that controls a group, with indeterminate state',
+            'description' => 'Synchronizes a master checkbox with grouped selections and indeterminate state',
         ],
         'clean-query-params' => [
             'source' => 'resources/js/controllers/clean_query_params_controller.js',
             'docs' => 'docs/controllers/clean-query-params.md',
             'category' => 'forms',
-            'description' => 'Strips empty fields from the query string before submitting a GET form',
+            'description' => 'Removes empty values from GET form submissions before building the query string',
         ],
         'clear-input' => [
             'source' => 'resources/js/controllers/clear_input_controller.js',
             'docs' => 'docs/controllers/clear-input.md',
             'category' => 'forms',
-            'description' => 'Adds a clear button that appears when the input has a value',
+            'description' => 'Clears a targeted input, controls button visibility and emits input events',
         ],
         'color-scheme' => [
             'source' => 'resources/js/controllers/color_scheme_controller.js',
             'docs' => 'docs/controllers/color-scheme.md',
             'category' => 'utility',
-            'description' => 'Persists light, dark or system color scheme mode and synchronizes html[data-theme]',
+            'description' => 'Persists light, dark or system mode across tabs with optional View Transitions',
         ],
         'conditional-fields' => [
             'source' => 'resources/js/controllers/conditional_fields_controller.js',
             'docs' => 'docs/controllers/conditional-fields.md',
             'category' => 'forms',
-            'description' => 'Show/hide dependent fields based on the value of other form fields — auto-detects triggers from data-when-* attributes',
+            'description' => 'Shows and disables dependent fields using declarative value and checkbox-state rules',
         ],
         'copy-to-clipboard' => [
             'source' => 'resources/js/controllers/copy_to_clipboard_controller.js',
             'docs' => 'docs/controllers/copy-to-clipboard.md',
             'category' => 'utility',
-            'description' => 'Copies text to the clipboard and shows a temporary success label',
+            'description' => 'Copies targeted text or input values and shows temporary success feedback',
         ],
         'dev--duplicate-ids' => [
             'source' => 'resources/js/controllers/dev/duplicate_ids_controller.js',
             'docs' => 'docs/controllers/dev/duplicate-ids.md',
             'category' => 'dev',
-            'description' => 'Warns when DOM ids are duplicated in one render root, with guidance for automatic component ids',
+            'description' => 'Warns during development when duplicate DOM IDs appear within its render root',
         ],
         'dev--log' => [
             'source' => 'resources/js/controllers/dev/log_controller.js',
             'docs' => 'docs/controllers/dev/log.md',
             'category' => 'dev',
-            'description' => 'Logs Stimulus events to the browser console for debugging',
+            'description' => 'Logs action events to the browser console for development debugging',
         ],
         'disclosure' => [
             'source' => 'resources/js/controllers/disclosure_controller.js',
             'docs' => 'docs/controllers/disclosure.md',
             'category' => 'display',
-            'description' => 'Show/hide collapsible content with aria-expanded sync for FAQ items, panels and accordions',
+            'description' => 'Toggles an inline panel, synchronizes ARIA state and emits change events',
         ],
         'drawer' => [
             'source' => 'resources/js/controllers/drawer_controller.js',
             'docs' => 'docs/controllers/drawer.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas drawer with state-driven motion, focus trap and Escape/click-outside dismissal',
+            'description' => 'Controls an accessible off-canvas overlay with optional Turbo Frame content',
         ],
         'dropdown' => [
             'source' => 'resources/js/controllers/dropdown_controller.js',
             'docs' => 'docs/controllers/dropdown.md',
             'category' => 'overlay',
-            'description' => 'Accessible disclosure dropdown with state-driven presence, responsive positioning and outside-click/Escape dismissal',
+            'description' => 'Controls a responsive floating disclosure panel with selectable-item dismissal',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'error-scroll' => [
             'source' => 'resources/js/controllers/error_scroll_controller.js',
             'docs' => 'docs/controllers/error-scroll.md',
             'category' => 'forms',
-            'description' => 'Scrolls to the first validation error inside a container after frame render or full-page render',
+            'description' => 'Scrolls to the first validation error after Turbo Frame or full-page renders',
         ],
         'file-preserve' => [
             'source' => 'resources/js/controllers/file_preserve_controller.js',
             'docs' => 'docs/controllers/file-preserve.md',
             'category' => 'forms',
-            'description' => 'Captures and restores file input selection across Turbo morphs and frame navigations',
+            'description' => 'Restores selected files when a submitted Turbo form re-renders with validation errors',
         ],
         'file-upload' => [
             'source' => 'resources/js/controllers/file_upload_controller.js',
             'docs' => 'docs/controllers/file-upload.md',
             'category' => 'forms',
-            'description' => 'Native upload transport with queueing, managed outputs, hybrid JSON and raw Turbo Streams',
+            'description' => 'Uploads validated files through queued requests with JSON or Turbo Stream responses',
         ],
         'gtm' => [
             'source' => 'resources/js/controllers/gtm_controller.js',
             'docs' => 'docs/controllers/gtm.md',
             'category' => 'utility',
-            'description' => 'Loads Google Tag Manager lazily and fires custom events via data-action',
+            'description' => 'Loads Google Tag Manager immediately or on interaction and pushes data layer events',
         ],
         'hotkey' => [
             'source' => 'resources/js/controllers/hotkey_controller.js',
             'docs' => 'docs/controllers/hotkey.md',
             'category' => 'utility',
-            'description' => 'Binds keyboard shortcuts to click or focus an element',
+            'description' => 'Clicks or focuses its element from shortcuts while ignoring editable input',
         ],
         'hover-card' => [
             'source' => 'resources/js/controllers/hover_card_controller.js',
             'docs' => 'docs/controllers/hover-card.md',
             'category' => 'overlay',
-            'description' => 'Delayed hover/focus preview card with state-driven presence, Escape dismissal and Floating UI positioning',
+            'description' => 'Shows a delayed floating preview on hover or focus with Escape dismissal',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'input-mask' => [
             'source' => 'resources/js/controllers/input_mask_controller.js',
             'docs' => 'docs/controllers/input-mask.md',
             'category' => 'forms',
-            'description' => 'Applies input masks via Maska (phone, date, custom patterns)',
+            'description' => 'Applies Maska static, dynamic, reverse and custom-token masks to text inputs',
             'npm' => ['maska' => '^3.2.0'],
         ],
         'lazy-image' => [
             'source' => 'resources/js/controllers/lazy_image_controller.js',
             'docs' => 'docs/controllers/lazy-image.md',
             'category' => 'display',
-            'description' => 'Polls until an image URL becomes available, then displays it',
+            'description' => 'Polls for an image URL up to a limit and then renders responsive picture content',
         ],
         'map' => [
             'source' => 'resources/js/controllers/map_controller.js',
             'docs' => 'docs/controllers/map.md',
             'category' => 'display',
-            'description' => 'Leaflet wrapper — center/zoom/markers values, GeoJSON URL fetch, ResizeObserver, subclass hooks for tile layer and event listeners',
+            'description' => 'Renders Leaflet maps with OpenStreetMap tiles, inline markers or fetched GeoJSON',
             'npm' => ['leaflet' => '^1.9.4'],
         ],
         'modal' => [
             'source' => 'resources/js/controllers/modal_controller.js',
             'docs' => 'docs/controllers/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal with state-driven motion, focus trap and Turbo integration',
+            'description' => 'Controls an accessible modal with optional Turbo Frame-driven content',
         ],
         'modal-auto-close' => [
             'source' => 'resources/js/controllers/modal_auto_close_controller.js',
             'docs' => 'docs/controllers/modal-auto-close.md',
             'category' => 'overlay',
-            'description' => 'Closes the nearest modal on connect — for server-driven dismissal via Turbo Stream',
+            'description' => 'Closes the nearest modal when inserted by a Turbo Stream',
         ],
         'money-input' => [
             'source' => 'resources/js/controllers/money_input_controller.js',
             'docs' => 'docs/controllers/money-input.md',
             'category' => 'forms',
-            'description' => 'Classic money input with locale-aware formatting and right-aligned fractional entry',
+            'description' => 'Formats locale-aware money entry and exposes canonical minor-unit values',
         ],
         'multi-select' => [
             'source' => 'resources/js/controllers/multi_select_controller.js',
             'docs' => 'docs/controllers/multi-select.md',
             'category' => 'forms',
-            'description' => 'Searchable multi-value select with select-all, max selection and state-driven Floating UI presence',
+            'description' => 'Enhances a native multiple select with search, limits, select-all and floating positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'oembed' => [
             'source' => 'resources/js/controllers/oembed_controller.js',
             'docs' => 'docs/controllers/oembed.md',
             'category' => 'display',
-            'description' => 'Transforms oembed tags into responsive iframes for YouTube, Vimeo and others',
+            'description' => 'Embeds YouTube and Vimeo URLs as responsive frames and other providers as links',
             'styling' => [
                 'slots' => $slots(['oembed', 'oembed-frame', 'oembed-link']),
             ],
@@ -1456,68 +1456,68 @@ return [
             'source' => 'resources/js/controllers/optimistic/dispatch_controller.js',
             'docs' => 'docs/controllers/optimistic/dispatch.md',
             'category' => 'turbo',
-            'description' => 'Escape-hatch controller that exposes optimistic dispatch for custom triggers',
+            'description' => 'Applies optimistic Turbo Stream templates from arbitrary custom triggers',
         ],
         'optimistic--form' => [
             'source' => 'resources/js/controllers/optimistic/form_controller.js',
             'docs' => 'docs/controllers/optimistic/form.md',
             'category' => 'turbo',
-            'description' => 'Dispatches optimistic UI updates immediately when a Turbo form submits',
+            'description' => 'Applies optimistic Turbo Stream templates before a form request begins',
         ],
         'optimistic--link' => [
             'source' => 'resources/js/controllers/optimistic/link_controller.js',
             'docs' => 'docs/controllers/optimistic/link.md',
             'category' => 'turbo',
-            'description' => 'Dispatches optimistic UI updates immediately when a Turbo-driven link is clicked',
+            'description' => 'Applies optimistic Turbo Stream templates when Turbo handles a link click',
         ],
         'pagination' => [
             'source' => 'resources/js/controllers/pagination_controller.js',
             'docs' => 'docs/controllers/pagination.md',
             'category' => 'navigation',
-            'description' => 'Loads additional paginator pages from server-rendered HTML, with manual and IntersectionObserver activation',
+            'description' => 'Appends server-rendered paginator pages manually or when the fallback link enters view',
         ],
         'password-visibility' => [
             'source' => 'resources/js/controllers/password_visibility_controller.js',
             'docs' => 'docs/controllers/password-visibility.md',
             'category' => 'forms',
-            'description' => 'Toggles a password input between hidden and visible, keeping the trigger ARIA state in sync',
+            'description' => 'Toggles password visibility and synchronizes the trigger ARIA state',
         ],
         'popover' => [
             'source' => 'resources/js/controllers/popover_controller.js',
             'docs' => 'docs/controllers/popover.md',
             'category' => 'overlay',
-            'description' => 'Anchored click-triggered popover with state-driven presence, focus return and Floating UI positioning',
+            'description' => 'Controls an interactive floating panel with focus and dismissal management',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'read-more' => [
             'source' => 'resources/js/controllers/read_more_controller.js',
             'docs' => 'docs/controllers/read-more.md',
             'category' => 'display',
-            'description' => 'Measures overflowing content and coordinates accessible collapsed and expanded states',
+            'description' => 'Measures overflow and synchronizes static, collapsed and expanded preview states',
         ],
         'remote-form' => [
             'source' => 'resources/js/controllers/remote_form_controller.js',
             'docs' => 'docs/controllers/remote-form.md',
             'category' => 'forms',
-            'description' => 'Submits a form from a decoupled trigger element outside the form',
+            'description' => 'Submits a form from a decoupled trigger while preserving submitter metadata',
         ],
         'reset-files' => [
             'source' => 'resources/js/controllers/reset_files_controller.js',
             'docs' => 'docs/controllers/reset-files.md',
             'category' => 'forms',
-            'description' => 'Clears file inputs automatically after a successful Turbo morph',
+            'description' => 'Clears opted-in file inputs after successful form submission and a render without validation errors',
         ],
         'reveal' => [
             'source' => 'resources/js/controllers/reveal_controller.js',
             'docs' => 'docs/controllers/reveal.md',
             'category' => 'display',
-            'description' => 'Coordinates load and per-item scroll reveal cascades with Turbo-safe cleanup',
+            'description' => 'Coordinates load- or viewport-triggered reveal cascades and emits when content appears',
         ],
         'rich-text' => [
             'source' => 'resources/js/controllers/rich_text_controller.js',
             'docs' => 'docs/controllers/rich-text.md',
             'category' => 'forms',
-            'description' => 'Tiptap-backed rich text editor — syncs a hidden textarea, dispatches change/state/focus/blur and an optional image-upload event for app-side handling',
+            'description' => 'Runs a Tiptap editor with form sync, read-only mode and optional image-upload events',
             'npm' => [
                 '@tiptap/core' => '3.31.3',
                 '@tiptap/starter-kit' => '3.31.3',
@@ -1531,128 +1531,128 @@ return [
             'source' => 'resources/js/controllers/rich_text_toolbar_controller.js',
             'docs' => 'docs/controllers/rich-text-toolbar.md',
             'category' => 'forms',
-            'description' => 'Optional toolbar paired with the rich-text controller via a Stimulus outlet — reflects active marks and runs Tiptap chain commands',
+            'description' => 'Formats a linked Tiptap editor and synchronizes toolbar ARIA pressed states',
         ],
         'scroll-progress' => [
             'source' => 'resources/js/controllers/scroll_progress_controller.js',
             'docs' => 'docs/controllers/scroll-progress.md',
             'category' => 'utility',
-            'description' => 'Displays a progress bar that follows the scroll position',
+            'description' => 'Updates a progress bar from the document scroll position with optional throttling',
         ],
         'sheet' => [
             'source' => 'resources/js/controllers/sheet_controller.js',
             'docs' => 'docs/controllers/sheet.md',
             'category' => 'overlay',
-            'description' => 'Off-canvas sheet with state-driven motion, focus trap and side-aware slide transitions',
+            'description' => 'Controls an accessible sheet overlay with optional Turbo Frame content',
         ],
         'side-panel' => [
             'source' => 'resources/js/controllers/side_panel_controller.js',
             'docs' => 'docs/controllers/side-panel.md',
             'category' => 'navigation',
-            'description' => 'Controls an inline collapsible panel with cookie persistence and nested scope isolation',
+            'description' => 'Controls nested inline panel state with ARIA synchronization and optional persistence',
         ],
         'sidebar' => [
             'source' => 'resources/js/controllers/sidebar_controller.js',
             'docs' => 'docs/controllers/sidebar.md',
             'category' => 'navigation',
-            'description' => 'Controls desktop sidebar state and a Presence-driven mobile overlay',
+            'description' => 'Controls persisted desktop sidebar state and an accessible mobile overlay',
         ],
         'slider' => [
             'source' => 'resources/js/controllers/slider_controller.js',
             'docs' => 'docs/controllers/slider.md',
             'category' => 'forms',
-            'description' => 'Keeps a native range input visual fill synchronized with its current value',
+            'description' => 'Synchronizes a native range input visual fill after input, reset and Turbo morphs',
         ],
         'slug' => [
             'source' => 'resources/js/controllers/slug_controller.js',
             'docs' => 'docs/controllers/slug.md',
             'category' => 'forms',
-            'description' => 'Auto-fills a slug field from a source input until the user edits it, with preview and max-length',
+            'description' => 'Autofills and sanitizes a slug from a source field until manual editing, with optional length limits',
         ],
         'tabs' => [
             'source' => 'resources/js/controllers/tabs_controller.js',
             'docs' => 'docs/controllers/tabs.md',
             'category' => 'display',
-            'description' => 'Accessible tabs with roving tabindex, arrow/Home/End keyboard navigation and automatic activation',
+            'description' => 'Implements ARIA tabs with automatic activation and orientation-aware keyboard navigation',
         ],
         'timeago' => [
             'source' => 'resources/js/controllers/timeago_controller.js',
             'docs' => 'docs/controllers/timeago.md',
             'category' => 'utility',
-            'description' => 'Displays a self-refreshing relative timestamp (e.g. "3 minutes ago")',
+            'description' => 'Formats localized relative times with optional suffixes and automatic refresh',
         ],
         'toast' => [
             'source' => 'resources/js/controllers/toast_controller.js',
             'docs' => 'docs/controllers/toast.md',
             'category' => 'feedback',
-            'description' => 'Fires a single toast from session flash or explicit props',
+            'description' => 'Emits one configured notification through a Toaster',
         ],
         'toaster' => [
             'source' => 'resources/js/controllers/toaster_controller.js',
             'docs' => 'docs/controllers/toaster.md',
             'category' => 'feedback',
-            'description' => 'Displays accessible toast notifications with stacking, timed dismissal and Turbo Drive persistence',
+            'description' => 'Manages an accessible toast stack with timed dismissal and Turbo Drive persistence',
         ],
         'toggle' => [
             'source' => 'resources/js/controllers/toggle_controller.js',
             'docs' => 'docs/controllers/toggle.md',
             'category' => 'forms',
-            'description' => 'Synchronizes a two-state button with aria-pressed, data-state and an optional hidden input',
+            'description' => 'Synchronizes a two-state button ARIA state and optional hidden form input',
         ],
         'toggle-group' => [
             'source' => 'resources/js/controllers/toggle_group_controller.js',
             'docs' => 'docs/controllers/toggle-group.md',
             'category' => 'forms',
-            'description' => 'Coordinates pressed-button groups so single groups keep one active item and form inputs stay synchronized',
+            'description' => 'Coordinates single or multiple pressed-button groups and synchronizes form inputs',
         ],
         'tooltip' => [
             'source' => 'resources/js/controllers/tooltip_controller.js',
             'docs' => 'docs/controllers/tooltip.md',
             'category' => 'overlay',
-            'description' => 'Clones custom or component-authored templates into accessible hover/focus tooltips with Floating UI positioning',
+            'description' => 'Creates non-interactive ARIA tooltips from templates with anchored positioning',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'turbo--frame-src' => [
             'source' => 'resources/js/controllers/turbo/frame_src_controller.js',
             'docs' => 'docs/controllers/turbo/frame-src.md',
             'category' => 'turbo',
-            'description' => 'Injects the X-Turbo-Frame-Src header on same-frame form submissions for correct redirect resolution',
+            'description' => 'Sends the Turbo Frame source URL with same-frame form submissions',
         ],
         'turbo--morph-guard' => [
             'source' => 'resources/js/controllers/turbo/morph_guard_controller.js',
             'docs' => 'docs/controllers/turbo/morph-guard.md',
             'category' => 'turbo',
-            'description' => 'Keeps the nearest Turbo Frame permanent during active editing so external morph refreshes preserve local state',
+            'description' => 'Preserves the nearest Turbo Frame during outer morphs while the user is editing',
         ],
         'turbo--polling' => [
             'source' => 'resources/js/controllers/turbo/polling_controller.js',
             'docs' => 'docs/controllers/turbo/polling.md',
             'category' => 'turbo',
-            'description' => 'Reloads a Turbo Frame at regular intervals without user interaction',
+            'description' => 'Reloads a Turbo Frame at configurable intervals with pause and refresh controls',
         ],
         'turbo--preserve-scroll' => [
             'source' => 'resources/js/controllers/turbo/preserve_scroll_controller.js',
             'docs' => 'docs/controllers/turbo/preserve-scroll.md',
             'category' => 'turbo',
-            'description' => 'Preserves page scroll around Turbo Frame renders that replace focused content',
+            'description' => 'Preserves page scroll across Turbo Frame renders that replace focused content',
         ],
         'turbo--progress' => [
             'source' => 'resources/js/controllers/turbo/progress_controller.js',
             'docs' => 'docs/controllers/turbo/progress.md',
             'category' => 'turbo',
-            'description' => 'Extends the Turbo Drive progress bar to cover Frame and Stream requests',
+            'description' => 'Shows the Turbo progress bar for Turbo Frame and Turbo Stream requests',
         ],
         'turbo--view-transition' => [
             'source' => 'resources/js/controllers/turbo/view_transition_controller.js',
             'docs' => 'docs/controllers/turbo/view-transition.md',
             'category' => 'turbo',
-            'description' => 'Applies the View Transitions API when rendering Turbo Frame content',
+            'description' => 'Wraps Turbo Frame renders in View Transitions when supported',
         ],
         'unsaved-changes' => [
             'source' => 'resources/js/controllers/unsaved_changes_controller.js',
             'docs' => 'docs/controllers/unsaved-changes.md',
             'category' => 'forms',
-            'description' => 'Warns the user before navigating away with unsaved form changes',
+            'description' => 'Confirms Turbo Drive navigation away from forms with unsaved changes',
         ],
     ],
 ];
