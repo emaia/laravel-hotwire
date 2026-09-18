@@ -77,6 +77,21 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        if ($filter !== 'css') {
+            try {
+                $this->packageInstaller->validateDependency(
+                    $this->files,
+                    '@emaia/stimulus-lazy-loader',
+                    $this->coreDependencies()['@emaia/stimulus-lazy-loader'],
+                    allowMissing: true,
+                );
+            } catch (RuntimeException $exception) {
+                warning($exception->getMessage());
+
+                return self::FAILURE;
+            }
+        }
+
         $stubBase = realpath(__DIR__.'/../../stubs/resources');
         $targetBase = resource_path();
 
@@ -497,22 +512,7 @@ class InstallCommand extends Command
 
         $deps = array_merge($deps, $this->catalogDependencies($filter));
 
-        $changed = [];
-        $loaderVersion = $deps['@emaia/stimulus-lazy-loader'] ?? null;
-
-        if ($loaderVersion !== null) {
-            $changed = $this->packageInstaller->ensureDependency(
-                $this->files,
-                '@emaia/stimulus-lazy-loader',
-                $loaderVersion,
-            );
-            unset($deps['@emaia/stimulus-lazy-loader']);
-        }
-
-        return count(array_merge(
-            $changed,
-            $this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false),
-        ));
+        return count($this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false));
     }
 
     private function shouldInstallDependencies(): bool

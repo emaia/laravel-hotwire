@@ -146,6 +146,12 @@ The second line records the generated loading plan. `hotwire:check --fix` uses t
 the JavaScript when regenerating lazy, preload and eager selections. Local controllers keep precedence over package
 controllers with the same Stimulus identifier.
 
+The generated loader requires `@emaia/stimulus-lazy-loader` 2.0.0 or later (new installs use `^2.0.0`). The installer
+adds a missing dependency but does not upgrade an incompatible existing constraint: update it manually, install the
+dependency, then re-run the command. Metadata schemas 2 and 3 are readable, and new stubs emit schema 3. Stubs without
+metadata or with schema 1 must be regenerated with an explicit dependency selection; `hotwire:check --fix` does not
+infer selections from old globs. See the [upgrade procedure](upgrade.md#end-of-automatic-lazy-loader-v1-migration).
+
 ---
 
 ## Critical controller loading
@@ -264,10 +270,12 @@ manager. End-to-end resolution in one command.
 exclusions, so there's no drift to detect). In interactive mode the user is prompted to apply `--fix`; in
 `--no-interaction` mode the check reports but does not act unless `--fix` is also passed.
 
-The check also reports a lazy-loader v1 dependency and drift between the generated loader metadata and
-`controllers.preload` / `controllers.eager`. `--fix` upgrades the loader to v2 and regenerates the policy. Imported
-application presets are validated automatically. Use repeatable `--preset=<name|path>` options to validate unimported
-presets in CI, followed by the application's production asset build.
+The check also validates the dependency declared for an auto-generated loader and detects drift between supported
+loader metadata and `controllers.preload` / `controllers.eager`. Missing/incompatible loader dependencies, an unreadable
+`package.json`, or unsupported generated metadata cause a failure with manual recovery instructions, including with
+`--fix`. Once those prerequisites are valid, `--fix` regenerates policy drift. Hand-written loaders remain
+application-managed. Imported application presets are validated automatically. Use repeatable `--preset=<name|path>`
+options to validate unimported presets in CI, followed by the application's production asset build.
 
 ---
 

@@ -6,6 +6,39 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### End of automatic lazy-loader v1 migration
+
+The generated loader requires `@emaia/stimulus-lazy-loader` **2.0.0 or later**; new installs declare `^2.0.0`.
+Automatic migration of v1 dependencies and inference of old loader selections have been removed. This is a breaking
+tooling change for the next **pre-1.0 minor**, not a patch; an equivalent removal after 1.0 would require a major release.
+
+- `hotwire:check`, including `--fix`, fails when a generated loader's dependency is missing or its declared semver
+  constraint is incompatible. It also fails when `package.json` is missing or invalid. It does not add or upgrade the
+  loader dependency, and the failure occurs before applying fixes.
+- `hotwire:install` adds the dependency when absent, but refuses an incompatible existing constraint before writing
+  scaffolding or dependencies. `--only=css` does not require the JavaScript dependency.
+- Loader metadata schemas **2 and 3** remain readable; schema **3** is emitted. Schema numbers are independent of the npm
+  package version. Schema 2 already records the dependency selection explicitly and remains supported in this release;
+  it needs no v1 runtime migration. Regeneration records the eager paths introduced by schema 3.
+- Generated stubs without metadata, with schema **1**, or with malformed/unknown metadata are no longer inferred from
+  JavaScript globs. `--fix` fails with recovery instructions rather than guessing which controllers to include.
+
+To upgrade an existing application:
+
+1. Set `@emaia/stimulus-lazy-loader` to `^2.0.0` in its existing `dependencies` or `devDependencies` section, or retain a
+   compatible newer constraint. Run your package manager's install command to update the lockfile and installed package.
+   Workspace, link, file and dist-tag references remain application-managed: the check preserves them and does not verify
+   their resolved runtime version.
+2. For a generated stub with unsupported metadata, re-run `php artisan hotwire:install --only=js --skip-install` with
+   the intended dependency selection: `--core-only`, `--with-deps=chart,carousel` (replace with your actual selection), or
+   neither flag to include all package controllers. Review `controllers.preload` and `controllers.eager` in
+   `config/hotwire.php` first. The command rebuilds the plan from these inputs; it does not recover the old selection.
+3. Run your package manager's install command again if regeneration added controller dependencies, rebuild Vite assets,
+   and run `php artisan hotwire:check --no-interaction`.
+
+Hand-written loader files remain application-owned. Update their dependency and registry manually; use `--force` only
+when intentionally replacing customized scaffolding. Lazy, preload and eager behavior is unchanged.
+
 ### Form-scoped field ids
 
 `<hw:form>` now resolves a deterministic id — explicit string, model, or automatic `hw-form-<scope>-<n>` — and renders
@@ -799,6 +832,9 @@ reserve their documented `data-slot`; migrate application hooks passed through `
 `data-*` attribute.
 
 ### Stimulus lazy loader v2 and critical controller policy
+
+The automatic migration described below applies to the historical release. For current versions, follow
+[End of automatic lazy-loader v1 migration](#end-of-automatic-lazy-loader-v1-migration) instead.
 
 The generated controller loader now requires `@emaia/stimulus-lazy-loader ^2.0.0`. Re-run the installer to update an
 existing dependency and regenerate `resources/js/controllers/index.js`:

@@ -251,37 +251,24 @@ it('does not modify package.json when core deps already present (--core-only)', 
     expect(File::get($this->packageJsonPath))->toBe($content);
 });
 
-it('upgrades an existing v1 lazy loader in devDependencies', function () {
+it('rejects an incompatible lazy loader before installing files', function (string $section) {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
-        'devDependencies' => [
+        $section => [
             '@emaia/stimulus-lazy-loader' => '^1.1.0',
         ],
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
-        ->assertSuccessful();
-
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
-});
-
-it('upgrades an existing v1 lazy loader in dependencies', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'dependencies' => [
-            '@emaia/stimulus-lazy-loader' => '^1.1.0',
-        ],
-    ], JSON_PRETTY_PRINT));
+    $original = File::get($this->packageJsonPath);
 
     $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
-        ->assertSuccessful();
+        ->expectsOutputToContain('Update @emaia/stimulus-lazy-loader manually')
+        ->assertFailed();
 
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['dependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
-});
+    expect(File::get($this->packageJsonPath))->toBe($original)
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::exists(resource_path('css/app.css')))->toBeFalse();
+})->with(['dependencies', 'devDependencies']);
 
 it('preserves a newer compatible lazy loader constraint', function () {
     File::put($this->packageJsonPath, json_encode([

@@ -18,7 +18,11 @@ final readonly class ControllerLoadPolicy
         public array $eagerControllerPaths = [],
     ) {}
 
-    /** @return array{version: int, includeAllComDepControllers: bool, includedComDepControllers: string[], preloadControllers: string[], eagerControllers: string[], eagerControllerPaths: array<string, string>} */
+    /**
+     * Serialize the regeneration policy as schema 3, independently of the npm loader version.
+     *
+     * @return array{version: int, includeAllComDepControllers: bool, includedComDepControllers: string[], preloadControllers: string[], eagerControllers: string[], eagerControllerPaths: array<string, string>}
+     */
     public function toArray(): array
     {
         return [
