@@ -194,6 +194,18 @@ it does not merge or patch the existing CSS. Use it only when replacement is int
 A `--from` clone preserves the source preset's rule order, which is worth keeping. Between equal-specificity rules in
 the same layer, the later one wins; reordering a clone can therefore change which declaration applies.
 
+Clone and selective-bundle generation use the same import parser as application preset validation. Imports must be
+top-level and precede style rules. Compact quoted imports, case-insensitive keywords and comments used as whitespace
+are supported. Nested, late or malformed imports fail explicitly, including in sources excluded from a selection;
+they are never promoted to unconditional rules or left behind in generated CSS. Local imports with `layer`, `supports`
+or media conditions cannot be flattened and are rejected. CSS escapes in import paths are rejected too; this does not
+affect Windows filesystem paths passed to the resolver.
+
+Official-source flattening has a narrower contract than import discovery: `@charset` and statement-form `@layer`
+preludes before or between imports are rejected, even though the shared parser recognizes subsequent imports as legal.
+Moving those preludes behind the imported sources could change encoding or cascade-layer order. Keep layer declarations
+in the ordered visual sources after their imports. These checks do not change the generated CSS of Nova or Bloom.
+
 A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
 publishing package views. Publishing or overriding a component template is instead an application-owned fork of markup
 and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and

@@ -127,6 +127,72 @@ it('ignores imports inside comments and strings', function () {
         ->toContain("@import './also-missing.css';");
 });
 
+// --- Shared import parsing and flattening boundaries ---
+
+it('resolves supported import spellings consistently for clones and selections', function (string $import) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] { color: blue; }');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', $import);
+
+    foreach ([null, ['presets/demo/forms.css']] as $selection) {
+        $source = $this->resolver->resolve($entrypoint, $selection);
+
+        expect($source->visualStylesheetPaths())->toBe(['presets/demo/forms.css'])
+            ->and($source->visualCss())->toBe('[data-slot="input"] { color: blue; }');
+    }
+})->with([
+    'comment separator' => '@import/* note */"./demo/forms.css";',
+    'compact' => '@import"./demo/forms.css";',
+    'case insensitive' => '@IMPORT URL("./demo/forms.css");',
+    'comments around url argument' => '@import url(/* path */ "./demo/forms.css" /* end */);',
+    'comment instead of conditions' => '@import "./demo/forms.css" /* unconditional */;',
+    'semicolon inside comment' => '@import "./demo/forms.css" /* ; */;',
+    'UTF-8 BOM' => "\xEF\xBB\xBF".'@import "./demo/forms.css";',
+]);
+
+it('rejects malformed and misplaced imports before flattening any source', function (string $css, bool $nested) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $path = $nested ? 'presets/demo/aggregate.css' : 'presets/demo.css';
+    writePresetCss($this->root, $path, str_replace('__PATH__', $nested ? './forms.css' : './demo/forms.css', $css));
+    $entrypoint = $nested
+        ? writePresetCss($this->root, 'presets/demo.css', '@import "./demo/aggregate.css";')
+        : $this->root.'/'.$path;
+
+    foreach ([null, []] as $selection) {
+        expect(fn () => $this->resolver->resolve($entrypoint, $selection))
+            ->toThrow(PresetSourceException::class, "Preset [demo] contains a malformed or misplaced @import in [{$path}].");
+    }
+})->with([
+    'nested media' => '@media (min-width: 1px) { @import "__PATH__"; }',
+    'nested style' => '[data-slot="button"] { @import "__PATH__"; }',
+    'after rule' => '[data-slot="button"] { color: red; } @import "__PATH__";',
+    'after namespace' => '@namespace svg url(http://www.w3.org/2000/svg); @import "__PATH__";',
+    'missing semicolon' => '@import "__PATH__"',
+    'missing path' => '@import;',
+    'unquoted path' => '@import __PATH__;',
+    'unclosed string' => '@import "__PATH__;',
+    'unmatched delimiter' => '@layer base ); @import "__PATH__";',
+    'after valid import' => '@import "__PATH__"; @import;',
+])->with([false, true]);
+
+it('rejects CSS escapes in import paths rather than treating them as filesystem separators', function () {
+    writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import ".\\demo\\forms.css";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] import paths cannot contain CSS escapes.');
+});
+
+it('rejects preludes that flattening would move behind imported styles', function (string $css) {
+    writePresetCss($this->root, 'presets/demo/forms.css', '@layer first { [data-slot="input"] {} }');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', $css);
+
+    expect(fn () => $this->resolver->resolve($entrypoint))
+        ->toThrow(PresetSourceException::class, 'Preset [demo] cannot flatten CSS prelude rules before imports in [presets/demo.css].');
+})->with([
+    'layer order' => '@layer second, first; @import "./demo/forms.css";',
+    'charset' => '@charset "UTF-8"; @import "./demo/forms.css";',
+]);
+
 it('requires shared foundations before visual sources', function () {
     writePresetCss($this->root, 'tokens.css', ':root {}');
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
@@ -244,13 +310,13 @@ it('compares Windows drive and UNC paths case-insensitively', function (string $
     ],
 ]);
 
-it('rejects conditions on local imports instead of changing their semantics', function () {
+it('rejects conditions on local imports instead of changing their semantics', function (string $conditions) {
     writePresetCss($this->root, 'presets/demo/forms.css', '[data-slot="input"] {}');
-    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css" layer(forms);');
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "./demo/forms.css" '.$conditions.';');
 
     expect(fn () => $this->resolver->resolve($entrypoint))
         ->toThrow(PresetSourceException::class, 'Preset [demo] local import [./demo/forms.css] uses unsupported import conditions.');
-});
+})->with(['layer(forms)', 'layer', 'supports(display: grid)', 'screen and (width > 40rem)', '/* note */ print']);
 
 it('delegates optional source selection to the resolved preset', function () {
     writePresetCss($this->root, 'presets/demo/modal.css', '[data-slot="modal"] {}');

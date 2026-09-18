@@ -27,7 +27,7 @@ final class CssImports
                         |
                         (?<url_path>[^)\s]+)
                     )(?:\s|/\*.*?\*/)*\)
-                )(?<conditions>[^;]*);
+                )(?<conditions>.*);$
             ~isx
             REGEX;
         $imports = [];
@@ -70,6 +70,21 @@ final class CssImports
         }
 
         return $content;
+    }
+
+    /** Detect unconsumed import tokens at any depth, ignoring strings, comments and escaped syntax. */
+    public function contains(string $content): bool
+    {
+        $found = false;
+
+        $this->rules->scan($content, function (array $event) use ($content, &$found): void {
+            if ($event['type'] === 'character' && $event['character'] === '@'
+                && preg_match('/\G@import(?![\w\\\\-]|[^\x00-\x7f])/i', $content, offset: $event['offset']) === 1) {
+                $found = true;
+            }
+        }, additionalCharacters: '@');
+
+        return $found;
     }
 
     /** @return list<array{content: string, offset: int, length: int}> */

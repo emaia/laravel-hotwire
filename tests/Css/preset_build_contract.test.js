@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import baselines from "./preset_build_baselines.json";
 import {
     buildCssContract,
@@ -66,11 +67,9 @@ describe("public CSS presets", () => {
         const nova = await readFile(new URL("../../resources/css/presets/nova.css", import.meta.url), "utf8");
         const direct = nova.replace(
             '@import "../foundation.css";',
-            [
-                '@import "../tokens.css";',
-                '@import "../custom-variants.css";',
-                '@import "../structural.css";',
-            ].join("\n"),
+            ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'].join(
+                "\n",
+            ),
         );
         const css = await compileCssFixture(stub.replace("nova.css", "nova-direct.css"), {
             setup: async (directory) => {
@@ -125,13 +124,96 @@ describe("public CSS presets", () => {
         }
     });
 
+    test.each(["constellation", "orbit"])(
+        "compiles identical synthetic %s clones and subsets with commented imports",
+        async (preset) => {
+            for (const mode of ["clone", "subset"]) {
+                const outputs = [];
+                const sources = [];
+
+                for (const commented of [false, true]) {
+                    outputs.push(
+                        await compileCssFixture('@import "tailwindcss"; @import "./generated.css";', {
+                            setup: async (directory) => {
+                                const cssRoot = join(directory, "vendor/emaia/laravel-hotwire/resources/css");
+                                await cp(new URL("../Fixtures/css/preset-package/", import.meta.url), cssRoot, {
+                                    recursive: true,
+                                });
+                                const manifest = join(cssRoot, "styles.php");
+                                await writeFile(
+                                    manifest,
+                                    (await readFile(manifest, "utf8"))
+                                        .replace("['panel']", "['card']")
+                                        .replace("['action']", "['button']")
+                                        .replace("['status']", "['tooltip']"),
+                                );
+                                if (commented) {
+                                    const entrypoint = join(cssRoot, `presets/${preset}.css`);
+                                    await writeFile(
+                                        entrypoint,
+                                        (await readFile(entrypoint, "utf8"))
+                                            .replaceAll("@import ", "@IMPORT/* source */")
+                                            .replaceAll('";', '" /* ; */;'),
+                                    );
+                                }
+                                const script =
+                                    mode === "clone" ? "run_make_preset_fixture.php" : "run_styles_fixture.php";
+                                const args =
+                                    mode === "clone"
+                                        ? [directory, "generated", preset, cssRoot]
+                                        : [directory, preset, "resources/css/generated.css", "card", "", cssRoot];
+                                const process = Bun.spawn(
+                                    [
+                                        globalThis.process.env.PHP_BINARY ?? "php",
+                                        fileURLToPath(new URL(`../../scripts/${script}`, import.meta.url)),
+                                        ...args,
+                                    ],
+                                    { stdout: "pipe", stderr: "pipe" },
+                                );
+                                const [status, stdout, stderr] = await Promise.all([
+                                    process.exited,
+                                    new Response(process.stdout).text(),
+                                    new Response(process.stderr).text(),
+                                ]);
+                                if (status !== 0)
+                                    throw new Error(`Synthetic preset generation failed: ${stdout}${stderr}`);
+
+                                const sourcePath = join(
+                                    directory,
+                                    mode === "clone"
+                                        ? "resources/css/presets/generated.css"
+                                        : "resources/css/generated.css",
+                                );
+                                sources.push(await readFile(sourcePath, "utf8"));
+                                if (mode === "clone") {
+                                    await writeFile(
+                                        join(directory, "resources/css/generated.css"),
+                                        '@import "./presets/generated.css";',
+                                    );
+                                }
+                            },
+                        }),
+                    );
+                }
+
+                expect(sources[1]).toBe(sources[0]);
+                expect(outputs[1]).toBe(outputs[0]);
+                expect(outputs[0]).toMatch(slotSelector("action"));
+                expect(outputs[0]).toContain("--fixture-background:");
+                if (preset === "constellation") {
+                    expect(outputs[0]).toContain("--fixture-radius:");
+                    expect(slotSelector("status").test(outputs[0])).toBe(mode === "clone");
+                }
+            }
+        },
+        30_000,
+    );
+
     test("compiles the blank application preset scaffold generated by make-preset", () => {
         const css = contract.outputs.blankScaffold;
         const source = contract.sources.blankScaffold;
 
-        expect(source).toContain(
-            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
-        );
+        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
         expect(source).toMatch(/\[data-slot="button"\] \{\}/);
         expect(css).toContain("--background:");
         expect(css).toMatch(carouselMechanic);
