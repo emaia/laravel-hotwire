@@ -30,12 +30,41 @@ final class StimulusControllerLocations
                 continue;
             }
 
-            $locations[$identifier] = self::projectRelativePath($basePath, $file->getPathname());
+            $locations[$identifier] = self::withClassDeclarationLine(
+                self::projectRelativePath($basePath, $file->getPathname()),
+                $file->getPathname(),
+            );
         }
 
         ksort($locations);
 
         return $locations;
+    }
+
+    /** Append the exported controller class line when the source can be inspected. */
+    public static function withClassDeclarationLine(string $location, string $sourcePath): string
+    {
+        $source = @fopen($sourcePath, 'r');
+
+        if ($source === false) {
+            return $location;
+        }
+
+        try {
+            $lineNumber = 0;
+
+            while (($line = fgets($source)) !== false) {
+                $lineNumber++;
+
+                if (preg_match('/^\s*export\s+default\s+class\b/', $line) === 1) {
+                    return $location.':'.$lineNumber;
+                }
+            }
+        } finally {
+            fclose($source);
+        }
+
+        return $location;
     }
 
     private static function identifierFromRelativePath(string $relative): ?string
