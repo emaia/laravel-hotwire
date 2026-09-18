@@ -10,13 +10,14 @@ function docsListRows(bool $includeControllers, bool $includeComponents): array
     $categoryOrder = array_flip(array_map(fn (Category $category) => $category->value, Category::cases()));
 
     usort($entries, function (array $a, array $b) use ($categoryOrder): int {
-        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['tags'][0] : $a['key']]
-            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['tags'][0] : $b['key']];
+        return [$categoryOrder[$a['category']], $a['type'], $a['type'] === 'component' ? $a['title'] : $a['key']]
+            <=> [$categoryOrder[$b['category']], $b['type'], $b['type'] === 'component' ? $b['title'] : $b['key']];
     });
 
     return array_map(fn (array $entry) => [
         ucfirst($entry['type']),
-        $entry['type'] === 'component' ? implode(', ', $entry['tags']) : $entry['key'],
+        $entry['type'] === 'component' ? $entry['title'] : $entry['key'],
+        $entry['type'] === 'component' ? "<hw:{$entry['key']}>" : '—',
         $entry['category'],
         $entry['description'],
     ], $entries);
@@ -42,8 +43,8 @@ it('displays docs for a substrate controller using slash notation', function () 
 it('displays docs for a component', function () {
     $this->artisan('hotwire:docs toast --component')
         ->expectsOutputToContain('Type: component')
-        ->expectsOutputToContain('Blade: <x-hw::toast>')
-        ->doesntExpectOutputToContain('Blade: <x-hw::toast>, <x-hw::toast>')
+        ->expectsOutputToContain('Blade: <hw:toast>')
+        ->doesntExpectOutputToContain('Blade: <hw:toast>, <hw:toast>')
         ->expectsOutputToContain('Controllers: toast')
         ->expectsOutputToContain('Toast')
         ->assertSuccessful();
@@ -60,7 +61,7 @@ it('displays the permanent hw alias with a configured component prefix', functio
     config()->set('hotwire.prefix', 'ui');
 
     $this->artisan('hotwire:docs toast --component')
-        ->expectsOutputToContain('Blade: <x-ui::toast>, <x-hw::toast>')
+        ->expectsOutputToContain('Blade: <ui:toast>, <hw:toast>')
         ->assertSuccessful();
 });
 
@@ -134,27 +135,45 @@ it('fails with an error when no argument is given in non-interactive mode', func
 
 it('lists both controllers and components with --list', function () {
     $this->artisan('hotwire:docs --list')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(true, true))
+        ->expectsTable(['Type', 'Name', 'Blade Tag', 'Category', 'Description'], docsListRows(true, true))
         ->assertSuccessful();
 });
 
 it('lists only controllers with --list --controller', function () {
     $this->artisan('hotwire:docs --list --controller')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(true, false))
+        ->expectsTable(['Type', 'Name', 'Blade Tag', 'Category', 'Description'], docsListRows(true, false))
         ->assertSuccessful();
 });
 
 it('lists only components with --list --component', function () {
     $this->artisan('hotwire:docs --list --component')
-        ->expectsTable(['Type', 'Name', 'Category', 'Description'], docsListRows(false, true))
+        ->expectsTable(['Type', 'Name', 'Blade Tag', 'Category', 'Description'], docsListRows(false, true))
         ->assertSuccessful();
+});
+
+it('orders component rows by their displayed name', function () {
+    Artisan::call('hotwire:docs --list --component');
+    $output = Artisan::output();
+
+    preg_match('/^\|\s*Component\s*\|\s*Button\s*\|/m', $output, $button, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Button Group\s*\|/m', $output, $buttonGroup, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Reveal\s*\|/m', $output, $reveal, PREG_OFFSET_CAPTURE);
+    preg_match('/^\|\s*Component\s*\|\s*Reveal Item\s*\|/m', $output, $revealItem, PREG_OFFSET_CAPTURE);
+
+    expect($button)->not->toBeEmpty()
+        ->and($buttonGroup)->not->toBeEmpty()
+        ->and($reveal)->not->toBeEmpty()
+        ->and($revealItem)->not->toBeEmpty();
+
+    expect($button[0][1])->toBeLessThan($buttonGroup[0][1])
+        ->and($reveal[0][1])->toBeLessThan($revealItem[0][1]);
 });
 
 it('lists configured and permanent component aliases', function () {
     config()->set('hotwire.prefix', 'ui');
 
     $this->artisan('hotwire:docs --list --component')
-        ->expectsOutputToContain('<x-ui::modal>, <x-hw::modal>')
+        ->expectsOutputToContain('<ui:modal>, <hw:modal>')
         ->assertSuccessful();
 });
 
@@ -172,8 +191,8 @@ it('includes both controllers and components when no filter is applied', functio
     $labels = array_column($entries, 'label');
     $allLabels = implode("\n", $labels);
 
-    expect($allLabels)->toContain('<x-hw::')   // at least one component
-        ->and($allLabels)->not->toContain('<x-hw::auto-submit'); // auto-submit is a controller, not a component
+    expect($allLabels)->toContain('<hw:')   // at least one component
+        ->and($allLabels)->not->toContain('<hw:auto-submit>'); // auto-submit is a controller, not a component
 });
 
 it('excludes components when includeComponents is false', function () {
@@ -181,7 +200,7 @@ it('excludes components when includeComponents is false', function () {
 
     $labels = implode("\n", array_column($entries, 'label'));
 
-    expect($labels)->not->toContain('<x-hw::');
+    expect($labels)->not->toContain('<hw:');
 });
 
 it('excludes controllers when includeControllers is false', function () {
@@ -189,8 +208,8 @@ it('excludes controllers when includeControllers is false', function () {
 
     $labels = implode("\n", array_column($entries, 'label'));
 
-    // Component labels start with <x-hw:: ; controller labels do not
-    expect($labels)->toContain('<x-hw::')
+    // Component labels start with <hw: ; controller labels do not
+    expect($labels)->toContain('<hw:')
         ->and($labels)->not->toMatch('/^auto-submit/m')
         ->and($labels)->not->toMatch('/^modal\s/m');
 });
@@ -206,9 +225,9 @@ it('keeps picker labels aligned to the configured component prefix', function ()
         ->values()
         ->all();
 
-    expect($alertDialog['label'])->toContain('<x-ui::alert-dialog>')
-        ->not->toContain('<x-hw::alert-dialog>')
-        ->and($alertDialog['tags'])->toBe(['<x-ui::alert-dialog>', '<x-hw::alert-dialog>'])
+    expect($alertDialog['label'])->toContain('<ui:alert-dialog>')
+        ->not->toContain('<hw:alert-dialog>')
+        ->and($alertDialog['tags'])->toBe(['<ui:alert-dialog>', '<hw:alert-dialog>'])
         ->and($categoryOffsets)->toHaveCount(1);
 });
 
@@ -219,8 +238,8 @@ it('keeps component aliases out of search metadata', function () {
 
     expect($searchTerms)->not->toContain('ui')
         ->not->toContain('hw')
-        ->and($modal['search'])->not->toContain('<x-')
-        ->and($modal['search'])->not->toContain('::');
+        ->and($modal['search'])->not->toContain('<ui:')
+        ->and($modal['search'])->not->toContain('<hw:');
 });
 
 it('includes category and description in the search index', function () {

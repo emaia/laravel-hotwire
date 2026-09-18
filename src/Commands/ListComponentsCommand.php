@@ -50,7 +50,7 @@ class ListComponentsCommand extends Command
             }
         }
 
-        $this->table(['Component', 'Blade Tag', 'Controller', 'Status'], $rows);
+        $this->table(['Name', 'Blade Tag', 'Controller', 'Status'], $rows);
 
         return self::SUCCESS;
     }

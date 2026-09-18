@@ -30,12 +30,12 @@ it('lists all registered components', function () {
 
 it('shows blade tags with current prefix', function () {
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-hw::modal>')
-        ->expectsOutputToContain('<x-hw::alert-dialog>')
-        ->expectsOutputToContain('<x-hw::field.group>')
-        ->expectsOutputToContain('<x-hw::toast>')
-        ->expectsOutputToContain('<x-hw::spinner>')
-        ->expectsOutputToContain('<x-hw::scroll-progress>')
+        ->expectsOutputToContain('<hw:modal>')
+        ->expectsOutputToContain('<hw:alert-dialog>')
+        ->expectsOutputToContain('<hw:field.group>')
+        ->expectsOutputToContain('<hw:toast>')
+        ->expectsOutputToContain('<hw:spinner>')
+        ->expectsOutputToContain('<hw:scroll-progress>')
         ->assertSuccessful();
 });
 
@@ -43,8 +43,27 @@ it('shows blade tags respecting custom prefix', function () {
     config()->set('hotwire.prefix', 'h');
 
     $this->artisan('hotwire:components')
-        ->expectsOutputToContain('<x-h::modal>, <x-hw::modal>')
+        ->expectsOutputToContain('<h:modal>, <hw:modal>')
         ->assertSuccessful();
+});
+
+it('keeps component names and blade tags aligned with the docs listing', function () {
+    Artisan::call('hotwire:components');
+    $componentsOutput = Artisan::output();
+
+    Artisan::call('hotwire:docs', ['--list' => true, '--component' => true]);
+    $docsOutput = Artisan::output();
+
+    preg_match_all('/^\|\s*(?<name>[^|]+?)\s*\|\s*(?<tag><hw:[^>]+>)\s*\|/m', $componentsOutput, $components);
+    preg_match_all('/^\|\s*Component\s*\|\s*(?<name>[^|]+?)\s*\|\s*(?<tag><hw:[^>]+>)\s*\|/m', $docsOutput, $docs);
+
+    $componentPairs = array_combine(array_map('trim', $components['name']), $components['tag']);
+    $docsPairs = array_combine(array_map('trim', $docs['name']), $docs['tag']);
+    ksort($componentPairs);
+    ksort($docsPairs);
+
+    expect($componentPairs)->toHaveKey('Toast', '<hw:toast>')
+        ->and($componentPairs)->toBe($docsPairs);
 });
 
 it('shows stimulus controller identifiers', function () {

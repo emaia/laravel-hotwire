@@ -12,5 +12,5 @@ it('builds component tags from the shared prefix list', function () {
     $component = HotwireRegistry::make()->component('modal');
 
     expect($component->tags(ComponentAliases::prefixes('ui')))
-        ->toBe(['<x-ui::modal>', '<x-hw::modal>']);
+        ->toBe(['<ui:modal>', '<hw:modal>']);
 });
