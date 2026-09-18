@@ -23,11 +23,16 @@ class PackageInstaller
         bool $allowMissing = false,
     ): void {
         $path = base_path('package.json');
-        $json = $files->exists($path) ? json_decode($files->get($path), true) : null;
 
-        if ($allowMissing && ! $files->exists($path)) {
-            return;
+        if (! $files->exists($path)) {
+            if ($allowMissing) {
+                return;
+            }
+
+            throw new RuntimeException("package.json not found. The controller loader requires $version of $package. Create a package.json and install $package $version.");
         }
+
+        $json = json_decode($files->get($path), true);
 
         if (! is_array($json)) {
             throw new RuntimeException("The controller loader requires $version of $package. Restore a valid package.json and install the dependency.");

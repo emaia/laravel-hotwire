@@ -351,6 +351,21 @@ it('warns when package.json does not exist', function () {
     expect(File::exists(resource_path('js/app.js')))->toBeTrue();
 });
 
+it('defers post-install verification when the application manifest is absent', function (string $flags) {
+    File::delete($this->packageJsonPath);
+
+    $exit = Artisan::call("hotwire:install {$flags} --skip-install --no-interaction");
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->toContain('package.json not found. Skipping npm dependency installation.')
+        ->toContain('Skipping post-install verification until package.json is created')
+        ->toContain('re-run hotwire:install with the same dependency selection')
+        ->not->toContain('Restore a valid package.json')
+        ->not->toContain('Verifying view usage matches install config')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue()
+        ->and(File::exists($this->packageJsonPath))->toBeFalse();
+})->with(['--core-only', '--with-deps=chart', '--core-only --fix']);
+
 it('refuses malformed application package.json before writing scaffolding', function () {
     File::put($this->packageJsonPath, '{');
 

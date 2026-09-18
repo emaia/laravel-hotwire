@@ -14,12 +14,15 @@ tooling change for the next **pre-1.0 minor**, not a patch; an equivalent remova
 
 - `hotwire:check`, including `--fix`, fails when a generated loader's dependency is missing or its declared semver
   constraint is incompatible. It also fails when `package.json` is missing or invalid. It does not add or upgrade the
-  loader dependency, and the failure occurs before applying fixes.
+  loader dependency, and the failure occurs before applying fixes. A missing manifest is diagnosed separately: create
+  `package.json` and install the loader dependency. Invalid JSON requires repairing the existing manifest.
 - `hotwire:install` adds the dependency when absent, but refuses an incompatible existing constraint before writing
   scaffolding or dependencies. It now also fails before writing files when the application's `package.json` contains
   invalid JSON; earlier versions silently skipped dependency changes and continued scaffolding. An absent application
-  manifest still produces a warning and allows scaffolding. `--only=css` does not validate the JavaScript manifest or
-  dependencies.
+  manifest still produces a warning and allows scaffolding. For `--core-only` and `--with-deps`, the automatic post-install
+  check is deferred until that manifest exists; create it and re-run the installer with the same selection. This does
+  not change the standalone check's failure for missing manifests. `--only=css` does not validate the JavaScript manifest
+  or dependencies.
 - Loader metadata schema **3** is the only supported format, both for reading and writing. Metadata was first shipped
   with schema 3 in **0.67.0**; schemas 1 and 2 were never emitted by a released package and have no compatibility window.
   Schema numbers are independent of the npm package version.

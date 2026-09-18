@@ -268,8 +268,11 @@ php artisan hotwire:check --fix
 Applies all fixes — regenerates the stub to include `chart`, adds `echarts` to `package.json`, and runs your package
 manager. End-to-end resolution in one command.
 
-`hotwire:install` runs `hotwire:check` automatically when `--core-only` or `--with-deps` is set (the default mode has no
-exclusions, so there's no drift to detect). In interactive mode the user is prompted to apply `--fix`; in
+`hotwire:install` runs `hotwire:check` automatically when `--core-only` or `--with-deps` is set and the application's
+`package.json` exists (the default mode has no exclusions, so there's no drift to detect). Without that manifest,
+scaffolding still succeeds and the installer explicitly defers verification: create `package.json`, then re-run the
+installer with the same dependency selection to add dependencies and verify view usage. Running `hotwire:check` directly
+still fails until the manifest and loader dependency are present. In interactive mode the user is prompted to apply `--fix`; in
 `--no-interaction` mode the check reports but does not act unless `--fix` is also passed.
 
 The check also validates the dependency declared for an auto-generated loader and detects drift between supported

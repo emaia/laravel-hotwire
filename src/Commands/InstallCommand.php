@@ -145,6 +145,12 @@ class InstallCommand extends Command
             return;
         }
 
+        if (! $this->files->exists(base_path('package.json'))) {
+            warning('Skipping post-install verification until package.json is created. Create the manifest, then re-run hotwire:install with the same dependency selection.');
+
+            return;
+        }
+
         $this->newLine();
         $this->line('Verifying view usage matches install config...');
 
@@ -399,9 +405,9 @@ class InstallCommand extends Command
     /** @return array<string, string> */
     private function coreDependencies(): array
     {
-        $path = realpath(__DIR__.'/../../package.json');
+        $path = dirname(__DIR__, 2).'/package.json';
 
-        if (! $path || ! $this->files->exists($path)) {
+        if (! $this->files->exists($path)) {
             warning('Could not read package.json from the laravel-hotwire package — core dependencies (stimulus, turbo, dynamic-loader) were not added.');
 
             return [];

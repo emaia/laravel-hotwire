@@ -1763,7 +1763,7 @@ it('reports a missing lazy loader dependency without adding it with --fix', func
     expect(readPackageJson()['devDependencies'])->not->toHaveKey('@emaia/stimulus-lazy-loader');
 });
 
-it('fails loader dependency validation when package.json cannot be read', function (?string $content) {
+it('fails loader dependency validation with a specific manifest recovery message', function (?string $content, string $message) {
     File::ensureDirectoryExists($this->targetDir);
     File::put($this->targetDir.'/index.js', LoaderStub::generate(HotwireRegistry::make()));
 
@@ -1777,8 +1777,17 @@ it('fails loader dependency validation when package.json cannot be read', functi
 
     expect($exit)->toBe(1)
         ->and(Artisan::output())->toContain('package.json')
-        ->toContain('requires ^2.0.0');
-})->with(['missing' => null, 'invalid' => '{']);
+        ->toContain('requires ^2.0.0')
+        ->toContain($message);
+
+    if ($content === null) {
+        expect(Artisan::output())->not->toContain('Restore a valid package.json')
+            ->and(File::exists($this->packageJsonPath))->toBeFalse();
+    }
+})->with([
+    'missing' => [null, 'Create a package.json and install @emaia/stimulus-lazy-loader ^2.0.0'],
+    'invalid' => ['{', 'Restore a valid package.json'],
+]);
 
 it('deduplicates dependencies used by multiple controllers', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
