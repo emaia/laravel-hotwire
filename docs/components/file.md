@@ -122,8 +122,8 @@ the previously selected file — even after a DOM morph. Use `reset-on-success` 
 The `<input>` gets `data-controller="file-preserve reset-files" data-reset-on-success="true"`. After a `turbo:morph`
 event, the file input is cleared automatically.
 
-The `resetOnSuccess` prop requires the `reset-files` controller to be published. The `file-preserve` controller is
-always mounted on the input — publish it too so `hotwire:check` passes.
+The `reset-files` and `file-preserve` controllers auto-load from the package. Publish them only when you want to
+customize their source.
 
 ## File preservation across Turbo morphs
 
@@ -224,7 +224,8 @@ enabled) — that's where an uploader controller wants to operate:
 ## Controller integrations
 
 `hotwire:check` looks for `file-preserve` (always used by this component) and `reset-files` (when `reset-on-success` is
-enabled). Both must be published for `hotwire:check` to pass.
+enabled), verifies their npm dependencies and checks any package-owned published copies for drift. Publishing is not
+required because both controllers auto-load from the package.
 
 ## Styling hooks
 

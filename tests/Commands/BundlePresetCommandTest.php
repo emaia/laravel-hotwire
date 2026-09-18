@@ -14,7 +14,7 @@ afterEach(function () {
 });
 
 it('generates a marked selective bundle with shared foundation imports', function () {
-    $this->artisan('hotwire:styles --components=modal --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')
         ->expectsOutputToContain('resources/css/hotwire.css')
         ->assertSuccessful();
 
@@ -33,7 +33,7 @@ it('generates a marked selective bundle with shared foundation imports', functio
 });
 
 it('generates foundations when a selection has no visual module closure', function () {
-    $this->artisan('hotwire:styles --include=color-scheme --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --include=color-scheme --no-interaction')->assertSuccessful();
 
     $css = File::get($this->output);
     $plan = app(GeneratedStyleBundle::class)->planFromContent($css);
@@ -45,7 +45,7 @@ it('generates foundations when a selection has no visual module closure', functi
 });
 
 it('includes every component-owned Toaster card slot', function () {
-    $this->artisan('hotwire:styles --components=toaster --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=toaster --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="toast"]')
@@ -59,7 +59,7 @@ it('includes every component-owned Toaster card slot', function () {
 });
 
 it('includes the complete Textarea visual contract', function () {
-    $this->artisan('hotwire:styles --components=textarea --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=textarea --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="textarea-wrapper"]')
@@ -68,7 +68,7 @@ it('includes the complete Textarea visual contract', function () {
 });
 
 it('includes Tooltip visuals and shared dependencies for component integrations', function (string $component) {
-    $this->artisan("hotwire:styles --components={$component} --no-interaction")->assertSuccessful();
+    $this->artisan("hotwire:bundle-preset --components={$component} --no-interaction")->assertSuccessful();
 
     $css = File::get($this->output);
 
@@ -82,7 +82,7 @@ it('includes Tooltip visuals and shared dependencies for component integrations'
 })->with(['button', 'color-scheme.toggle']);
 
 it('preserves controller-owned OEmbed visuals as an explicit inclusion', function () {
-    $this->artisan('hotwire:styles --components=badge --include=oembed --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --include=oembed --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="badge"]')
@@ -94,7 +94,7 @@ it('preserves controller-owned OEmbed visuals as an explicit inclusion', functio
 });
 
 it('includes every visual dependency used while uploading files', function () {
-    $this->artisan('hotwire:styles --components=file-upload --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=file-upload --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="file-upload"]')
@@ -103,7 +103,7 @@ it('includes every visual dependency used while uploading files', function () {
 });
 
 it('accepts repeated manual component and controller inclusions', function () {
-    $this->artisan('hotwire:styles --components=badge --include=modal --include=tooltip --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge --include=modal --include=tooltip --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($this->output))
@@ -114,7 +114,7 @@ it('accepts repeated manual component and controller inclusions', function () {
 });
 
 it('records a canonical regeneration plan with effective modules and controllers', function () {
-    $this->artisan('hotwire:styles --components=modal --include=turbo/progress --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --include=turbo/progress --no-interaction')
         ->assertSuccessful();
 
     $plan = app(GeneratedStyleBundle::class)->planFromContent(File::get($this->output));
@@ -131,7 +131,7 @@ it('records a canonical regeneration plan with effective modules and controllers
 });
 
 it('generates a selective Bloom bundle with its preset recorded', function () {
-    $this->artisan('hotwire:styles --preset=bloom --components=modal --no-interaction')
+    $this->artisan('hotwire:bundle-preset --preset=bloom --components=modal --no-interaction')
         ->assertSuccessful();
 
     $css = File::get($this->output);
@@ -149,9 +149,9 @@ it('generates a selective Bloom bundle with its preset recorded', function () {
 });
 
 it('treats equivalent selection order as an idempotent generation', function () {
-    $this->artisan('hotwire:styles --components=modal,badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal,badge --no-interaction')->assertSuccessful();
 
-    $this->artisan('hotwire:styles --components=badge,modal --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge,modal --no-interaction')
         ->expectsOutputToContain('Up to date')
         ->assertSuccessful();
 });
@@ -159,7 +159,7 @@ it('treats equivalent selection order as an idempotent generation', function () 
 it('parses comma-separated components and adjusts imports for a custom output depth', function () {
     $output = resource_path('css/generated/front.css');
 
-    $this->artisan('hotwire:styles --components=badge,modal --output=resources/css/generated/front.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge,modal --output=resources/css/generated/front.css --no-interaction')
         ->assertSuccessful();
 
     expect(File::get($output))
@@ -175,13 +175,13 @@ it('fails before writing for unknown presets and selections', function (string $
 
     expect(File::exists($this->output))->toBeFalse();
 })->with([
-    'preset' => ['hotwire:styles --preset=missing --components=modal --no-interaction', 'Unknown preset "missing"'],
-    'component' => ['hotwire:styles --components=modla --no-interaction', 'Unknown component "modla"'],
-    'include' => ['hotwire:styles --components=modal --include=missing --no-interaction', 'Unknown component or controller "missing"'],
+    'preset' => ['hotwire:bundle-preset --preset=missing --components=modal --no-interaction', 'Unknown preset "missing"'],
+    'component' => ['hotwire:bundle-preset --components=modla --no-interaction', 'Unknown component "modla"'],
+    'include' => ['hotwire:bundle-preset --components=modal --include=missing --no-interaction', 'Unknown component or controller "missing"'],
 ]);
 
 it('requires an explicit selection', function () {
-    $this->artisan('hotwire:styles --no-interaction')
+    $this->artisan('hotwire:bundle-preset --no-interaction')
         ->expectsOutputToContain('Select at least one component or controller')
         ->assertFailed();
 
@@ -189,15 +189,15 @@ it('requires an explicit selection', function () {
 });
 
 it('requires force to replace a generated bundle', function () {
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
 
-    $this->artisan('hotwire:styles --components=modal --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')
         ->expectsOutputToContain('Use --force to overwrite')
         ->assertFailed();
 
     expect(File::get($this->output))->toContain('[data-slot="badge"]');
 
-    $this->artisan('hotwire:styles --components=modal --force --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=modal --force --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="modal-panel"]')
@@ -205,22 +205,22 @@ it('requires force to replace a generated bundle', function () {
 });
 
 it('repairs a generated bundle that retains its plan but loses its signature', function () {
-    $this->artisan('hotwire:styles --components=badge --no-interaction')->assertSuccessful();
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
     $css = File::get($this->output);
-    $css = str_replace('/* Generated by `php artisan hotwire:styles`. Regenerate instead of editing. */', '', $css);
+    $css = str_replace('/* Generated by `php artisan hotwire:bundle-preset`. Regenerate instead of editing. */', '', $css);
     File::put($this->output, $css);
 
-    $this->artisan('hotwire:styles --components=badge --force --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=badge --force --no-interaction')
         ->assertSuccessful();
 
-    expect(File::get($this->output))->toContain('Generated by `php artisan hotwire:styles`.');
+    expect(File::get($this->output))->toContain('Generated by `php artisan hotwire:bundle-preset`.');
 });
 
 it('never replaces a user-owned output even with force', function () {
     File::ensureDirectoryExists(dirname($this->output));
     File::put($this->output, '/* application-owned */');
 
-    $this->artisan('hotwire:styles --components=modal --force --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --force --no-interaction')
         ->expectsOutputToContain('not generated by Laravel Hotwire')
         ->assertFailed();
 
@@ -232,7 +232,7 @@ it('never replaces other package-marked CSS even with force', function () {
     File::ensureDirectoryExists(dirname($this->output));
     File::put($this->output, $content);
 
-    $this->artisan('hotwire:styles --components=modal --force --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --force --no-interaction')
         ->expectsOutputToContain('not generated by Laravel Hotwire')
         ->assertFailed();
 
@@ -240,7 +240,7 @@ it('never replaces other package-marked CSS even with force', function () {
 });
 
 it('only writes bundles under resources css', function (string $output) {
-    $this->artisan("hotwire:styles --components=modal --output={$output} --no-interaction")
+    $this->artisan("hotwire:bundle-preset --components=modal --output={$output} --no-interaction")
         ->expectsOutputToContain('under resources/css')
         ->assertFailed();
 
@@ -254,7 +254,7 @@ it('only writes bundles under resources css', function (string $output) {
 ]);
 
 it('rejects output paths outside the application', function () {
-    $this->artisan('hotwire:styles --components=modal --output=../hotwire.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --output=../hotwire.css --no-interaction')
         ->expectsOutputToContain('under resources/css')
         ->assertFailed();
 
@@ -268,7 +268,7 @@ it('rejects output paths that escape through a symlink', function () {
     symlink($outside, resource_path('css/generated'));
 
     try {
-        $this->artisan('hotwire:styles --components=modal --output=resources/css/generated/hotwire.css --no-interaction')
+        $this->artisan('hotwire:bundle-preset --components=modal --output=resources/css/generated/hotwire.css --no-interaction')
             ->expectsOutputToContain('Output must resolve inside resources/css')
             ->assertFailed();
 
@@ -282,7 +282,7 @@ it('rejects output paths through symlinks that the coverage scan would not follo
     File::ensureDirectoryExists(resource_path('css/real'));
     symlink(resource_path('css/real'), resource_path('css/generated'));
 
-    $this->artisan('hotwire:styles --components=modal --output=resources/css/generated/hotwire.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --output=resources/css/generated/hotwire.css --no-interaction')
         ->expectsOutputToContain('Output must resolve inside resources/css')
         ->assertFailed();
 
@@ -293,7 +293,7 @@ it('rejects output paths whose earlier segment is a symlink', function () {
     File::ensureDirectoryExists(resource_path('css/.real/sub'));
     symlink(resource_path('css/.real'), resource_path('css/generated'));
 
-    $this->artisan('hotwire:styles --components=modal --output=resources/css/generated/sub/hotwire.css --no-interaction')
+    $this->artisan('hotwire:bundle-preset --components=modal --output=resources/css/generated/sub/hotwire.css --no-interaction')
         ->expectsOutputToContain('Output must resolve inside resources/css')
         ->assertFailed();
 

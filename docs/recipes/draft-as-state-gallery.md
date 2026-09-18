@@ -549,7 +549,7 @@ export default class extends Controller {
 ```
 
 Install SortableJS app-side: `bun add sortablejs` (or `npm install sortablejs`).
-Scaffold the controller via `php artisan hotwire:make-controller reorder-list` to wire it
+Scaffold the controller via `php artisan hotwire:make-controller gallery/reorder-list` to wire it
 into the dynamic loader, then paste the code above.
 
 ## Cleanup — pruning abandoned drafts

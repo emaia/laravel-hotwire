@@ -230,9 +230,9 @@ to descendant form requests, and never overwrites an explicit header. See
 
 ## Controller integrations
 
-`hotwire:check` looks for `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, and
-`conditional-fields`. Only the ones you actually use need to be published — `hotwire:check` will warn for the others
-even if you do not enable them.
+`hotwire:check` detects the enabled `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, and
+`conditional-fields` integrations. These controllers auto-load from the package; publish one only when you want to
+customize its source.
 
 ## Styling hooks
 

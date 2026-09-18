@@ -46,6 +46,7 @@ For lean installs, CI flags and loader details, see [Advanced installation](docs
 | [**Basic usage**](#components)                                      | Blade components and auto-loaded Stimulus controllers                             |
 | [**Components**](#components)                                       | Composable Blade primitives for forms, overlays, navigation, feedback and display |
 | [**Controllers**](#controllers)                                     | Standalone Stimulus behavior with direct links to each controller contract        |
+| [**Artisan commands**](docs/commands.md)                             | Installation, generation, validation and discovery command reference              |
 | [**Turbo Streams**](https://github.com/emaia/laravel-hotwire-turbo) | Request detection, DOM helpers and fluent stream responses                        |
 | [**Frame-backed modals**](docs/recipes/server-driven-modals.md)     | Shared modal hosts driven by Turbo Frames and regular Blade responses             |
 | [**Stimulus helpers**](docs/stimulus-helpers.md)                    | Fluent helpers for controllers, actions, targets, values, classes and outlets     |
@@ -167,7 +168,7 @@ For a layout with an explicit component set, generate a smaller visual bundle wh
 foundation:
 
 ```bash
-php artisan hotwire:styles \
+php artisan hotwire:bundle-preset \
   --preset=bloom \
   --components=badge,button,field,input,navbar,pagination \
   --include=tooltip \
@@ -203,7 +204,7 @@ bun run test:browser
 composer format
 ```
 
-`bun run build:css` compiles every public preset plus a generated `hotwire:styles` bundle and application-owned clone
+`bun run build:css` compiles every public preset plus a generated `hotwire:bundle-preset` bundle and application-owned clone
 for each one, then reports raw/gzip sizes. After an intentional output change, refresh the committed size baseline with
 `bun run test:css:update`.
 

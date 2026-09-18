@@ -56,7 +56,7 @@ so an open nested overlay does not visually reopen its parent.
   `php artisan hotwire:make-preset brand`.
 - Customize Nova's complete selector structure: `php artisan hotwire:make-preset brand --from=nova`.
 - Customize Bloom's complete selector structure: `php artisan hotwire:make-preset brand --from=bloom`.
-- Ship only selected modules: `php artisan hotwire:styles --preset=<name>` and regenerate after changing the selection or
+- Ship only selected modules: `php artisan hotwire:bundle-preset --preset=<name>` and regenerate after changing the selection or
   upgrading.
 - Include Stream/JavaScript-only modules explicitly with `--include`.
 

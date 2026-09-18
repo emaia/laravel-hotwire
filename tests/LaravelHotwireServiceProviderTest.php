@@ -61,11 +61,11 @@ it('registers every package command', function () {
         'hotwire:install',
         'hotwire:make-controller',
         'hotwire:make-preset',
-        'hotwire:styles',
+        'hotwire:bundle-preset',
         'hotwire:controllers',
         'hotwire:components',
         'hotwire:check',
         'hotwire:docs',
         'hotwire:ide-json',
-    );
+    )->not->toContain('hotwire:styles');
 });

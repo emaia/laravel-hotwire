@@ -172,8 +172,8 @@ error reference derives from that id.
 
 ## Controller integrations
 
-`hotwire:check` looks for `auto-select`, `clear-input`, `input-mask`, and `auto-submit`. Only the ones you actually use
-need to be published.
+`hotwire:check` detects the enabled `auto-select`, `clear-input`, `input-mask`, and `auto-submit` integrations. These
+controllers auto-load from the package; publish one only when you want to customize its source.
 
 ## Styling hooks
 

@@ -22,7 +22,7 @@ afterEach(function () {
 
 dataset('preset generation commands', [
     'clone' => ['hotwire:make-preset brand --from=nova --force --no-interaction', 'css/presets/brand.css'],
-    'subset' => ['hotwire:styles --preset=nova --components=button --force --no-interaction', 'css/hotwire.css'],
+    'subset' => ['hotwire:bundle-preset --preset=nova --components=button --force --no-interaction', 'css/hotwire.css'],
 ]);
 
 it('generates identical artifacts for equivalent supported import syntax', function (string $replacement, string $command, string $output) {

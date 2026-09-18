@@ -6,6 +6,23 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Selective preset command renamed
+
+`hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output
+and overwrite options keep the same behavior.
+
+Generated bundles now carry `hotwire-preset-bundle-plan` metadata. The new command deliberately does not recognize the
+old marker, even with `--force`. Delete each previously generated selective bundle and recreate it with its original
+selection:
+
+```bash
+rm resources/css/hotwire.css
+php artisan hotwire:bundle-preset --preset=nova --components=button,input
+```
+
+Update CI scripts, deployment commands and internal developer documentation at the same time. Application-owned presets
+created by `hotwire:make-preset` are unaffected.
+
 ### End of automatic lazy-loader v1 migration
 
 The generated loader requires `@emaia/stimulus-lazy-loader` **2.0.0 or later**; new installs declare `^2.0.0`.
@@ -75,7 +92,7 @@ release.
 2. For an application-owned preset or clone, adopt the foundation facade, new visual slots, Sidebar geometry and
    nearest-theme rules described below. Generate a fresh clone under a temporary name for comparison; do not overwrite
    a maintained preset with `--force` unless replacing its customizations is intentional.
-3. Regenerate selective bundles with their original `hotwire:styles` selection and `--force`. Include dynamically
+3. Regenerate selective bundles with their original `hotwire:bundle-preset` selection and `--force`. Include dynamically
    rendered Tooltip/Toaster content explicitly when static view scanning cannot discover it.
 4. Review published component views and controllers together. Merge the updated icon parts and Tooltip/Toaster
    templates into customized views, and reconcile published controllers with the corresponding package versions.
@@ -156,7 +173,7 @@ selectors or lexical axis vocabulary.
 
 After upgrading, add newly declared visual slots and adopt foundation facade changes before expecting a maintained
 application preset to pass. Run the application's production build separately because static validation does not compile
-Tailwind utilities or certify browser behavior. Generated `hotwire:styles` bundles continue to use their recorded
+Tailwind utilities or certify browser behavior. Generated `hotwire:bundle-preset` bundles continue to use their recorded
 selective plan and may omit unrelated components intentionally.
 
 Selectors whose subject is a pseudo-element no longer satisfy visual-slot coverage or required preset properties. A rule
