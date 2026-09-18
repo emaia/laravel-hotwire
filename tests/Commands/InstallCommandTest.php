@@ -1,6 +1,9 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\LoaderStub;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 dataset('css presets', fn () => collect(glob(__DIR__.'/../../resources/css/presets/*.css') ?: [])
@@ -193,6 +196,42 @@ it('reads dependency versions from the package own package.json', function () {
     }
 });
 
+it('warns once and continues scaffolding when the package manifest is missing', function () {
+    File::put($this->packageJsonPath, '{"name":"test"}');
+    $packageManifest = dirname(__DIR__, 2).'/package.json';
+    $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
+        $mock->shouldReceive('exists')->with($packageManifest)->once()->andReturnFalse();
+    });
+
+    $exit = Artisan::call('hotwire:install --skip-install --no-interaction');
+
+    expect($exit)->toBe(0)
+        ->and(substr_count(Artisan::output(), 'Could not read package.json from the laravel-hotwire package'))->toBe(1)
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue()
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+    expect($json['devDependencies'])->toHaveKey('echarts')
+        ->not->toHaveKey('@emaia/stimulus-lazy-loader');
+});
+
+it('reads core dependencies once and tolerates a missing loader version', function () {
+    File::put($this->packageJsonPath, '{"name":"test"}');
+    $packageManifest = dirname(__DIR__, 2).'/package.json';
+    $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest) {
+        $mock->shouldReceive('get')->with($packageManifest)->once()->andReturn(
+            '{"dependencies":{"@hotwired/stimulus":"^3.2.2"}}',
+        );
+    });
+
+    $this->artisan('hotwire:install --skip-install --no-interaction')->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+    expect($json['devDependencies']['@hotwired/stimulus'])->toBe('^3.2.2')
+        ->and($json['devDependencies'])->not->toHaveKey('@emaia/stimulus-lazy-loader')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue();
+});
+
 it('installs core + all catalog dependencies by default', function () {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
@@ -251,37 +290,24 @@ it('does not modify package.json when core deps already present (--core-only)', 
     expect(File::get($this->packageJsonPath))->toBe($content);
 });
 
-it('upgrades an existing v1 lazy loader in devDependencies', function () {
+it('rejects an incompatible lazy loader before installing files', function (string $section) {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
-        'devDependencies' => [
+        $section => [
             '@emaia/stimulus-lazy-loader' => '^1.1.0',
         ],
     ], JSON_PRETTY_PRINT));
 
-    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
-        ->assertSuccessful();
-
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
-});
-
-it('upgrades an existing v1 lazy loader in dependencies', function () {
-    File::put($this->packageJsonPath, json_encode([
-        'name' => 'test',
-        'dependencies' => [
-            '@emaia/stimulus-lazy-loader' => '^1.1.0',
-        ],
-    ], JSON_PRETTY_PRINT));
+    $original = File::get($this->packageJsonPath);
 
     $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
-        ->assertSuccessful();
+        ->expectsOutputToContain('Update @emaia/stimulus-lazy-loader manually')
+        ->assertFailed();
 
-    $json = json_decode(File::get($this->packageJsonPath), true);
-
-    expect($json['dependencies']['@emaia/stimulus-lazy-loader'])->toBe('^2.0.0');
-});
+    expect(File::get($this->packageJsonPath))->toBe($original)
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::exists(resource_path('css/app.css')))->toBeFalse();
+})->with(['dependencies', 'devDependencies']);
 
 it('preserves a newer compatible lazy loader constraint', function () {
     File::put($this->packageJsonPath, json_encode([
@@ -327,12 +353,79 @@ it('warns when package.json does not exist', function () {
     expect(File::exists(resource_path('js/app.js')))->toBeTrue();
 });
 
+it('defers post-install verification when the application manifest is absent', function (string $flags) {
+    File::delete($this->packageJsonPath);
+
+    $exit = Artisan::call("hotwire:install {$flags} --skip-install --no-interaction");
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->toContain('package.json not found. Skipping npm dependency installation.')
+        ->toContain('Skipping post-install verification until package.json is created')
+        ->toContain('re-run hotwire:install with the same dependency selection')
+        ->not->toContain('Restore a valid package.json')
+        ->not->toContain('Verifying view usage matches install config')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeTrue()
+        ->and(File::exists($this->packageJsonPath))->toBeFalse();
+})->with(['--core-only', '--with-deps=chart', '--core-only --fix']);
+
+it('refuses malformed application package.json before writing scaffolding', function () {
+    File::put($this->packageJsonPath, '{');
+
+    $this->artisan('hotwire:install --skip-install --no-interaction')
+        ->expectsOutputToContain('Restore a valid package.json')
+        ->assertFailed();
+
+    expect(File::get($this->packageJsonPath))->toBe('{')
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::exists(resource_path('css/app.css')))->toBeFalse();
+});
+
+it('allows a CSS-only install with malformed application package.json', function () {
+    File::put($this->packageJsonPath, '{');
+
+    $this->artisan('hotwire:install --only=css --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->packageJsonPath))->toBe('{')
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue()
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse();
+});
+
 it('does not resolve controller policy during a CSS-only install', function () {
     config()->set('hotwire.controllers.eager', ['missing']);
 
     $this->artisan('hotwire:install --only=css --no-interaction')
         ->assertSuccessful();
 });
+
+it('skips JavaScript post-install checks during CSS-only installs with dependency flags', function (string $flags) {
+    $manifest = json_encode(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^1.1.0']]);
+    File::put($this->packageJsonPath, $manifest);
+    $loader = LoaderStub::generate(HotwireRegistry::make());
+    File::ensureDirectoryExists(resource_path('js/controllers'));
+    File::put(resource_path('js/controllers/index.js'), $loader);
+
+    $exit = Artisan::call("hotwire:install --only=css {$flags} --skip-install --no-interaction");
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->not->toContain('Verifying view usage matches install config')
+        ->not->toContain('@emaia/stimulus-lazy-loader')
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue()
+        ->and(File::get($this->packageJsonPath))->toBe($manifest)
+        ->and(File::get(resource_path('js/controllers/index.js')))->toBe($loader);
+})->with(['--core-only', '--with-deps=chart']);
+
+it('rejects fix during CSS-only installs before writing files', function (string $flags) {
+    $manifest = '{"name":"test"}';
+    File::put($this->packageJsonPath, $manifest);
+
+    $this->artisan("hotwire:install --only=css --fix {$flags} --no-interaction")
+        ->expectsOutputToContain('Cannot combine --only=css with --fix. CSS-only installs do not run post-install verification.')
+        ->assertFailed();
+
+    expect(File::exists(resource_path('css/app.css')))->toBeFalse()
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::get($this->packageJsonPath))->toBe($manifest);
+})->with(['', '--core-only', '--with-deps=chart']);
 
 it('ignores ambiguous local controllers unrelated to the install policy', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));

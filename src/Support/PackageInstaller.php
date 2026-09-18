@@ -5,45 +5,52 @@ namespace Emaia\LaravelHotwire\Support;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
+use RuntimeException;
 use Symfony\Component\Process\Process;
 
 class PackageInstaller
 {
     /**
-     * Update a package in its existing dependency section, or add it to devDependencies.
+     * Validate a declared dependency without rewriting application constraints.
      *
-     * @return array<string, string> entries added or updated
-     *
+     * @throws RuntimeException When the manifest is unreadable or the dependency is missing or incompatible.
      * @throws FileNotFoundException
      */
-    public function ensureDependency(Filesystem $files, string $package, string $version): array
-    {
+    public function validateDependency(
+        Filesystem $files,
+        string $package,
+        string $version,
+        bool $allowMissing = false,
+    ): void {
         $path = base_path('package.json');
 
         if (! $files->exists($path)) {
-            return [];
+            if ($allowMissing) {
+                return;
+            }
+
+            throw new RuntimeException("package.json not found. Create a package.json and install $package $version.");
         }
 
         $json = json_decode($files->get($path), true);
 
         if (! is_array($json)) {
-            return [];
+            throw new RuntimeException("The controller loader requires $version of $package. Restore a valid package.json and install the dependency.");
         }
 
-        $section = array_key_exists($package, $json['dependencies'] ?? [])
-            ? 'dependencies'
-            : 'devDependencies';
-        $current = $json[$section][$package] ?? null;
+        $current = $json['dependencies'][$package] ?? $json['devDependencies'][$package] ?? null;
+
+        if ($allowMissing && $current === null) {
+            return;
+        }
 
         if (is_string($current) && ! $this->dependencyNeedsUpdate($current, $version)) {
-            return [];
+            return;
         }
 
-        $json[$section] ??= [];
-        $json[$section][$package] = $version;
-        $files->put($path, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+        $current = is_string($current) ? $current : 'missing';
 
-        return [$package => $version];
+        throw new RuntimeException("$package $current requires $version for the controller loader. Update $package manually in package.json, run your package manager install command, and rebuild your Vite assets. Automatic dependency migration is not supported.");
     }
 
     /** Determine whether a conventional semver constraint is definitely older than the required major. */

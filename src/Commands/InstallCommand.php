@@ -27,7 +27,7 @@ class InstallCommand extends Command
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
                         {--preset=nova : CSS preset to import in resources/css/app.css (bloom or nova).}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
-                        {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
+                        {--fix : Auto-apply hotwire:check --fix during post-install verification (incompatible with --only=css)}';
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
 
@@ -65,6 +65,12 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        if ($filter === 'css' && $this->option('fix')) {
+            warning('Cannot combine --only=css with --fix. CSS-only installs do not run post-install verification.');
+
+            return self::FAILURE;
+        }
+
         if (! $this->validateDepFlags()) {
             return self::FAILURE;
         }
@@ -77,6 +83,24 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        $coreDependencies = $filter === 'css' ? [] : $this->coreDependencies();
+        $loaderVersion = $coreDependencies['@emaia/stimulus-lazy-loader'] ?? null;
+
+        if ($loaderVersion !== null) {
+            try {
+                $this->packageInstaller->validateDependency(
+                    $this->files,
+                    '@emaia/stimulus-lazy-loader',
+                    $loaderVersion,
+                    allowMissing: true,
+                );
+            } catch (RuntimeException $exception) {
+                warning($exception->getMessage());
+
+                return self::FAILURE;
+            }
+        }
+
         $stubBase = realpath(__DIR__.'/../../stubs/resources');
         $targetBase = resource_path();
 
@@ -86,7 +110,7 @@ class InstallCommand extends Command
         $depsAdded = 0;
         $aliasResult = null;
         if ($filter !== 'css') {
-            $depsAdded = $this->addNpmDependencies();
+            $depsAdded = $this->addNpmDependencies($coreDependencies);
             $aliasResult = $this->packageInstaller->addViteAlias(
                 $this->files,
                 self::VITE_ALIAS_KEY,
@@ -123,7 +147,15 @@ class InstallCommand extends Command
      */
     private function runPostInstallCheck(): void
     {
-        if (! $this->option('core-only') && $this->controllerFilter() === null) {
+        if ($this->option('only') === 'css'
+            || (! $this->option('core-only') && $this->controllerFilter() === null)
+        ) {
+            return;
+        }
+
+        if (! $this->files->exists(base_path('package.json'))) {
+            warning('Skipping post-install verification until package.json is created. Create the manifest, then re-run hotwire:install with the same dependency selection.');
+
             return;
         }
 
@@ -381,15 +413,15 @@ class InstallCommand extends Command
     /** @return array<string, string> */
     private function coreDependencies(): array
     {
-        $path = realpath(__DIR__.'/../../package.json');
+        $path = dirname(__DIR__, 2).'/package.json';
 
-        if (! $path) {
+        if (! $this->files->exists($path)) {
             warning('Could not read package.json from the laravel-hotwire package — core dependencies (stimulus, turbo, dynamic-loader) were not added.');
 
             return [];
         }
 
-        $json = json_decode(file_get_contents($path), true);
+        $json = json_decode($this->files->get($path), true);
         $all = $json['dependencies'] ?? [];
 
         return array_intersect_key($all, array_flip(self::CORE_DEPENDENCIES));
@@ -470,7 +502,8 @@ class InstallCommand extends Command
         return $identifiers;
     }
 
-    private function addNpmDependencies(): int
+    /** @param array<string, string> $coreDependencies */
+    private function addNpmDependencies(array $coreDependencies): int
     {
         $packageJsonPath = base_path('package.json');
 
@@ -480,7 +513,6 @@ class InstallCommand extends Command
             return 0;
         }
 
-        $deps = $this->coreDependencies();
         $registry = HotwireRegistry::make();
         $configuration = ControllerLoadConfiguration::fromConfig();
         $configuredCatalogDependencies = $this->configuredCatalogDependencyControllerIdentifiers($registry, $configuration);
@@ -495,24 +527,9 @@ class InstallCommand extends Command
             )));
         }
 
-        $deps = array_merge($deps, $this->catalogDependencies($filter));
+        $deps = array_merge($coreDependencies, $this->catalogDependencies($filter));
 
-        $changed = [];
-        $loaderVersion = $deps['@emaia/stimulus-lazy-loader'] ?? null;
-
-        if ($loaderVersion !== null) {
-            $changed = $this->packageInstaller->ensureDependency(
-                $this->files,
-                '@emaia/stimulus-lazy-loader',
-                $loaderVersion,
-            );
-            unset($deps['@emaia/stimulus-lazy-loader']);
-        }
-
-        return count(array_merge(
-            $changed,
-            $this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false),
-        ));
+        return count($this->packageInstaller->addDevDependencies($this->files, $deps, updateExisting: false));
     }
 
     private function shouldInstallDependencies(): bool

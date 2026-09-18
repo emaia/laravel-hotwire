@@ -146,6 +146,14 @@ The second line records the generated loading plan. `hotwire:check --fix` uses t
 the JavaScript when regenerating lazy, preload and eager selections. Local controllers keep precedence over package
 controllers with the same Stimulus identifier.
 
+The generated loader requires `@emaia/stimulus-lazy-loader` 2.0.0 or later (new installs use `^2.0.0`). The installer
+adds a missing dependency but does not upgrade an incompatible existing constraint: update it manually, install the
+dependency, then re-run the command. Invalid application `package.json` JSON stops a JavaScript install before any files
+are written; an absent manifest warns and still allows scaffolding. CSS-only installs skip that validation. Metadata
+schema 3 is the only supported format. Stubs without metadata or with an unsupported schema must be regenerated with
+an explicit dependency selection; `hotwire:check --fix` does not infer selections from old globs. See the
+[upgrade procedure](upgrade.md#end-of-automatic-lazy-loader-v1-migration).
+
 ---
 
 ## Critical controller loading
@@ -260,14 +268,23 @@ php artisan hotwire:check --fix
 Applies all fixes — regenerates the stub to include `chart`, adds `echarts` to `package.json`, and runs your package
 manager. End-to-end resolution in one command.
 
-`hotwire:install` runs `hotwire:check` automatically when `--core-only` or `--with-deps` is set (the default mode has no
-exclusions, so there's no drift to detect). In interactive mode the user is prompted to apply `--fix`; in
-`--no-interaction` mode the check reports but does not act unless `--fix` is also passed.
+For JavaScript installs, `hotwire:install` runs `hotwire:check` automatically when `--core-only` or `--with-deps` is set
+and the application's `package.json` exists (the default mode has no exclusions, so there's no drift to detect). Without
+that manifest, scaffolding still succeeds and the installer explicitly defers verification: create `package.json`, then
+re-run the installer with the same dependency selection to add dependencies and verify view usage. Running
+`hotwire:check` directly still fails until the manifest and loader dependency are present. In interactive mode the user
+is prompted to apply `--fix`; in `--no-interaction` mode the check reports but does not act unless
+`--fix` is also passed.
 
-The check also reports a lazy-loader v1 dependency and drift between the generated loader metadata and
-`controllers.preload` / `controllers.eager`. `--fix` upgrades the loader to v2 and regenerates the policy. Imported
-application presets are validated automatically. Use repeatable `--preset=<name|path>` options to validate unimported
-presets in CI, followed by the application's production asset build.
+`--only=css` skips this post-install check even when combined with `--core-only` or `--with-deps`. Combining
+`--only=css` with `--fix` is rejected before writing files because there is no post-install verification to fix.
+
+The check also validates the dependency declared for an auto-generated loader and detects drift between supported
+loader metadata and `controllers.preload` / `controllers.eager`. Missing/incompatible loader dependencies, an unreadable
+`package.json`, or unsupported generated metadata cause a failure with manual recovery instructions, including with
+`--fix`. Once those prerequisites are valid, `--fix` regenerates policy drift. Hand-written loaders remain
+application-managed. Imported application presets are validated automatically. Use repeatable `--preset=<name|path>`
+options to validate unimported presets in CI, followed by the application's production asset build.
 
 ---
 
@@ -297,16 +314,16 @@ manager.
 
 ## Flag reference
 
-| Flag                       | Purpose                                                                                                                                                                                                                        |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--force`                  | Overwrite existing scaffolded files without prompting. Hand-written files (no `// @hotwire-package` marker for controllers; no `// AUTO-GENERATED` marker for the loader stub) are still protected unless `--force` is passed. |
-| `--only=js` / `--only=css` | Install only the JS or CSS scaffold. Skips npm deps, Vite alias and post-install check when CSS-only.                                                                                                                          |
-| `--with-deps=<list>`       | Add npm deps only for the listed controllers. Comma-separated or repeatable. Validates each name against the catalog.                                                                                                          |
-| `--core-only`              | Add only core deps (stimulus, turbo, stimulus-lazy-loader). Excludes every com-dep controller from the loader stub. Mutually exclusive with `--with-deps`.                                                                    |
+| Flag                       | Purpose                                                                                                                                                                                                                            |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--force`                  | Overwrite existing scaffolded files without prompting. Hand-written files (no `// @hotwire-package` marker for controllers; no `// AUTO-GENERATED` marker for the loader stub) are still protected unless `--force` is passed.     |
+| `--only=js` / `--only=css` | Install only the JS or CSS scaffold. Skips npm deps, Vite alias and post-install check when CSS-only.                                                                                                                              |
+| `--with-deps=<list>`       | Add npm deps only for the listed controllers. Comma-separated or repeatable. Validates each name against the catalog.                                                                                                              |
+| `--core-only`              | Add only core deps (stimulus, turbo, stimulus-lazy-loader). Excludes every com-dep controller from the loader stub. Mutually exclusive with `--with-deps`.                                                                         |
 | `--preset=<name>`          | Select the shipped `nova` or `bloom` CSS preset discovered from the package's public entrypoints. Defaults to `nova`; every unselected official preset remains visible as a commented import. Local presets are imported manually. |
-| `--skip-install`           | Do not run the package manager after writing `package.json`. Also propagated to the post-install `hotwire:check`.                                                                                                              |
-| `--fix`                    | Auto-apply `hotwire:check --fix` during the post-install verification. Pairs with `--no-interaction` for end-to-end automation.                                                                                                |
-| `--no-interaction`         | Standard Laravel flag — suppresses all prompts. Combined with `--fix`, applies all fixes silently; without `--fix`, reports findings but does not act.                                                                         |
+| `--skip-install`           | Do not run the package manager after writing `package.json`. Also propagated to the post-install `hotwire:check`.                                                                                                                  |
+| `--fix`                    | Auto-apply `hotwire:check --fix` during the post-install verification. Pairs with `--no-interaction` for end-to-end automation. Incompatible with `--only=css`.                                                                    |
+| `--no-interaction`         | Standard Laravel flag — suppresses all prompts. Combined with `--fix`, applies all fixes silently; without `--fix`, reports findings but does not act.                                                                             |
 
 ---
 

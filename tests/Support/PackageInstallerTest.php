@@ -23,34 +23,40 @@ function writeInstallerPackageJson(array $json): void
     );
 }
 
-// --- addDevDependencies ---
+// --- Dependency validation ---
 
-it('updates an older semver dependency while preserving compatible and non-semver constraints', function () {
+it('rejects an older dependency without rewriting it', function () {
     writeInstallerPackageJson([
         'name' => 'app',
         'devDependencies' => ['loader' => '^1.1.0'],
     ]);
 
-    expect($this->installer->ensureDependency($this->files, 'loader', '^2.0.0'))
-        ->toBe(['loader' => '^2.0.0']);
+    $original = File::get($this->packageJsonPath);
 
+    expect(fn () => $this->installer->validateDependency($this->files, 'loader', '^2.0.0'))
+        ->toThrow(RuntimeException::class, 'Update loader manually');
+    expect(File::get($this->packageJsonPath))->toBe($original);
+});
+
+it('preserves compatible and non-semver constraints during validation', function () {
     foreach (['^2.5.0', '*', 'x', 'X', '*.*.*', 'x.x', 'workspace:*', 'link:../loader', 'file:../loader', 'latest'] as $constraint) {
         writeInstallerPackageJson([
             'name' => 'app',
             'devDependencies' => ['loader' => $constraint],
         ]);
 
-        expect($this->installer->ensureDependency($this->files, 'loader', '^2.0.0'))->toBe([])
-            ->and(json_decode(File::get($this->packageJsonPath), true)['devDependencies']['loader'])->toBe($constraint);
+        $this->installer->validateDependency($this->files, 'loader', '^2.0.0');
+
+        expect(json_decode(File::get($this->packageJsonPath), true)['devDependencies']['loader'])->toBe($constraint);
     }
 });
 
-it('updates wildcard constraints pinned to an older major', function () {
+it('detects wildcard constraints pinned to an older major', function () {
     expect($this->installer->dependencyNeedsUpdate('1.x', '^2.0.0'))->toBeTrue()
         ->and($this->installer->dependencyNeedsUpdate('1.x || *', '^2.0.0'))->toBeFalse();
 });
 
-it('updates hyphen ranges that end before the required major', function () {
+it('detects hyphen ranges that end before the required major', function () {
     expect($this->installer->dependencyNeedsUpdate('1.0.0 - 1.9.9', '^2.0.0'))->toBeTrue()
         ->and($this->installer->dependencyNeedsUpdate('1.0.0 - 2.9.9', '^2.0.0'))->toBeFalse()
         ->and($this->installer->dependencyNeedsUpdate('2.0.0 - 2.9.9', '^2.0.0'))->toBeFalse();
@@ -62,6 +68,8 @@ it('preserves comparator ranges that admit the required version', function () {
         ->and($this->installer->dependencyNeedsUpdate('>=1 <2', '^2.0.0'))->toBeTrue()
         ->and($this->installer->dependencyNeedsUpdate('>=2.1', '^2.0.0'))->toBeFalse();
 });
+
+// --- addDevDependencies ---
 
 it('adds a new package to devDependencies', function () {
     writeInstallerPackageJson(['name' => 'app', 'devDependencies' => new stdClass]);
