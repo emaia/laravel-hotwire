@@ -27,7 +27,7 @@ class InstallCommand extends Command
                         {--core-only : Add only core npm deps (stimulus, turbo, dynamic-loader). Skip catalog deps entirely.}
                         {--preset=nova : CSS preset to import in resources/css/app.css (bloom or nova).}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after writing package.json. Leaves dep fetching to the caller.}
-                        {--fix : Auto-apply hotwire:check --fix during the post-install verification (non-interactive friendly)}';
+                        {--fix : Auto-apply hotwire:check --fix during post-install verification (incompatible with --only=css)}';
 
     public $description = 'Install Hotwire scaffolding into your Laravel application';
 
@@ -61,6 +61,12 @@ class InstallCommand extends Command
 
         if ($filter !== null && ! in_array($filter, ['js', 'css'])) {
             warning("Invalid --only value: \"$filter\". Use 'js' or 'css'.");
+
+            return self::FAILURE;
+        }
+
+        if ($filter === 'css' && $this->option('fix')) {
+            warning('Cannot combine --only=css with --fix. CSS-only installs do not run post-install verification.');
 
             return self::FAILURE;
         }

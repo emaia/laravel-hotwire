@@ -22,7 +22,7 @@ tooling change for the next **pre-1.0 minor**, not a patch; an equivalent remova
   manifest still produces a warning and allows scaffolding. For `--core-only` and `--with-deps`, the automatic post-install
   check is deferred until that manifest exists; create it and re-run the installer with the same selection. This does
   not change the standalone check's failure for missing manifests. `--only=css` does not validate the JavaScript manifest
-  or dependencies.
+  or dependencies; combining it with `--fix` now fails before writing files instead of accepting an ineffective flag.
 - Loader metadata schema **3** is the only supported format, both for reading and writing. Metadata was first shipped
   with schema 3 in **0.67.0**; schemas 1 and 2 were never emitted by a released package and have no compatibility window.
   Schema numbers are independent of the npm package version.

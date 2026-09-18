@@ -404,7 +404,7 @@ it('skips JavaScript post-install checks during CSS-only installs with dependenc
     File::ensureDirectoryExists(resource_path('js/controllers'));
     File::put(resource_path('js/controllers/index.js'), $loader);
 
-    $exit = Artisan::call("hotwire:install --only=css {$flags} --fix --skip-install --no-interaction");
+    $exit = Artisan::call("hotwire:install --only=css {$flags} --skip-install --no-interaction");
 
     expect($exit)->toBe(0)
         ->and(Artisan::output())->not->toContain('Verifying view usage matches install config')
@@ -413,6 +413,19 @@ it('skips JavaScript post-install checks during CSS-only installs with dependenc
         ->and(File::get($this->packageJsonPath))->toBe($manifest)
         ->and(File::get(resource_path('js/controllers/index.js')))->toBe($loader);
 })->with(['--core-only', '--with-deps=chart']);
+
+it('rejects fix during CSS-only installs before writing files', function (string $flags) {
+    $manifest = '{"name":"test"}';
+    File::put($this->packageJsonPath, $manifest);
+
+    $this->artisan("hotwire:install --only=css --fix {$flags} --no-interaction")
+        ->expectsOutputToContain('Cannot combine --only=css with --fix. CSS-only installs do not run post-install verification.')
+        ->assertFailed();
+
+    expect(File::exists(resource_path('css/app.css')))->toBeFalse()
+        ->and(File::exists(resource_path('js/controllers/index.js')))->toBeFalse()
+        ->and(File::get($this->packageJsonPath))->toBe($manifest);
+})->with(['', '--core-only', '--with-deps=chart']);
 
 it('ignores ambiguous local controllers unrelated to the install policy', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
