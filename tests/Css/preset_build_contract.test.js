@@ -67,9 +67,11 @@ describe("public CSS presets", () => {
         const nova = await readFile(new URL("../../resources/css/presets/nova.css", import.meta.url), "utf8");
         const direct = nova.replace(
             '@import "../foundation.css";',
-            ['@import "../tokens.css";', '@import "../custom-variants.css";', '@import "../structural.css";'].join(
-                "\n",
-            ),
+            [
+                '@import "../tokens.css";',
+                '@import "../custom-variants.css";',
+                '@import "../structural.css";',
+            ].join("\n"),
         );
         const css = await compileCssFixture(stub.replace("nova.css", "nova-direct.css"), {
             setup: async (directory) => {
@@ -213,7 +215,9 @@ describe("public CSS presets", () => {
         const css = contract.outputs.blankScaffold;
         const source = contract.sources.blankScaffold;
 
-        expect(source).toContain('@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";');
+        expect(source).toContain(
+            '@import "../../../vendor/emaia/laravel-hotwire/resources/css/foundation.css";',
+        );
         expect(source).toMatch(/\[data-slot="button"\] \{\}/);
         expect(css).toContain("--background:");
         expect(css).toMatch(carouselMechanic);

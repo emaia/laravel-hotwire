@@ -25,16 +25,19 @@ dataset('preset generation commands', [
     'subset' => ['hotwire:styles --preset=nova --components=button --force --no-interaction', 'css/hotwire.css'],
 ]);
 
-it('generates identical artifacts for equivalent supported import syntax', function (string $command, string $output) {
+it('generates identical artifacts for equivalent supported import syntax', function (string $replacement, string $command, string $output) {
     $this->artisan($command)->assertSuccessful();
     $expected = File::get(resource_path($output));
     $path = $this->cssRoot.'/presets/nova.css';
-    File::put($path, str_replace(['@import ', '";'], ['@IMPORT/* source */', '" /* ; */;'], File::get($path)));
+    File::put($path, str_replace(['@import ', '";'], ['@IMPORT/* source */', $replacement], File::get($path)));
 
     $this->artisan($command)->assertSuccessful();
 
     expect(File::get(resource_path($output)))->toBe($expected);
-})->with('preset generation commands');
+})->with([
+    'comments' => '" /* ; */;',
+    'URL suffixes' => '?v=1#theme";',
+])->with('preset generation commands');
 
 it('preserves existing artifacts when a source contains an unsupported import', function (
     string $css,
@@ -56,4 +59,5 @@ it('preserves existing artifacts when a source contains an unsupported import', 
     'late' => ['[data-slot="badge"] {} @import "./button.css";', 'malformed or misplaced @import'],
     'malformed' => ['@import "./button.css"', 'malformed or misplaced @import'],
     'conditional' => ['@import "./button.css" supports(display: grid);', 'unsupported import conditions'],
+    'invalid syntax' => ['@layer base ); @import "./button.css";', 'invalid CSS syntax in [presets/nova/badge.css]'],
 ])->with('preset generation commands');

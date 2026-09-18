@@ -197,7 +197,9 @@ the same layer, the later one wins; reordering a clone can therefore change whic
 Clone and selective-bundle generation use the same import parser as application preset validation. Imports must be
 top-level and precede style rules. Compact quoted imports, case-insensitive keywords and comments used as whitespace
 are supported. Nested, late or malformed imports fail explicitly, including in sources excluded from a selection;
-they are never promoted to unconditional rules or left behind in generated CSS. Local imports with `layer`, `supports`
+lexically invalid CSS is reported separately. Imports are never promoted to unconditional rules or left behind in
+generated CSS. Query strings and fragments on local import URLs are ignored for filesystem resolution, just as in
+application preset validation; diagnostics retain the original URL. Local imports with `layer`, `supports`
 or media conditions cannot be flattened and are rejected. CSS escapes in import paths are rejected too; this does not
 affect Windows filesystem paths passed to the resolver.
 

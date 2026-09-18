@@ -15,6 +15,7 @@ final class PresetSourceResolver
         ?string $cssRoot = null,
         ?FoundationFacade $foundationFacade = null,
         private readonly CssImports $imports = new CssImports,
+        private readonly CssRules $rules = new CssRules,
     ) {
         $cssRoot = CssPath::normalize($cssRoot ?? dirname(__DIR__, 2).'/resources/css');
         $this->cssRoot = rtrim(CssPath::normalize(realpath($cssRoot) ?: $cssRoot), '/');
@@ -109,12 +110,17 @@ final class PresetSourceResolver
 
         $visited[$path] = true;
         $stack[] = $path;
-        $css = $this->files->get($path);
-        $css = str_starts_with($css, "\xEF\xBB\xBF") ? substr($css, 3) : $css;
+        $css = $this->rules->stripBom($this->files->get($path));
         $imports = $this->imports->parse($css);
         $visual = trim($this->imports->remove($css, $imports));
 
         if ($this->imports->contains($visual)) {
+            if (! $this->rules->scan($css)['valid']) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] contains invalid CSS syntax in [{$this->relative($path)}]."
+                );
+            }
+
             throw new PresetSourceException(
                 "Preset [{$preset}] contains a malformed or misplaced @import in [{$this->relative($path)}]."
             );
@@ -124,12 +130,14 @@ final class PresetSourceResolver
         $hasVisualImport = false;
 
         foreach ($imports as $import) {
-            if (str_contains($import['path'], '\\')) {
-                throw new PresetSourceException("Preset [{$preset}] import paths cannot contain CSS escapes.");
-            }
-
             if (! str_starts_with($import['path'], '.')) {
                 throw new PresetSourceException("Preset [{$preset}] supports only local CSS imports.");
+            }
+
+            if (str_contains($import['path'], '\\')) {
+                throw new PresetSourceException(
+                    "Preset [{$preset}] import paths cannot contain CSS escapes in [{$this->relative($path)}]."
+                );
             }
 
             if ($import['conditions'] !== '') {
@@ -138,7 +146,8 @@ final class PresetSourceResolver
                 );
             }
 
-            $target = CssPath::normalize(dirname($path).'/'.$import['path']);
+            $importPath = preg_replace('/[?#].*$/', '', $import['path']) ?? $import['path'];
+            $target = CssPath::normalize(dirname($path).'/'.$importPath);
 
             if (! $this->insideCssRoot($target)) {
                 throw new PresetSourceException(
@@ -246,7 +255,7 @@ final class PresetSourceResolver
 
         $last = $imports[array_key_last($imports)];
         $prefix = $this->imports->remove(substr($css, 0, $last['offset'] + $last['length']), $imports);
-        $prefix = preg_replace('~/\*.*?\*/~s', '', $prefix) ?? $prefix;
+        $prefix = $this->rules->stripComments($prefix);
 
         if (trim($prefix) !== '') {
             throw new PresetSourceException(

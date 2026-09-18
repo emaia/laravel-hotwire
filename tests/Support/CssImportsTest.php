@@ -2,6 +2,21 @@
 
 use Emaia\LaravelHotwire\Support\CssImports;
 
+it('retains comment-like text inside quoted import conditions', function () {
+    $imports = (new CssImports)->parse('@import "./theme.css" supports(font-family: "/* literal */") /* comment */;');
+
+    expect($imports[0]['conditions'])->toBe('supports(font-family: "/* literal */")');
+});
+
+it('preserves original offsets and remaining content when parsing after a BOM', function () {
+    $parser = new CssImports;
+    $css = "\xEF\xBB\xBF".'@import "./theme.css"; body {}';
+    $imports = $parser->parse($css);
+
+    expect($imports[0]['offset'])->toBe(3)
+        ->and($parser->remove($css, $imports))->toBe("\xEF\xBB\xBF".' body {}');
+});
+
 it('detects remaining import tokens independently of placement without reading strings or comments', function (string $css, bool $expected) {
     expect((new CssImports)->contains($css))->toBe($expected);
 })->with([

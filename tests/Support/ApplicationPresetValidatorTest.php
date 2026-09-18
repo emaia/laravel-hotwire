@@ -50,6 +50,14 @@ it('accepts a complete synthetic preset without requiring official selector voca
         ]);
 });
 
+it('resolves local import URLs with query strings and fragments', function () {
+    $this->files->put($this->entrypoint, str_replace('.css";', '.css?v=1#theme";', $this->files->get($this->entrypoint)));
+
+    $result = $this->validator->validate($this->entrypoint, $this->registry, $this->root.'/resources/css');
+
+    expect($result['errors'])->toBe([])->and($result['warnings'])->toBe([]);
+});
+
 it('reports missing visual slots and undeclared slot references as proven errors', function () {
     $path = $this->root.'/resources/css/presets/constellation/feedback.css';
     $this->files->put($path, str_replace(

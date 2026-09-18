@@ -115,6 +115,7 @@ it('rejects imports that cannot be preserved when visual sources are flattened',
 })->with([
     'bare' => '"tailwindcss"',
     'remote' => 'url("https://example.com/theme.css")',
+    'remote with escape' => '"https://example.com/\\theme.css"',
 ]);
 
 it('ignores imports inside comments and strings', function () {
@@ -147,6 +148,10 @@ it('resolves supported import spellings consistently for clones and selections',
     'comment instead of conditions' => '@import "./demo/forms.css" /* unconditional */;',
     'semicolon inside comment' => '@import "./demo/forms.css" /* ; */;',
     'UTF-8 BOM' => "\xEF\xBB\xBF".'@import "./demo/forms.css";',
+    'query' => '@import "./demo/forms.css?v=1";',
+    'fragment' => '@import "./demo/forms.css#theme";',
+    'query and fragment' => '@import url("./demo/forms.css?v=1#theme");',
+    'fragment before query' => '@import "./demo/forms.css#theme?v=1";',
 ]);
 
 it('rejects malformed and misplaced imports before flattening any source', function (string $css, bool $nested) {
@@ -169,9 +174,25 @@ it('rejects malformed and misplaced imports before flattening any source', funct
     'missing semicolon' => '@import "__PATH__"',
     'missing path' => '@import;',
     'unquoted path' => '@import __PATH__;',
-    'unclosed string' => '@import "__PATH__;',
-    'unmatched delimiter' => '@layer base ); @import "__PATH__";',
     'after valid import' => '@import "__PATH__"; @import;',
+])->with([false, true]);
+
+it('reports lexical failures instead of blaming a remaining import', function (string $css, bool $nested) {
+    $path = $nested ? 'presets/demo/aggregate.css' : 'presets/demo.css';
+    writePresetCss($this->root, $path, $css);
+    $entrypoint = $nested
+        ? writePresetCss($this->root, 'presets/demo.css', '@import "./demo/aggregate.css";')
+        : $this->root.'/'.$path;
+
+    foreach ([null, []] as $selection) {
+        expect(fn () => $this->resolver->resolve($entrypoint, $selection))
+            ->toThrow(PresetSourceException::class, "Preset [demo] contains invalid CSS syntax in [{$path}].");
+    }
+})->with([
+    'unclosed string' => '@import "./forms.css;',
+    'unmatched delimiter' => '@layer base ); @import "./forms.css";',
+    'unclosed comment' => '@import /* unfinished',
+    'unclosed url' => '@import url("./forms.css";',
 ])->with([false, true]);
 
 it('rejects CSS escapes in import paths rather than treating them as filesystem separators', function () {
@@ -179,8 +200,28 @@ it('rejects CSS escapes in import paths rather than treating them as filesystem 
     $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import ".\\demo\\forms.css";');
 
     expect(fn () => $this->resolver->resolve($entrypoint))
-        ->toThrow(PresetSourceException::class, 'Preset [demo] import paths cannot contain CSS escapes.');
+        ->toThrow(PresetSourceException::class, 'Preset [demo] import paths cannot contain CSS escapes in [presets/demo.css].');
 });
+
+it('uses canonical file identity for duplicate imports with different URL suffixes', function (string $target, string $diagnostic) {
+    writePresetCss($this->root, $target, '[data-slot="input"] {}');
+    $import = $target === 'tokens.css' ? '../tokens.css' : './demo/forms.css';
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', "@import \"{$import}?v=1\"; @import \"{$import}#theme\";");
+
+    expect(fn () => $this->resolver->resolve($entrypoint))->toThrow(PresetSourceException::class, $diagnostic);
+})->with([
+    'foundation' => ['tokens.css', 'imports shared foundation [tokens.css] more than once.'],
+    'visual' => ['presets/demo/forms.css', 'includes visual stylesheet [presets/demo/forms.css] more than once.'],
+]);
+
+it('retains the original URL in errors after removing its suffix for resolution', function (string $url, string $diagnostic) {
+    $entrypoint = writePresetCss($this->root, 'presets/demo.css', '@import "'.$url.'";');
+
+    expect(fn () => $this->resolver->resolve($entrypoint))->toThrow(PresetSourceException::class, $diagnostic);
+})->with([
+    'missing' => ['./demo/missing.css?v=1#theme', 'cannot resolve local import [./demo/missing.css?v=1#theme] from [presets/demo.css].'],
+    'outside root' => ['../../private.css?v=1#theme', 'local import [../../private.css?v=1#theme] from [presets/demo.css] leaves the package CSS directory.'],
+]);
 
 it('rejects preludes that flattening would move behind imported styles', function (string $css) {
     writePresetCss($this->root, 'presets/demo/forms.css', '@layer first { [data-slot="input"] {} }');
