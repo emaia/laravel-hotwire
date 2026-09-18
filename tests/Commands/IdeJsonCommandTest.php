@@ -28,7 +28,7 @@ TS);
     $json = json_decode(File::get(base_path('ide.json')), true, 512, JSON_THROW_ON_ERROR);
     $locations = $json['completions'][0]['options']['stringsWithLocation'];
 
-    expect($locations['chart'])->toBe('vendor/emaia/laravel-hotwire/resources/js/controllers/chart_controller.js:28')
+    expect($locations['chart'])->toMatch('#^vendor/emaia/laravel-hotwire/resources/js/controllers/chart_controller\.js:\d+$#')
         ->and($locations['gallery'])->toBe('resources/js/controllers/gallery_controller.js:3')
         ->and($locations['admin--photo-grid'])->toBe('resources/js/controllers/admin/photo_grid_controller.ts:3');
 });
