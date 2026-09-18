@@ -141,7 +141,9 @@ class InstallCommand extends Command
      */
     private function runPostInstallCheck(): void
     {
-        if (! $this->option('core-only') && $this->controllerFilter() === null) {
+        if ($this->option('only') === 'css'
+            || (! $this->option('core-only') && $this->controllerFilter() === null)
+        ) {
             return;
         }
 

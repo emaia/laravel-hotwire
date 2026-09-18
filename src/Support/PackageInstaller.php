@@ -29,7 +29,7 @@ class PackageInstaller
                 return;
             }
 
-            throw new RuntimeException("package.json not found. The controller loader requires $version of $package. Create a package.json and install $package $version.");
+            throw new RuntimeException("package.json not found. Create a package.json and install $package $version.");
         }
 
         $json = json_decode($files->get($path), true);

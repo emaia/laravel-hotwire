@@ -1777,7 +1777,8 @@ it('fails loader dependency validation with a specific manifest recovery message
 
     expect($exit)->toBe(1)
         ->and(Artisan::output())->toContain('package.json')
-        ->toContain('requires ^2.0.0')
+        ->toContain('@emaia/stimulus-lazy-loader')
+        ->toContain('^2.0.0')
         ->toContain($message);
 
     if ($content === null) {

@@ -1,6 +1,8 @@
 <?php
 
+use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\LoaderStub;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
@@ -394,6 +396,23 @@ it('does not resolve controller policy during a CSS-only install', function () {
     $this->artisan('hotwire:install --only=css --no-interaction')
         ->assertSuccessful();
 });
+
+it('skips JavaScript post-install checks during CSS-only installs with dependency flags', function (string $flags) {
+    $manifest = json_encode(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^1.1.0']]);
+    File::put($this->packageJsonPath, $manifest);
+    $loader = LoaderStub::generate(HotwireRegistry::make());
+    File::ensureDirectoryExists(resource_path('js/controllers'));
+    File::put(resource_path('js/controllers/index.js'), $loader);
+
+    $exit = Artisan::call("hotwire:install --only=css {$flags} --fix --skip-install --no-interaction");
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->not->toContain('Verifying view usage matches install config')
+        ->not->toContain('@emaia/stimulus-lazy-loader')
+        ->and(File::exists(resource_path('css/app.css')))->toBeTrue()
+        ->and(File::get($this->packageJsonPath))->toBe($manifest)
+        ->and(File::get(resource_path('js/controllers/index.js')))->toBe($loader);
+})->with(['--core-only', '--with-deps=chart']);
 
 it('ignores ambiguous local controllers unrelated to the install policy', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
