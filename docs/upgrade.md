@@ -6,6 +6,26 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+These changes apply when upgrading from **0.77.0** to the next release. The
+[0.77.0 and earlier](#0770-and-earlier) section contains previously shipped migrations, not additional changes in this
+release.
+
+### Upgrade an existing application
+
+1. Keep the public `presets/nova.css` import when using Nova, or switch to `presets/bloom.css` to adopt Bloom. Enable
+   exactly one preset per CSS entrypoint and rebuild the application's assets.
+2. For an application-owned preset or clone, adopt the foundation facade, new visual slots, Sidebar geometry and
+   nearest-theme rules described below. Generate a fresh clone under a temporary name for comparison; do not overwrite
+   a maintained preset with `--force` unless replacing its customizations is intentional.
+3. Regenerate selective bundles with their original `hotwire:styles` selection and `--force`. Include dynamically
+   rendered Tooltip/Toaster content explicitly when static view scanning cannot discover it.
+4. Review published component views and controllers together. Merge the updated icon parts and Tooltip/Toaster
+   templates into customized views, and reconcile published controllers with the corresponding package versions.
+   Run `php artisan hotwire:check --no-interaction` to detect drift and validate imported application presets; use
+   `--preset=brand` for a maintained preset that is not imported yet.
+5. Run the production build and exercise the affected components in the application. Check local themes and direction
+   on portaled content, then perform a full page reload to replace any Turbo-permanent Toaster blueprint.
+
 ### Sidebar composition has explicit limits
 
 A complete Sidebar inside another Sidebar's surface is no longer a supported composition. Earlier guidance and
@@ -175,6 +195,39 @@ Dropdown disclosure indicators can now use `dropdown.trigger-icon`. Replace a ma
 `data-slot="dropdown-trigger-icon"` on the graphic with the wrapper when using Blade composition. The low-level slot
 remains available for raw controller markup, and unrelated trigger icons do not rotate.
 
+### Preset dark surfaces follow the nearest theme
+
+Nova's dark-specific surface and state rules now stop at an explicit light theme boundary. Bloom uses the same policy.
+Semantic tokens and native `color-scheme` already followed the nearest theme in 0.77.0; this release extends that behavior
+to the presets' dark-tuned surfaces. A nested `[data-theme="light"]` island inside a dark page therefore paints complete
+light surfaces, while another nested `[data-theme="dark"]` island restores the dark treatment.
+
+Application-authored `dark:` utilities, including those copied into an application-owned Nova clone, keep Tailwind's
+ancestor-matching behavior and cross nested light boundaries. To adopt nearest-theme behavior, move each dark adjustment
+out of its style rule and into a top-level scope inside the same layer:
+
+```css
+@scope ([data-theme="dark"]) to ([data-theme="light"]) {
+    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
+        @apply border-input bg-input/30 hover:bg-input/50;
+    }
+}
+```
+
+The `:scope` branch includes a component that carries `data-theme="dark"` itself; `:scope *` covers its descendants.
+Keep the `@scope` outside style rules because `@apply` cannot emit a working scoped at-rule from a variant. See the
+[browser requirements](theming.md#colour-space) before adopting these rules in a maintained preset.
+
+This does not carry a trigger's theme or direction into content portaled elsewhere in the document. Put an explicit
+`data-theme` or `dir` on authored Tooltip content when it must preserve a local context, and choose the Toaster viewport's
+theme and direction at its own location.
+
+## 0.77.0 and earlier
+
+The migrations below were already present in 0.77.0 and span several earlier releases. Applications upgrading from
+0.77.0 do not need to repeat them. If upgrading from an older version, consult that version's release notes to determine
+which steps apply.
+
 ### Breadcrumb validates its item descriptors
 
 `<hw:breadcrumb>` now validates the `items` descriptors it is given, instead of coercing them and rendering an
@@ -264,25 +317,10 @@ existing application overrides too — write `:root:not([data-theme="dark"])` th
 `:root` rule after the preset also matches `<html data-theme="dark">` and can override dark values through source order.
 Bare `:root` remains appropriate for theme-independent values such as `--radius`.
 
-The package light token block is guarded as well, without increasing its specificity. Semantic tokens, `color-scheme`
-and Nova's dark-tuned surfaces now follow the nearest explicit theme scope. A nested `[data-theme="light"]` island
-inside a dark page therefore paints complete light surfaces and native controls, while another nested
-`[data-theme="dark"]` island restores the dark treatment.
-
-Application-authored `dark:` utilities, including those copied into an application-owned Nova clone, keep Tailwind's
-ancestor-matching behavior and cross nested light boundaries. To adopt nearest-theme behavior, move each dark adjustment
-out of its style rule and into a top-level scope inside the same layer:
-
-```css
-@scope ([data-theme="dark"]) to ([data-theme="light"]) {
-    :where(:scope, :scope *)[data-slot="button"][data-variant="outline"] {
-        @apply border-input bg-input/30 hover:bg-input/50;
-    }
-}
-```
-
-The `:scope` branch includes a component that carries `data-theme="dark"` itself; `:scope *` covers its descendants.
-Keep the `@scope` outside style rules because `@apply` cannot emit a working scoped at-rule from a variant.
+The package light token block is guarded as well, without increasing its specificity. In 0.77.0, semantic tokens and
+`color-scheme` follow the nearest explicit theme scope, but Nova's `dark:` surface rules still match any dark ancestor.
+See [Preset dark surfaces follow the nearest theme](#preset-dark-surfaces-follow-the-nearest-theme) for the subsequent
+preset migration.
 
 The 11 packaged semantic foreground/background pairs are verified from rendered browser colours at `4.50:1` or higher.
 `hotwire:check` does not parse or restrict application colour syntax; contrast after custom overrides remains an

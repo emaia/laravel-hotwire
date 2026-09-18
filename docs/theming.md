@@ -200,7 +200,7 @@ Application-authored `dark:` utilities still use Tailwind's ancestor variant exp
 descendant of a dark ancestor and do not stop at a nested `[data-theme="light"]` boundary. Prefer semantic tokens when
 both themes can share a declaration. When an application visual needs different dark declarations, move them into a
 top-level `@scope ([data-theme="dark"]) to ([data-theme="light"])` block as shown in
-[Upgrade](upgrade.md#semantic-tokens-enforce-readable-contrast-and-nested-color-schemes).
+[Upgrade](upgrade.md#preset-dark-surfaces-follow-the-nearest-theme).
 
 The unthemed document stays fully light even when the operating system prefers dark. Use the Color Scheme script when
 the page should follow that preference; advertising both schemes while keeping an unconditional light palette would let
@@ -215,8 +215,8 @@ See [`docs/components/color-scheme.md`](components/color-scheme.md) for the pack
 
 All tokens use the **OKLCH** colour space for perceptually uniform lightness and predictable blending. Browsers that do
 not support OKLCH (Safari < 15.4, Chrome and Edge < 111, Firefox < 113) will not render themed components. Official
-preset nearest-theme surfaces and Sidebar icon-collapsed rules use CSS `@scope`, raising the effective minimum to Safari and
+preset nearest-theme surfaces use CSS `@scope`, raising the effective minimum to Safari and
 iOS 17.4, Chrome and Edge 118, Firefox 146, Opera 106 and Samsung Internet 25. Browsers below that floor ignore the
 scoped rules: semantic dark tokens still resolve when OKLCH is supported, but presets lose their dark-specific surface and
-state adjustments across controls, while the Sidebar's scoped icon-collapse rules do not apply. Firefox ESR 140 does
+state adjustments across controls. Firefox ESR 140 does
 not meet this requirement; Firefox ESR 153 does.
