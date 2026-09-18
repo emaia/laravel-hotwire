@@ -48,6 +48,29 @@ function commandTableRow(string $token, string $default): string
     return '/^\|\s*`'.preg_quote($token, '/').'`\s*\|\s*`'.preg_quote($default, '/').'`\s*\|/m';
 }
 
+/** @return string[] */
+function documentedControllerNames(string $contents): array
+{
+    $contents = preg_replace('/\\\\\R[ \t]*/', ' ', $contents) ?? $contents;
+    preg_match_all('/hotwire:make-controller\b([^`\r\n]*)/', $contents, $matches);
+
+    $names = [];
+
+    foreach ($matches[1] as $arguments) {
+        $tokens = preg_split('/[ \t]+/', trim($arguments), flags: PREG_SPLIT_NO_EMPTY) ?: [];
+
+        foreach ($tokens as $token) {
+            if (! str_starts_with($token, '-')) {
+                $names[] = $token;
+
+                break;
+            }
+        }
+    }
+
+    return $names;
+}
+
 /** @return array<string, Command> */
 function packageCommands(): array
 {
@@ -58,7 +81,7 @@ function packageCommands(): array
 }
 
 it('documents the complete public command API from the registered definitions', function () {
-    $documentation = File::get(__DIR__.'/../../docs/commands.md');
+    $documentation = str_replace(["\r\n", "\r"], "\n", File::get(__DIR__.'/../../docs/commands.md'));
     preg_match_all('/^## `(hotwire:[^`]+)`$/m', $documentation, $matches);
 
     $commands = packageCommands();
@@ -96,11 +119,21 @@ it('links the command API from the main documentation index', function () {
 
 it('uses namespaced names in documented make-controller invocations', function () {
     foreach (File::allFiles(__DIR__.'/../../docs') as $file) {
-        $contents = $file->getContents();
-        preg_match_all('/hotwire:make-controller\s+([^\s`]+)/', $contents, $matches);
-
-        foreach ($matches[1] as $name) {
+        foreach (documentedControllerNames($file->getContents()) as $name) {
             expect($name)->toContain('/');
         }
     }
+});
+
+it('finds make-controller names after command options', function () {
+    $contents = <<<'MARKDOWN'
+        `php artisan hotwire:make-controller --ts form/autosave`
+
+        ```shell
+        php artisan hotwire:make-controller --force \
+            admin/report
+        ```
+        MARKDOWN;
+
+    expect(documentedControllerNames($contents))->toBe(['form/autosave', 'admin/report']);
 });
