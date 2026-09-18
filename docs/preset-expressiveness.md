@@ -117,9 +117,10 @@ extension point and Bloom gives it a surface. `structural.css` owns only invaria
 Those shared mechanics live in `@layer components`. They are package defaults, not a cascade lock: later preset or
 application rules can deliberately replace them. Sidebar keeps each coupled pair on the same side of that boundary:
 structural CSS owns zero-specificity gap/container widths and offcanvas offsets, while presets set
-`--sidebar-floating-inset` and `--sidebar-floating-edge` for their visual padding and edge treatment. `@scope` still
-isolates icon geometry from nested providers and participates in cascade proximity ties; wrapping the complete geometry
-selectors in `:where()` avoids relying on such a tie. Attachment and Table need no zero-specificity wrapper because
+`--sidebar-floating-inset` and `--sidebar-floating-edge` for their visual padding and edge treatment. Sidebar geometry
+targets its direct-child gap and container through zero-specificity `:where()` defaults. A complete Sidebar inside
+another Sidebar's surface is outside the [supported composition](components/sidebar.md#supported-composition); presets
+do not maintain recursive provider-scope styling for it. Attachment and Table need no zero-specificity wrapper because
 their simple structural rules already tie a simple slotted application override, which wins by source order. Nova and
 Bloom still choose transition timing and easing.
 

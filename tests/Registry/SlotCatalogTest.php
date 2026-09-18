@@ -374,33 +374,6 @@ it('collects utilities only when the requested slot is the final slot target', f
         ->toBe(['relative']);
 });
 
-it('stops Sidebar icon mode rules at nested providers', function (string $preset) {
-    $stylesheets = [
-        File::get(__DIR__.'/../../resources/css/structural.css'),
-        app(CssPresetFiles::class)->source($preset)->visualCss(),
-    ];
-    $matched = 0;
-
-    foreach ($stylesheets as $css) {
-        foreach ((new CssRules)->parse((new CssRules)->stripComments($css)) as ['chain' => $chain]) {
-            $selector = (string) end($chain);
-
-            if (! str_contains($selector, '[data-slot="sidebar"]')
-                || ! str_contains($selector, '[data-collapsible="icon"]')) {
-                continue;
-            }
-
-            $matched++;
-
-            expect($chain)->toContain(
-                '@scope ([data-slot="sidebar"][data-collapsible="icon"]) to ([data-slot="sidebar-wrapper"])'
-            );
-        }
-    }
-
-    expect($matched)->toBeGreaterThan(0);
-})->with('slot catalog presets');
-
 it('keeps rules that name no slot out of preset modules', function (string $preset) {
     // A preset groups by component; a rule keyed on a technical hook alone belongs to none of them.
     $source = app(CssPresetFiles::class)->source($preset);
