@@ -94,5 +94,8 @@ model-derived and explicit IDs are checked too, including when the same model-ba
 | Component targeted by CSS, JavaScript, tests, or Turbo Streams | Pass an explicit string |
 | Two instances of the same component for one model | Use distinct `dom_id()` prefixes |
 
-Form controls continue to derive their ids from `name`. Pass an explicit control or Field `id` when the same field name
-appears more than once in the current document.
+Fields inside an `<hw:form>` derive their ids from the form's identity, so the same `name` stays unique across forms in
+one document. Give the form an explicit or model `id` when its fields live in a reorderable collection or when the form
+itself is refreshed alone by a Turbo Frame or Stream: the automatic form id is positional, and its scope changes between
+page and frame renders, which would move every field id along with it. Fields outside a form keep their name-derived
+ids; pass an explicit control or Field `id` when the same name appears more than once outside a form.

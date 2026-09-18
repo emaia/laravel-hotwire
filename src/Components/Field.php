@@ -3,7 +3,9 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FieldContext;
+use Emaia\LaravelHotwire\Support\FieldKey;
 use Emaia\LaravelHotwire\Support\FieldOwnerContext;
 use InvalidArgumentException;
 
@@ -48,6 +50,15 @@ class Field extends Component
     ) {
         if (! in_array($this->set, [null, 'group', 'radiogroup'], true)) {
             throw new InvalidArgumentException('The Field set prop must be group, radiogroup, or null.');
+        }
+
+        if ($this->id === null && $this->name !== null && $this->name !== '') {
+            $scope = FieldKey::scope();
+
+            if ($scope !== null) {
+                $this->id = FieldKey::scopedToId($scope, $this->name);
+                app(ComponentId::class)->claim($scope, $this->id.'-error');
+            }
         }
 
         $this->context = new FieldContext(

@@ -27,6 +27,8 @@ final class FieldContext
     /** Return component data that prevents Field and selection-owner context from crossing a boundary. */
     public static function boundaryData(): array
     {
+        // fieldScope is deliberately not reset: an overlay rendered inside a form still
+        // belongs to that form's DOM subtree, so its fields keep the form's id scope.
         return [
             'fieldName' => null,
             'fieldId' => null,
@@ -129,9 +131,13 @@ final class FieldContext
         return $labelId;
     }
 
-    /** Resolve the id base a direct selection owner inherits from this Field. */
+    /** Resolve the id base a direct selection owner inherits from this Field, reserving a unique base id when a divergent name is scoped to the enclosing form. */
     public function selectionId(?string $id, ?string $name): ?string
     {
+        if (($id === null || $id === '') && $name !== null && $name !== '' && $name !== $this->name) {
+            return FieldKey::scopedToId(FieldKey::scope(), $name);
+        }
+
         return FieldKey::resolveId($id, $name, $this->id, $this->name);
     }
 

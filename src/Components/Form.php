@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\FrameTarget;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\View\ComponentAttributeBag;
@@ -25,9 +26,11 @@ class Form extends Component
         'enctype',
         'state',
         'stimulus',
+        'id',
     ];
 
     public function __construct(
+        public string|object $id = '',
         public bool $autoSubmit = false,
         public bool $unsavedChanges = false,
         public bool $errorScroll = false,
@@ -40,6 +43,7 @@ class Form extends Component
         public mixed $state = null,
         public ?Htmlable $stimulus = null,
     ) {
+        $this->id = app(ComponentId::class)->resolve($this->id, 'hw-form', 'form');
         $this->frame = FrameTarget::normalize($this->frame);
     }
 
@@ -55,6 +59,7 @@ class Form extends Component
     {
         $data = parent::data();
         $data['formRoot'] = $this;
+        $data['fieldScope'] = $this->id;
         $data['conditionalFieldState'] = $this->state;
         $data['compute'] = $this->computeResolved(...);
 

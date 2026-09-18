@@ -10,6 +10,9 @@ final class ComponentId
     /** @var array<string, int> */
     private array $counters = [];
 
+    /** @var array<string, array<string, true>> */
+    private array $claimedIds = [];
+
     public function __construct(private readonly Request $request) {}
 
     /** Resolve an explicit string or model identity, falling back to the current render sequence. */
@@ -30,6 +33,22 @@ final class ComponentId
         $ordinal = $this->counters[$counter] = ($this->counters[$counter] ?? 0) + 1;
 
         return "{$prefix}-{$scope}-{$ordinal}";
+    }
+
+    /** Reserve a preferred id in a scope, appending a numeric suffix until it is free. */
+    public function claim(string $scope, string $id): string
+    {
+        $candidate = $id;
+        $suffix = 2;
+
+        while (isset($this->claimedIds[$scope][$candidate])) {
+            $candidate = $id.'-'.$suffix;
+            $suffix++;
+        }
+
+        $this->claimedIds[$scope][$candidate] = true;
+
+        return $candidate;
     }
 
     private function renderScope(): string
