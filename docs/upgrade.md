@@ -6,6 +6,21 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Sidebar composition has explicit limits
+
+A complete Sidebar inside another Sidebar's surface is no longer a supported composition. Earlier guidance and
+icon-mode CSS attempted to isolate nested providers inside the navigation surface; that recursive styling support has
+been removed before 1.0. Adding another `sidebar.provider` inside the surface does not restore it.
+
+Replace recursive Sidebars with `sidebar.menu-sub` for hierarchical navigation or [Side Panel](components/side-panel.md)
+for contextual navigation and tools. Independent providers in the main content area remain supported, with their
+controller, Blade context and Turbo identity boundaries preserved. Use distinct cookie names for separate providers.
+
+Maintained presets and published views should follow the [supported Sidebar composition](components/sidebar.md#supported-composition)
+instead of relying on the old Sidebar-specific `@scope` boundaries. Gap and container geometry still uses the common
+direct-child anatomy and remains overridable. This change does not remove nesting support from Side Panel or from
+overlay components generally.
+
 ### Shared foundations use one public facade
 
 Official presets, generated selective bundles and application preset scaffolds now import
