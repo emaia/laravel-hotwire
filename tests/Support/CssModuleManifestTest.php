@@ -448,6 +448,13 @@ it('selects Toaster visuals through the package component but not the standalone
         ->and($manifest->modulesFor([], ['toaster']))->toBe([]);
 });
 
+it('selects Video Embed visuals through the package component but not the standalone OEmbed controller', function () {
+    $manifest = app(CssModuleManifest::class);
+
+    expect($manifest->modulesFor(['video-embed'], []))->toContain('video-embed')
+        ->and($manifest->modulesFor([], ['oembed']))->toBe([]);
+});
+
 it('includes upload state styling with the file upload component', function () {
     expect(app(CssModuleManifest::class)->modulesFor(['file-upload'], []))
         ->toContain('file-upload', 'text-shimmer');

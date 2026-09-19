@@ -1172,6 +1172,11 @@
                     "name": "tooltip",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Tooltip"
+                },
+                {
+                    "name": "video-embed",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\VideoEmbed"
                 }
             ],
             "phpNamespaces": [

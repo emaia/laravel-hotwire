@@ -230,7 +230,7 @@ test("structural component selectors work before their controllers connect", asy
             <input id="clearable" class="clear-input--touched" data-slot="input" data-clear-input-target="input" value="Search">
             <button id="clear" class="hidden" data-slot="clear-input-button" data-clear-input-target="clearButton">Clear</button>
         </span>
-        <div id="embed" data-slot="oembed"><iframe id="frame" data-slot="oembed-frame"></iframe></div>
+        <div id="embed" data-slot="video-embed"><iframe id="frame" data-slot="video-embed-frame"></iframe></div>
     `);
 
     await page.locator("html").evaluate((element) => {
@@ -432,11 +432,11 @@ test("shared component mechanics yield to later application overrides", async ({
     await expect(page.locator("#sidebar-offcanvas-container")).toHaveCSS("left", "42px");
 });
 
-test("OEmbed inherits an application aspect ratio without losing structural geometry", async ({ page }) => {
+test("Video Embed inherits an application aspect ratio without losing structural geometry", async ({ page }) => {
     await page.setContent(`
         <style>${presetCss}</style>
-        <div style="--oembed-aspect-ratio: 4 / 3">
-            <div id="embed" data-slot="oembed"><iframe data-slot="oembed-frame"></iframe></div>
+        <div style="--video-embed-aspect-ratio: 4 / 3">
+            <div id="embed" data-slot="video-embed"><iframe data-slot="video-embed-frame"></iframe></div>
         </div>
     `);
 

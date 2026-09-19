@@ -79,6 +79,30 @@ rendered standalone by a Turbo Frame or Stream — the automatic id is positiona
 frame renders, moving every field id along with it. See
 [Stable component ids](recipes/stable-component-ids.md).
 
+### Video Embed owns direct video URLs
+
+The `oembed` controller remains available for editor-generated HTML, but its structural slots no longer select package
+visual styling. For a known URL stored by the application, use the server-rendered component:
+
+```blade
+<hw:video-embed
+    :url="$page->hero_video_url"
+    title="Product walkthrough"
+    loading="eager"
+    privacy
+/>
+```
+
+The component renders its iframe or fallback link entirely on the server. It is intended for direct application fields,
+not as a wrapper around rich text HTML. Use `ratio` for responsive geometry, `loading="eager"` for hero media and
+`privacy` to use YouTube's no-cookie host.
+
+Editor-generated HTML remains a zero-template controller use case. Mount `data-controller="oembed"` around the full
+document and it will convert every `<oembed>` directly. The existing `oembed`, `oembed-frame` and `oembed-link` slots
+remain as application styling hooks, but no longer select a package visual module. See the
+[controller contract](controllers/oembed.md#usage) and regenerate selective bundles with the `video-embed` component
+when package styling is wanted for direct URLs.
+
 ## 0.78.0
 
 These changes apply when upgrading from **0.77.0** to **0.78.0**. The

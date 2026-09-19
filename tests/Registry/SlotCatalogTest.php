@@ -135,6 +135,15 @@ it('keeps package registry styling claims unambiguous', function () {
     expect(registryStylingClaimConflicts(HotwireRegistry::make()))->toBe([]);
 });
 
+it('keeps package visual anatomy component-owned', function () {
+    $controllerSlots = array_map(
+        fn ($controller): array => $controller->styling->visualSlots(),
+        HotwireRegistry::make()->controllers(),
+    );
+
+    expect($controllerSlots)->each->toBe([]);
+});
+
 it('detects ambiguous styling claims in mutated registry fixtures', function () {
     $registries = [
         HotwireRegistry::fromCatalog(registryAuditCatalog([

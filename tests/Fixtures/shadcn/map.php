@@ -1980,9 +1980,9 @@ return [
             'note' => 'Upstream\'s Navigation Menu covers this ground with a flyout anatomy the package does not port;'
                 .' Navbar is a plain navigation bar.',
         ],
-        'oembed' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
-        'oembed-frame' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
-        'oembed-link' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
+        'video-embed' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
+        'video-embed-frame' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
+        'video-embed-link' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
         'pagination' => [
             'decision' => 'hotwire-only',
             'note' => 'The corpus styles the pagination content, previous, next and ellipsis only; the `<nav>` root has no'

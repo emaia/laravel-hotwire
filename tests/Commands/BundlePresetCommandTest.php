@@ -78,17 +78,17 @@ it('includes Tooltip visuals and shared dependencies for component integrations'
         ->toContain('[data-slot="kbd"]')
         ->not->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('[data-slot="toast"]')
-        ->not->toContain('[data-slot="oembed"]');
+        ->not->toContain('[data-slot="video-embed"]');
 })->with(['button', 'color-scheme.toggle']);
 
-it('preserves controller-owned OEmbed visuals as an explicit inclusion', function () {
-    $this->artisan('hotwire:bundle-preset --components=badge --include=oembed --no-interaction')->assertSuccessful();
+it('includes Video Embed visuals through the component selection', function () {
+    $this->artisan('hotwire:bundle-preset --components=badge,video-embed --no-interaction')->assertSuccessful();
 
     expect(File::get($this->output))
         ->toContain('[data-slot="badge"]')
-        ->toContain('[data-slot="oembed"]')
-        ->toContain('[data-slot="oembed-frame"]')
-        ->toContain('[data-slot="oembed-link"]')
+        ->toContain('[data-slot="video-embed"]')
+        ->toContain('[data-slot="video-embed-frame"]')
+        ->toContain('[data-slot="video-embed-link"]')
         ->not->toContain('[data-slot="tooltip"]')
         ->not->toContain('[data-slot="toast"]');
 });

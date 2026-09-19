@@ -50,7 +50,7 @@ The cascade has four ordered layers:
 1. `foundation.css`, the package-managed public facade over shared `tokens.css`, `custom-variants.css` and
    `structural.css`;
 2. the preset base, package-managed in an official preset and copied into an application-owned clone;
-3. selectable visual modules owned by components, families or controllers;
+3. selectable visual modules owned by components and their families;
 4. application overrides loaded after the preset.
 
 Shared foundations define the common semantic token contract, Tailwind variants, mechanics and accessibility baseline.
@@ -124,7 +124,7 @@ dynamic components is not known, keep the selected public `presets/<name>.css` i
 guessing.
 
 Generated bundles also record their canonical component, controller and module selection in a versioned header.
-`hotwire:check` inspects marked bundles under `resources/css` and reports visual components/controllers found in the
+`hotwire:check` inspects marked bundles under `resources/css` and reports visual components found in the
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
 safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
 `resources/css` retains an official complete preset import, or imports an application preset from
@@ -147,8 +147,9 @@ php artisan hotwire:make-preset brand
 The command creates `resources/css/presets/brand.css`. It imports the live package `foundation.css` facade — including
 the runtime utility safelist, so new package mechanics arrive on upgrade instead of freezing — and emits one empty base
 rule for every visual slot projected by the registry. An application preset does not need its own preset-base layer;
-depending only on shared defaults is valid. Component rules are grouped under the family that declares each slot;
-controller-authored anatomy is grouped under its controller.
+depending only on shared defaults is valid. Component rules are grouped under the family that declares each slot.
+Runtime anatomy styled by the package is authored by a component template; standalone controller DOM and its CSS remain
+application-owned.
 The scaffold does not copy selector decomposition from Nova or another shipped preset:
 
 ```css
@@ -332,7 +333,7 @@ The baseline lives in `@layer hotwire-accessibility` with low-specificity select
 
 CSS that defines appearance belongs in a preset and targets `data-slot`. Carousel buttons, dots, progress and counter
 are visual, so presets own them. Controller CSS must not choose their colors, radius or spacing; preset CSS must not
-duplicate the controller's geometry. Slots that are presentation-free containers, assistive nodes or controller-owned
+duplicate structural geometry. Slots that are presentation-free containers, assistive nodes or controller-dependent
 structure are marked `structural` in the catalog and are intentionally omitted from an empty scaffold.
 
 The scaffold is an inventory, not a complete design. State relationships, motion, top-layer resets and compound

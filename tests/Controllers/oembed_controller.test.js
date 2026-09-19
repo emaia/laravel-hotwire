@@ -59,9 +59,9 @@ test.serial("replaces Vimeo URL with iframe", async () => {
     expect(iframe.src).toBe("https://player.vimeo.com/video/123456789");
 });
 
-// --- iframe attributes ---
+// --- generated output ---
 
-test.serial("iframe has allowfullscreen and allow attributes", async () => {
+test.serial("adds the functional iframe attributes", async () => {
     await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
 
     const iframe = document.querySelector("iframe");
@@ -71,28 +71,47 @@ test.serial("iframe has allowfullscreen and allow attributes", async () => {
     expect(iframe.getAttribute("frameborder")).toBe("0");
 });
 
-// --- preset-owned presentation ---
-
-test.serial("exposes the wrapper and frame as semantic slots", async () => {
-    await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
+test.serial("replaces the editor figure with a slotted wrapper", async () => {
+    await mount(`
+        <figure class="media" data-kind="video">
+            <oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>
+        </figure>
+    `);
 
     const iframe = document.querySelector("iframe");
     const wrapper = iframe.parentElement;
 
+    expect(document.querySelector("figure")).toBeNull();
     expect(wrapper.dataset.slot).toBe("oembed");
     expect(iframe.dataset.slot).toBe("oembed-frame");
 });
 
-test.serial("leaves presentation to the preset", async () => {
+test.serial("does not require templates to process multiple embeds", async () => {
+    await mount(`
+        <oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>
+        <oembed url="https://vimeo.com/123456789"></oembed>
+    `);
+
+    expect(document.querySelectorAll('[data-slot="oembed"] iframe').length).toBe(2);
+    expect(document.querySelector("template")).toBeNull();
+});
+
+test.serial("replaces a direct source without replacing the controller root", async () => {
+    await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
+
+    expect(mounted.root.isConnected).toBe(true);
+    expect(mounted.root.querySelector("iframe").src).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ");
+});
+
+test.serial("emits stable application styling hooks", async () => {
     await mount(`<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>`);
 
     const iframe = document.querySelector("iframe");
-    const wrapper = iframe.parentElement;
 
-    expect(wrapper.getAttribute("style")).toBeNull();
-    expect(wrapper.getAttribute("class")).toBeNull();
-    expect(iframe.getAttribute("style")).toBeNull();
+    expect(iframe.parentElement.dataset.slot).toBe("oembed");
+    expect(iframe.dataset.slot).toBe("oembed-frame");
     expect(iframe.getAttribute("class")).toBeNull();
+    expect(iframe.hasAttribute("data-oembed-frame")).toBe(false);
 });
 
 // --- fallback for unknown URLs ---
@@ -124,9 +143,9 @@ test.serial("processes multiple oembed elements", async () => {
     expect(iframes[1].src).toBe("https://player.vimeo.com/video/123456789");
 });
 
-// --- wrapper replaces figure when inside one ---
+// --- editor wrapper replacement ---
 
-test.serial("wrapper replaces the figure ancestor when present", async () => {
+test.serial("replaces the figure ancestor when present", async () => {
     await mount(`
         <figure>
             <oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>
@@ -134,7 +153,7 @@ test.serial("wrapper replaces the figure ancestor when present", async () => {
     `);
 
     expect(document.querySelector("figure")).toBeNull();
-    expect(document.querySelector("iframe")).not.toBeNull();
+    expect(document.querySelector('[data-slot="oembed"] > iframe')).not.toBeNull();
 });
 
 async function mount(innerHTML) {

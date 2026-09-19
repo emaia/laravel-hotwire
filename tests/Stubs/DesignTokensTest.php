@@ -379,9 +379,9 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->toContain('[data-motion="fade"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"]')
         ->toContain('[data-hotwire-top-layer][popover]:is([data-slot="dropdown-menu"]')
-        ->toContain('[data-slot="oembed"]')
-        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
-        ->toContain('[data-slot="oembed-frame"]')
+        ->toContain('[data-slot="video-embed"]')
+        ->toContain('aspect-ratio: var(--video-embed-aspect-ratio, 16 / 9)')
+        ->toContain('[data-slot="video-embed-frame"]')
         ->toContain('[data-slot="input-wrapper"][data-clearable="true"]')
         ->and($visual)
         ->not->toContain('[data-slot="aspect-ratio"]')
@@ -669,15 +669,15 @@ it('keeps Reveal routing structural while Nova owns its offsets and blur', funct
         ->not->toContain('[data-motion="fade"]');
 });
 
-it('keeps responsive OEmbed geometry structural and its appearance in Nova', function () {
+it('keeps responsive Video Embed geometry structural and its appearance in Nova', function () {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/oembed.css');
+    $visual = File::get(__DIR__.'/../../resources/css/presets/nova/video-embed.css');
 
-    expect(presetDeclaration($structural, '[data-slot="oembed"]'))
-        ->toContain('aspect-ratio: var(--oembed-aspect-ratio, 16 / 9)')
+    expect(presetDeclaration($structural, '[data-slot="video-embed"]'))
+        ->toContain('aspect-ratio: var(--video-embed-aspect-ratio, 16 / 9)')
         ->toContain('width: 100%')
         ->toContain('overflow: hidden')
-        ->and(presetDeclaration($structural, '[data-slot="oembed-frame"]'))
+        ->and(presetDeclaration($structural, '[data-slot="video-embed-frame"]'))
         ->toContain('width: 100%')
         ->toContain('height: 100%')
         ->and($visual)

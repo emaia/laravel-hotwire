@@ -87,6 +87,7 @@ use Emaia\LaravelHotwire\Components\Toggle;
 use Emaia\LaravelHotwire\Components\ToggleGroup;
 use Emaia\LaravelHotwire\Components\ToggleGroup\Item as ToggleGroupItem;
 use Emaia\LaravelHotwire\Components\Tooltip;
+use Emaia\LaravelHotwire\Components\VideoEmbed;
 
 /**
  * @param  string[]  $visual
@@ -1212,6 +1213,19 @@ return [
                 ],
             ],
         ],
+        'video-embed' => [
+            'class' => VideoEmbed::class,
+            'view' => 'hotwire::component-views.video-embed',
+            'docs' => 'docs/components/video-embed.md',
+            'category' => 'display',
+            'description' => 'Server-rendered YouTube or Vimeo video from URL',
+            'controllers' => [],
+            'styling' => [
+                'slots' => [
+                    ['class' => VideoEmbed::class],
+                ],
+            ],
+        ],
     ],
     'controllers' => [
         'accordion' => [
@@ -1447,9 +1461,9 @@ return [
             'source' => 'resources/js/controllers/oembed_controller.js',
             'docs' => 'docs/controllers/oembed.md',
             'category' => 'display',
-            'description' => 'Embeds YouTube and Vimeo URLs as responsive frames and other providers as links',
+            'description' => 'Converts editor-generated oembed tags into YouTube or Vimeo frames and fallback links',
             'styling' => [
-                'slots' => $slots(['oembed', 'oembed-frame', 'oembed-link']),
+                'slots' => $slots([], ['oembed', 'oembed-frame', 'oembed-link']),
             ],
         ],
         'optimistic--dispatch' => [
