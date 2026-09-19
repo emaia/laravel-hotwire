@@ -116,6 +116,7 @@ The family entry references that declaration instead of copying its names:
     'view'        => 'hotwire::component-views.alert',
     'docs'        => 'docs/components/alert.md',
     'category'    => 'feedback',
+    'description' => 'Inline alert with title, description, icon, action and semantic variants',
     'controllers' => [],
     'styling'     => [
         'slots' => [
@@ -131,6 +132,7 @@ The family entry references that declaration instead of copying its names:
 | `view`        | Blade view name                                           |
 | `docs`        | Relative path to the component's doc file                 |
 | `category`    | Public category (see [Categories](#categories))           |
+| `description` | Public discovery and search summary                        |
 | `controllers` | Controller keys required by this component                |
 | `styling`     | References to the styling surface this entry contributes  |
 
@@ -221,20 +223,22 @@ deliberately omitted slot is valid in a bundle even though it would be an error 
 
 ```php
 'tooltip' => [
-    'source'   => 'resources/js/controllers/tooltip_controller.js',
-    'docs'     => 'docs/controllers/tooltip.md',
-    'category' => 'overlay',
-    'npm'      => ['@floating-ui/dom' => '^1.8.0'],
+    'source'      => 'resources/js/controllers/tooltip_controller.js',
+    'docs'        => 'docs/controllers/tooltip.md',
+    'category'    => 'overlay',
+    'description' => 'Creates non-interactive ARIA tooltips from templates with anchored positioning',
+    'npm'         => ['@floating-ui/dom' => '^1.8.0'],
 ],
 ```
 
-| Key        | Description                                                              |
-|------------|--------------------------------------------------------------------------|
-| `source`   | Path to the controller file, relative to the package root                |
-| `docs`     | Relative path to the controller's doc file                               |
-| `category` | Public category                                                          |
-| `npm`      | External npm packages required at runtime (package → version constraint) |
-| `styling`  | Same shape as a component's, only when JavaScript itself creates visual anatomy |
+| Key           | Description                                                                    |
+|---------------|--------------------------------------------------------------------------------|
+| `source`      | Path to the controller file, relative to the package root                      |
+| `docs`        | Relative path to the controller's doc file                                     |
+| `category`    | Public category                                                                |
+| `description` | Public discovery and search summary                                            |
+| `npm`         | External npm packages required at runtime (package → version constraint)       |
+| `styling`     | Same shape as a component's, only when JavaScript itself creates visual anatomy |
 
 A controller declares `styling` only when JavaScript itself creates visual anatomy. Tooltip accepts an
 application-owned standalone template and declares no slots; `<hw:tooltip>` separately owns `Tooltip::SLOTS` and the
@@ -244,6 +248,16 @@ their lifecycle.
 
 Controllers inside substrate folders use `/` in the key: `'turbo/progress'`.  
 The identifier is derived automatically: `/` → `--`, `_` → `-`.
+
+## Descriptions
+
+Catalog descriptions are public discovery metadata. `hotwire:docs` displays them in list and interactive picker views
+and includes them in keyword search.
+
+Keep each description to one concise sentence without a trailing period. Start component descriptions with a noun phrase
+that says what the rendered component provides, and controller descriptions with a present-tense verb that says what the
+behavior does. Include capabilities or constraints that help someone choose the resource; omit implementation details,
+lifecycle mechanics and claims already conveyed by its name or category.
 
 ## Adding a new component
 
