@@ -110,6 +110,19 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
 - Identifiers follow the Stimulus naming rules above — substrate-folder controllers use the `--` separator
   (`turbo--progress`, `optimistic--form`, `dev--log`).
 - Every registered component/controller should ship a matching doc file under `docs/` at the path given in the entry.
+- **`description` is public presentation.** It reaches an app developer through `hotwire:docs` and
+  `hotwire:components` who has never read the source and is deciding whether the entry solves their problem, so it
+  says what the entry gives them and where it applies — [`docs/registry.md`](docs/registry.md#descriptions) covers
+  the form:
+    - Name the thing, then the capabilities that decide adoption: modes, Laravel and Turbo integration,
+      accessibility, limits.
+    - Name a library the app itself adopts (Embla, ECharts, Tiptap, Leaflet, Maska, Lucide); keep the package's own
+      plumbing out (Presence, outlets, Floating UI, header names, morph internals) and describe its effect instead —
+      `X-Turbo-Frame-Src` became "Sends the Turbo Frame source URL", `IntersectionObserver` became "enters view".
+    - Drop in-house shorthand — "items shortcut", "sticky sugar", "composed subcomponents", "state-driven motion" —
+      and empty restatements like "Displays a button or a component that looks like a button".
+    - A description that outlived its implementation is wrong, not merely dated; revisit it whenever a prop or option
+      changes what the entry does.
 
 ### Turbo
 
