@@ -122,6 +122,36 @@ test("does not show an icon-rail tooltip while the mobile sidebar is open", asyn
     await expect(page.locator('[data-slot="tooltip"]')).toHaveCount(0);
 });
 
+test("finishes an animated close when its enablement condition changes", async ({ page }) => {
+    test.setTimeout(10_000);
+
+    await page.setContent(`
+        <style>
+            [data-slot="tooltip"] { opacity: 1; transition: opacity 50ms linear; }
+            [data-slot="tooltip"][data-state="closed"] { opacity: 0; }
+        </style>
+        <div id="sidebar" data-slot="sidebar" data-collapsible="icon" data-mobile-state="closed">
+            <button
+                data-controller="tooltip"
+                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon][data-mobile-state=closed]"
+            >
+                Map
+                ${tooltipTemplate("Map")}
+            </button>
+        </div>
+    `);
+    await installControllers(page);
+
+    await page.locator('[data-controller="tooltip"]').hover();
+    await expect(page.locator('body > [data-slot="tooltip"]')).toHaveAttribute("data-state", "open");
+
+    await page.locator("#sidebar").evaluate((sidebar) => {
+        sidebar.dataset.collapsible = "";
+    });
+
+    await expect(page.locator('body > [data-slot="tooltip"]')).toHaveCount(0);
+});
+
 test("Escape closes a tooltip before its mobile Sidebar", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.setContent(`

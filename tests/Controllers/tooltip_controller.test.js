@@ -461,6 +461,28 @@ test.serial("passes positioning values through to Floating UI", async () => {
 
 // --- conditional enablement ---
 
+test.serial("observes conditional enablement only while open", async () => {
+    await mount(`
+        <div data-slot="sidebar" data-collapsible="icon">
+            <button
+                data-controller="tooltip"
+                data-tooltip-enabled-when-value="[data-slot=sidebar][data-collapsible=icon]"
+            >Map ${tooltipTemplate("Map")}</button>
+        </div>
+    `);
+
+    expect(mounted.controller.observer).toBeNull();
+
+    dispatchPointer(mounted.root, "pointerenter");
+    await wait(FRAME_WAIT);
+
+    expect(mounted.controller.observer).not.toBeNull();
+
+    mounted.controller.hide({ immediate: true });
+
+    expect(mounted.controller.observer).toBeNull();
+});
+
 test.serial("does not open when enabledWhen does not match", async () => {
     await mount(`
         <div data-slot="sidebar" data-collapsible="">
