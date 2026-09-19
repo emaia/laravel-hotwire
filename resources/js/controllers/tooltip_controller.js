@@ -67,7 +67,6 @@ export default class extends Controller {
         this.element.addEventListener("focusout", this.onFocusOut);
         this.element.addEventListener("click", this.onClick);
         document.addEventListener("turbo:before-cache", this.closeForCache);
-        this.observeEnablement();
     }
 
     disconnect() {
@@ -187,6 +186,7 @@ export default class extends Controller {
         }
 
         this.open = true;
+        this.observeEnablement();
         this.observeContainment();
         this.setEscapeScope(true);
         this.addDescribedBy();
@@ -222,6 +222,8 @@ export default class extends Controller {
 
     hide({ immediate = false } = {}) {
         this.clearTimers();
+        this.observer?.disconnect();
+        this.observer = null;
         this.containmentObserver?.disconnect();
         this.containmentObserver = null;
 
@@ -309,7 +311,7 @@ export default class extends Controller {
     }
 
     syncEnabledState() {
-        if (!this.isEnabled()) this.hide();
+        if (this.open && !this.isEnabled()) this.hide();
     }
 
     createTooltip() {
