@@ -201,7 +201,7 @@ it('requires hover card trigger and content to render inside a hover card root',
 
     $this->blade("<{$tag}>Content</{$tag}>");
 })->with(['trigger', 'content'])
-    ->throws(ViewException::class, 'must be rendered inside a Hover Card root');
+    ->throws(ViewException::class, 'receiving hoverCardId as an attribute or exposing it as a public property');
 
 it('requires a hover card root even when explicit wiring is supplied', function (string $template) {
     $this->blade($template);

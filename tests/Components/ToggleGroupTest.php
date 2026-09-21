@@ -208,7 +208,7 @@ it('keeps explicit toggle item identity ahead of group and field context', funct
 
 it('requires toggle group items to render inside a toggle group root', function () {
     $this->blade('<x-hw::toggle-group.item value="bold" name="formats">Bold</x-hw::toggle-group.item>');
-})->throws(ViewException::class, 'must be rendered inside a Toggle Group root');
+})->throws(ViewException::class, 'receiving toggleGroupContext as an attribute or exposing it as a public property');
 
 it('restores selected values from old input', function () {
     session()->put('_old_input', ['formats' => ['italic']]);

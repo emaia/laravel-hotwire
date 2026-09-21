@@ -2,7 +2,7 @@
 
 @php
     if ($popoverId === null) {
-        throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root. If a root is present, check for an intermediate component declaring a popoverId prop, which shadows the root context.');
+        throw new InvalidArgumentException('Popover trigger must be rendered inside a Popover root. If a root is present, check for an intermediate component receiving popoverId as an attribute or exposing it as a public property, either of which shadows the root context.');
     }
 
     $triggerAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
