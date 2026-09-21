@@ -118,8 +118,11 @@ php artisan hotwire:bundle-preset --preset=nova --components=button,field,input,
 
 Choose `--preset=bloom` to build the same selection with Bloom instead.
 
-Use `--include` for components/controllers emitted dynamically by Streams or JavaScript because static scanning cannot
-discover them. Do not import a full preset and a selective bundle together, and never hand-edit a generated bundle.
+Use `--include` for components emitted dynamically by Streams or JavaScript because static scanning cannot discover them.
+Controllers do not select package visual modules. Do not import a full preset and a selective bundle together, and never
+hand-edit a generated bundle. After package upgrades, replay its recorded selection with
+`php artisan hotwire:bundle-preset --from=resources/css/hotwire.css --force`; `hotwire:check --fix` only performs this
+regeneration when a v2 hash proves the bundle was not externally edited.
 
 ## Verify
 

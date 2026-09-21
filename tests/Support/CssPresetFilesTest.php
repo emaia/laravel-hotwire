@@ -73,13 +73,13 @@ it('selects synthetic sources independently of their grouping and nesting', func
             'presets/constellation/aliases.css',
             'presets/constellation/layout/surfaces.css',
         ])
-        ->and($presets->sourceForSelection('constellation', controllers: ['status'])?->visualStylesheetPaths())
+        ->and($presets->sourceForSelection('constellation', ['status'])?->visualStylesheetPaths())
         ->toBe([
             'presets/constellation/theme.css',
             'presets/constellation/aliases.css',
             'presets/constellation/feedback.css',
         ])
-        ->and($presets->sourceForSelection('constellation', ['action'], ['status'])?->visualStylesheetPaths())
+        ->and($presets->sourceForSelection('constellation', ['action', 'status'])?->visualStylesheetPaths())
         ->toBe([
             'presets/constellation/theme.css',
             'presets/constellation/aliases.css',
@@ -528,15 +528,11 @@ it('resolves complete and selective preset sources from catalog owners', functio
         $registry->components(),
         fn ($component): bool => $component->styling->visualSlots() !== [],
     ));
-    $controllers = array_keys(array_filter(
-        $registry->controllers(),
-        fn ($controller): bool => $controller->styling->visualSlots() !== [],
-    ));
-    $modules = app(CssModuleManifest::class)->modulesFor($components, $controllers);
+    $modules = app(CssModuleManifest::class)->modulesFor($components);
 
     expect(app(CssModuleManifest::class)->sourcesFor($preset, $modules))
         ->toBe($presets->source($preset)->visualStylesheetPaths())
-        ->and($presets->sourceForSelection($preset, $components, $controllers)->visualStylesheets())
+        ->and($presets->sourceForSelection($preset, $components)->visualStylesheets())
         ->toBe($presets->source($preset)->visualStylesheets());
 })->with('shipped css preset names');
 
@@ -550,13 +546,12 @@ it('resolves Nova modal integrations without unrelated sources', function () {
         ->not->toContain('[data-slot="carousel"]');
 });
 
-it('resolves migrated integrations to exact canonical visual sources', function (array $components, array $controllers, array $expected) {
-    expect(app(CssPresetFiles::class)->sourceForSelection('nova', $components, $controllers)?->visualStylesheetPaths())
+it('resolves migrated integrations to exact canonical visual sources', function (array $components, array $expected) {
+    expect(app(CssPresetFiles::class)->sourceForSelection('nova', $components)?->visualStylesheetPaths())
         ->toBe($expected);
 })->with([
     'Button with Tooltip' => [
         ['button'],
-        [],
         [
             'presets/nova/button-surfaces.css',
             'presets/nova/floating-presence.css',
@@ -566,7 +561,6 @@ it('resolves migrated integrations to exact canonical visual sources', function 
     ],
     'Color Scheme Toggle with Tooltip' => [
         ['color-scheme.toggle'],
-        [],
         [
             'presets/nova/button-surfaces.css',
             'presets/nova/floating-presence.css',
@@ -576,12 +570,10 @@ it('resolves migrated integrations to exact canonical visual sources', function 
     ],
     'Toaster component anatomy' => [
         ['toaster'],
-        [],
         ['presets/nova/toaster.css'],
     ],
     'Video Embed component anatomy' => [
         ['video-embed'],
-        [],
         ['presets/nova/video-embed.css'],
     ],
 ]);

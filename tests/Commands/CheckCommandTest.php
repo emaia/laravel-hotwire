@@ -5,6 +5,7 @@ use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ControllerImports;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
+use Emaia\LaravelHotwire\Support\GeneratedStyleBundle;
 use Emaia\LaravelHotwire\Support\LoaderStub;
 use Emaia\LaravelHotwire\Support\PresetSourceResolver;
 use Illuminate\Contracts\Console\Kernel;
@@ -133,6 +134,19 @@ function writePackageJson(array $data): void
 function readPackageJson(): array
 {
     return json_decode(File::get(base_path('package.json')), true);
+}
+
+function registerCheckWithCssRoot(string $root): void
+{
+    $files = new Filesystem;
+    $manifest = app(CssModuleManifest::class);
+    app()->instance(
+        CssPresetFiles::class,
+        new CssPresetFiles($files, new PresetSourceResolver($files, $root), $manifest),
+    );
+    $kernel = app(Kernel::class);
+    $getArtisan = new ReflectionMethod($kernel, 'getArtisan');
+    $getArtisan->invoke($kernel)->add(app(CheckCommand::class));
 }
 
 // --- Basic ---
@@ -302,7 +316,7 @@ it('reports generated bundle drift when its official preset entrypoint is invali
     $getArtisan->invoke($kernel)->add(app(CheckCommand::class));
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('generated CSS content does not match its plan')
+        ->expectsOutputToContain('recorded preset cannot be rendered')
         ->assertFailed();
 });
 
@@ -553,7 +567,7 @@ it('validates the recorded plan of a generated bundle selected as a preset', fun
         '--no-interaction' => true,
     ])
         ->expectsOutputToContain('complete-preset validation skipped: generated selective bundle')
-        ->expectsOutputToContain('generated CSS content does not match its plan')
+        ->expectsOutputToContain('generated CSS was edited outside Laravel Hotwire')
         ->assertFailed();
 });
 
@@ -696,21 +710,207 @@ it('reports generated CSS without readable metadata once', function () {
     ]));
 
     $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('generated CSS metadata unavailable')
+        ->expectsOutputToContain('generated CSS plan is invalid')
         ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
         ->assertFailed();
 });
 
-it('reports generated CSS whose content no longer matches its metadata', function () {
+it('reports externally edited generated CSS with a regeneration command and diff', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
     $css = File::get(resource_path('css/hotwire.css'));
     File::put(resource_path('css/hotwire.css'), strstr($css, '[data-slot="badge"]', true));
 
-    $this->artisan('hotwire:check --no-interaction')
-        ->expectsOutputToContain('generated CSS content does not match its plan')
-        ->doesntExpectOutputToContain('not covered by any generated CSS bundle')
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain(
+            'generated CSS was edited outside Laravel Hotwire',
+            "php artisan hotwire:bundle-preset --from='resources/css/hotwire.css' --force",
+            '--- resources/css/hotwire.css (current)',
+            '+++ resources/css/hotwire.css (expected)',
+        )
+        ->not->toContain('not covered by any generated CSS bundle');
+});
+
+it('regenerates untouched v2 package drift with fix', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
+    $path = resource_path('css/hotwire.css');
+    $before = File::get($path);
+    $root = base_path('package-css-update');
+    File::copyDirectory(dirname(__DIR__, 2).'/resources/css', $root);
+    File::append($root.'/presets/nova/badge.css', "\n[data-slot=\"badge\"] { outline-width: 2px; }\n");
+    registerCheckWithCssRoot($root);
+
+    $exit = Artisan::call('hotwire:check --fix --no-interaction');
+
+    expect($exit)->toBe(0)
+        ->and(Artisan::output())->toContain(
+            'generated CSS is outdated',
+            'hotwire:bundle-preset --from=',
+            'Regenerated: resources/css/hotwire.css',
+        );
+
+    expect(File::get($path))
+        ->not->toBe($before)
+        ->toContain('outline-width: 2px');
+});
+
+it('fixes safe bundle drift but still fails for missing component coverage', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
+    $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
+    $path = resource_path('css/hotwire.css');
+    $root = base_path('package-css-update');
+    File::copyDirectory(dirname(__DIR__, 2).'/resources/css', $root);
+    File::append($root.'/presets/nova/modal.css', "\n[data-slot=\"modal\"] { outline-width: 2px; }\n");
+    registerCheckWithCssRoot($root);
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->expectsOutputToContain('<x-hw::badge>  not covered by any generated CSS bundle')
         ->assertFailed();
+
+    expect(File::get($path))->toContain('outline-width: 2px');
+});
+
+it('never fixes a generated bundle through a symlink', function () {
+    if (PHP_OS_FAMILY === 'Windows') {
+        $this->markTestSkipped('Symbolic-link path semantics are covered on Unix-like systems.');
+    }
+
+    $bundle = app(GeneratedStyleBundle::class);
+    $source = app(CssPresetFiles::class)->sourceForSelection('nova', ['badge']);
+    $modules = app(CssModuleManifest::class)->modulesFor(['badge']);
+    $outside = base_path('outside.css');
+    File::put($outside, $bundle->render('resources/css/hotwire.css', $source, 'nova', ['badge'], $modules));
+    $before = File::get($outside);
+    File::ensureDirectoryExists(resource_path('css'));
+    symlink($outside, resource_path('css/hotwire.css'));
+    $root = base_path('package-css-update');
+    File::copyDirectory(dirname(__DIR__, 2).'/resources/css', $root);
+    File::append($root.'/presets/nova/badge.css', "\n[data-slot=\"badge\"] { outline-width: 2px; }\n");
+    registerCheckWithCssRoot($root);
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('generated CSS path must resolve inside resources/css without symlinks')
+        ->doesntExpectOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->assertFailed();
+
+    expect(File::get($outside))->toBe($before);
+});
+
+it('rejects a symlinked resources css root before fixing generated bundles', function () {
+    if (PHP_OS_FAMILY === 'Windows') {
+        $this->markTestSkipped('Symbolic-link path semantics are covered on Unix-like systems.');
+    }
+
+    $bundle = app(GeneratedStyleBundle::class);
+    $source = app(CssPresetFiles::class)->sourceForSelection('nova', ['badge']);
+    $modules = app(CssModuleManifest::class)->modulesFor(['badge']);
+    $outside = base_path('outside-css');
+    File::ensureDirectoryExists($outside);
+    File::put($outside.'/hotwire.css', $bundle->render('resources/css/hotwire.css', $source, 'nova', ['badge'], $modules));
+    $before = File::get($outside.'/hotwire.css');
+    symlink($outside, resource_path('css'));
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('generated CSS path must resolve inside resources/css without symlinks')
+        ->doesntExpectOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->assertFailed();
+
+    expect(File::get($outside.'/hotwire.css'))->toBe($before);
+});
+
+it('recalculates v2 modules from components instead of trusting recorded modules', function () {
+    $bundle = app(GeneratedStyleBundle::class);
+    $source = app(CssPresetFiles::class)->sourceForSelection('nova', ['badge']);
+    $path = resource_path('css/hotwire.css');
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, $bundle->render('resources/css/hotwire.css', $source, 'nova', ['badge'], []));
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('generated CSS is outdated')
+        ->expectsOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->assertSuccessful();
+
+    expect($bundle->planFromContent(File::get($path))['modules'])->toBe(['badge']);
+});
+
+it('does not fix externally edited v2 bundles', function () {
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
+    $path = resource_path('css/hotwire.css');
+    File::append($path, "\n/* application edit */\n");
+    $edited = File::get($path);
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('generated CSS was edited outside Laravel Hotwire')
+        ->doesntExpectOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->assertFailed();
+
+    expect(File::get($path))->toBe($edited);
+});
+
+it('applies safe bundle fixes while preserving other CSS failures', function () {
+    $this->artisan('hotwire:bundle-preset --components=badge --output=resources/css/badge.css --no-interaction')->assertSuccessful();
+    $safePath = resource_path('css/badge.css');
+    $before = File::get($safePath);
+    File::put(resource_path('css/invalid.css'), implode("\n", [
+        '/* @hotwire-package */',
+        '/* Generated by `php artisan hotwire:bundle-preset`. Regenerate instead of editing. */',
+    ]));
+    $root = base_path('package-css-update');
+    File::copyDirectory(dirname(__DIR__, 2).'/resources/css', $root);
+    File::append($root.'/presets/nova/badge.css', "\n[data-slot=\"badge\"] { outline-width: 2px; }\n");
+    registerCheckWithCssRoot($root);
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('Regenerated: resources/css/badge.css')
+        ->expectsOutputToContain('generated CSS plan is invalid')
+        ->assertFailed();
+
+    expect(File::get($safePath))->not->toBe($before)
+        ->and(File::get(resource_path('css/invalid.css')))->toContain('Generated by');
+});
+
+it('reports a missing recorded preset without suggesting impossible regeneration', function () {
+    $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
+    $path = resource_path('css/hotwire.css');
+    File::put($path, str_replace('"preset":"nova"', '"preset":"missing"', File::get($path)));
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+
+    expect($exit)->toBe(1)
+        ->and(Artisan::output())
+        ->toContain('recorded preset [missing] is no longer available', 'recreate the bundle with an available preset')
+        ->not->toContain('hotwire:bundle-preset --from');
+});
+
+it('reads canonical v1 bundles but never auto-fixes their drift', function () {
+    $bundle = app(GeneratedStyleBundle::class);
+    $source = app(CssPresetFiles::class)->sourceForSelection('nova', ['badge']);
+    $modules = app(CssModuleManifest::class)->modulesFor(['badge']);
+    $plan = [
+        'version' => 1,
+        'preset' => 'nova',
+        'components' => ['badge'],
+        'controllers' => ['tooltip'],
+        'modules' => $modules,
+    ];
+    $path = resource_path('css/hotwire.css');
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, $bundle->renderFromPlan('resources/css/hotwire.css', $source, $plan, $modules));
+
+    $this->artisan('hotwire:check --no-interaction')->assertSuccessful();
+
+    File::append($path, "\n/* stale v1 */\n");
+    $stale = File::get($path);
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('legacy v1 plan cannot be auto-fixed')
+        ->assertFailed();
+
+    expect(File::get($path))->toBe($stale);
 });
 
 it('accepts canonical generated CSS checked out with CRLF line endings', function () {
@@ -725,7 +925,7 @@ it('accepts canonical generated CSS checked out with CRLF line endings', functio
         ->assertSuccessful();
 });
 
-it('does not alter selective CSS while fixing and keeps drift failing', function () {
+it('does not alter selective CSS for missing coverage while fixing and keeps the check failing', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:bundle-preset --components=modal --no-interaction')->assertSuccessful();
     $before = File::get(resource_path('css/hotwire.css'));

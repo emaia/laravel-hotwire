@@ -56,9 +56,9 @@ so an open nested overlay does not visually reopen its parent.
   `php artisan hotwire:make-preset brand`.
 - Customize Nova's complete selector structure: `php artisan hotwire:make-preset brand --from=nova`.
 - Customize Bloom's complete selector structure: `php artisan hotwire:make-preset brand --from=bloom`.
-- Ship only selected modules: `php artisan hotwire:bundle-preset --preset=<name>` and regenerate after changing the selection or
-  upgrading.
-- Include Stream/JavaScript-only modules explicitly with `--include`.
+- Ship only selected component modules: `php artisan hotwire:bundle-preset --preset=<name>`.
+- Include Stream/JavaScript-rendered components explicitly with `--include`; controllers do not select package visuals.
+- Regenerate after upgrading with `php artisan hotwire:bundle-preset --from=<path> --force`.
 
 Scaffolds and clones are application-owned snapshots. Compare a fresh temporary output on package upgrades and merge
 relevant slot, preset-base and contract changes manually. `--force` replaces the target; it does not merge. Keep the live
@@ -67,5 +67,5 @@ package `foundation.css` import so shared foundation topology changes flow throu
 result. Static validation catches import, foundation, slot and required-property contract errors; it does not compile
 Tailwind utilities or prove visual, state or accessibility behavior.
 
-Never edit generated selective bundles. Regenerate them from the command and keep custom rules in separate application
-stylesheets.
+Never edit generated selective bundles. Keep custom rules in separate application stylesheets. `hotwire:check --fix`
+regenerates package drift only when the bundle's v2 hash proves its bytes are untouched; edited and v1 bundles stay manual.

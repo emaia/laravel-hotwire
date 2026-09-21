@@ -215,8 +215,9 @@ occurrence cannot prove.
 
 `hotwire:check --preset=<name|path>` projects the same visual-slot inventory from the registry when validating a complete
 application preset. It does not use `styles.php`, Nova selectors or `PresetAxes` vocabulary as a completeness baseline.
-Generated selective bundles remain governed by `styles.php` module ownership and their recorded generation plan, so a
-deliberately omitted slot is valid in a bundle even though it would be an error in a complete preset.
+Generated selective bundles remain governed by component-only `styles.php` module ownership and their recorded generation
+plan, so a deliberately omitted slot is valid in a bundle even though it would be an error in a complete preset.
+Controllers never select visual modules; controller-emitted slots are structural or application-styled.
 
 ### Controller
 

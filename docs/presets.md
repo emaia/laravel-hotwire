@@ -103,27 +103,35 @@ Replace the complete preset import in that layout's CSS entrypoint with the gene
 @import "./hotwire-front.css";
 ```
 
-`--components` accepts catalog component keys and may be repeated or comma-separated. The command automatically
-includes controllers mounted by those components, shared visual modules and their transitive dependencies.
+`--components` accepts catalog component keys and may be repeated or comma-separated. Each component selects its shared
+visual modules and transitive dependencies.
 When a preset groups several logical modules in one source, selecting any of them conservatively keeps that complete
 source; co-located styles may therefore remain in the bundle.
-`--include` accepts additional component keys or Stimulus controller identifiers; use it for UI rendered dynamically
-by PHP, Turbo Streams, vendor views or JavaScript when that UI is not represented by the layout's initial component
-list. Controller identifiers with `--` may also use their publish form, such as `turbo/progress`. The output must stay
-under `resources/css`, which is the same boundary `hotwire:check` audits. Paths elsewhere in the application, including
-`vendor`, are rejected.
+`--include` accepts additional component keys; use it for package components rendered dynamically by PHP, Turbo Streams,
+vendor views or JavaScript when that UI is not represented by the layout's initial component list. Controller identifiers
+remain accepted for command compatibility, but package controllers own no visual modules and do not enter the generation
+plan. Select the corresponding component when package styling is required. The output must stay under `resources/css`,
+which is the same boundary `hotwire:check` audits. Paths elsewhere in the application, including `vendor`, are rejected.
 
 `foundation.css` and preset base are included exactly once, including when the module closure is empty. Only visual
 modules are selective, so tokens, progressive enhancement and runtime utility coverage do not depend on which
 components were listed.
 
-The generated file starts with the package marker and should not be edited. Re-run the same command with `--force`
-after changing the selection or upgrading Laravel Hotwire. Only an existing `hotwire:bundle-preset` bundle is replaceable;
-application-owned files and other package-marked CSS are never replaced, even with `--force`. If the complete set of
-dynamic components is not known, keep the selected public `presets/<name>.css` import as the fallback instead of
-guessing.
+The generated file starts with the package marker and should not be edited. Regenerate its recorded selection in place
+after upgrading Laravel Hotwire:
 
-Generated bundles also record their canonical component, controller and module selection in a versioned header.
+```bash
+php artisan hotwire:bundle-preset --from=resources/css/hotwire-front.css --force
+```
+
+`--from` only accepts an existing `.css` file under `resources/css` and cannot be combined with selection, preset or
+output options. Only an existing `hotwire:bundle-preset` bundle is replaceable; application-owned files and other
+package-marked CSS are never replaced, even with `--force`. If the complete set of dynamic components is not known, keep
+the selected public `presets/<name>.css` import as the fallback instead of guessing.
+
+New bundles record a v2 plan containing the preset, canonical component selection, effective modules and a SHA-256 hash
+of the normalized artifact. Modules are diagnostic output, not regeneration input: both `--from` and `hotwire:check`
+recalculate them from components. Controllers are not recorded. Line-ending normalization keeps CRLF checkouts valid.
 `hotwire:check` inspects marked bundles under `resources/css` and reports visual components found in the
 scanned Blade views when none of those bundles covers them. With multiple layout bundles this is deliberately a global
 safety net, not layout inference: coverage in any generated bundle satisfies the check. If any CSS entrypoint under
@@ -131,10 +139,15 @@ safety net, not layout inference: coverage in any generated bundle satisfies the
 `resources/css/presets`, that local preset must pass the complete application-preset contract before it suppresses
 missing-module reports. The check also reconstructs each generated bundle from its recorded plan, so stale or truncated
 CSS fails even when its metadata remains intact. Generated selective bundles are validated only against their recorded
-selection and dependency closure; intentionally omitted components are not completeness errors. `--fix` never changes a
-CSS selection or application preset because it cannot know which layout should own a missing component or how an
-application's visual language should implement it. Dynamic PHP, Turbo or JavaScript markup still requires `--include`
-because static view scanning cannot see it.
+selection and dependency closure; intentionally omitted components are not completeness errors.
+
+When the v2 hash still matches but current package sources render different bytes, `hotwire:check --fix` can safely
+regenerate the bundle. When the hash does not match, the check reports an external edit, prints a focused diff and leaves
+the file untouched. Invalid metadata and missing recorded presets receive separate recovery guidance. V1 plans remain
+readable for coverage and manual `--from ... --force` migration, but are never auto-fixed because they have no trusted
+baseline. No fix changes the component selection or an application preset because the command cannot know which layout
+should own a missing component or how an application's visual language should implement it. Dynamic PHP, Turbo or
+JavaScript markup still requires a component `--include` because static view scanning cannot see it.
 
 ## Generate a custom preset
 
@@ -295,8 +308,8 @@ package upgrade that carries preset or markup notes:
 Run `hotwire:check --preset=brand` after each package upgrade. It catches missing visual slots, a stale foundation facade,
 unknown slot names and broken local import graphs. Then run `npm run build` and the focused browser/component checks from
 the maintenance list above. Static validation cannot prove state semantics, accessibility behavior, contrast or visual
-quality. Selective `hotwire:bundle-preset` bundles are different: regenerate them instead of merging changes because their
-recorded plan is their source of truth.
+quality. Selective `hotwire:bundle-preset` bundles are different: regenerate them with `--from=<path> --force` instead of
+merging changes because their recorded component plan is their source of truth.
 
 ## Structural and visual CSS
 
