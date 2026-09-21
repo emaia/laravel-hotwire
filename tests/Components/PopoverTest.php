@@ -168,7 +168,7 @@ it('requires popover trigger and content to render inside a popover root', funct
 
     $this->blade("<{$tag}>Content</{$tag}>");
 })->with(['trigger', 'content'])
-    ->throws(ViewException::class, 'must be rendered inside a Popover root');
+    ->throws(ViewException::class, 'receiving popoverId as an attribute or exposing it as a public property');
 
 it('requires a popover root even when explicit wiring is supplied', function (string $template) {
     $this->blade($template);

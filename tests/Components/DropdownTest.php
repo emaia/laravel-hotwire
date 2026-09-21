@@ -169,7 +169,7 @@ it('requires dropdown trigger and content to render inside a dropdown root', fun
 
     $this->blade("<{$tag}>Content</{$tag}>");
 })->with(['trigger', 'content'])
-    ->throws(ViewException::class, 'must be rendered inside a Dropdown root');
+    ->throws(ViewException::class, 'receiving dropdownId as an attribute or exposing it as a public property');
 
 it('requires a dropdown root even when explicit wiring is supplied', function (string $template) {
     $this->blade($template);

@@ -16,7 +16,7 @@
 
 @php
     if (! $radioGroupContext) {
-        throw new InvalidArgumentException('Radio Group item must be rendered inside a Radio Group root. If the item is passed into the slot of a wrapper component, move it inside the Radio Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component declaring a radioGroupContext prop, which shadows the root context.');
+        throw new InvalidArgumentException('Radio Group item must be rendered inside a Radio Group root. If the item is passed into the slot of a wrapper component, move it inside the Radio Group root itself: slot content renders before the view of the wrapper, so the root is not on the stack yet. Otherwise check for an intermediate component receiving radioGroupContext as an attribute or exposing it as a public property, either of which shadows the root context.');
     }
 
     $ownerName = $radioGroupName ?? $fieldName;

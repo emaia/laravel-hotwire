@@ -215,7 +215,7 @@ it('keeps explicit radio item identity ahead of group and field context', functi
 
 it('requires radio group items to render inside a radio group root', function () {
     $this->blade('<x-hw::radio-group.item value="pro" name="plan">Pro</x-hw::radio-group.item>');
-})->throws(ViewException::class, 'must be rendered inside a Radio Group root');
+})->throws(ViewException::class, 'receiving radioGroupContext as an attribute or exposing it as a public property');
 
 it('inherits name from field wrapper', function () {
     $view = $this->blade('

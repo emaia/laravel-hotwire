@@ -254,7 +254,7 @@ it('keeps explicit checkbox item identity ahead of group and field context', fun
 
 it('requires checkbox group items to render inside a checkbox group root', function () {
     $this->blade('<x-hw::checkbox-group.item value="admin" name="roles[]">Admin</x-hw::checkbox-group.item>');
-})->throws(ViewException::class, 'must be rendered inside a Checkbox Group root');
+})->throws(ViewException::class, 'receiving checkboxGroupContext as an attribute or exposing it as a public property');
 
 it('auto-appends [] when name does not end with brackets', function () {
     $view = $this->blade('<x-hw::checkbox-group name="ids" :options="[1 => \'One\', 2 => \'Two\']" />');
