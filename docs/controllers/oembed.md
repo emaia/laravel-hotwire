@@ -31,7 +31,8 @@ Mount the controller around the rendered editor document:
 ```
 
 For a supported provider, the controller replaces the nearest `<figure>` (or the `<oembed>` itself) with a wrapper and
-iframe. Other URLs become links. It emits no classes and does not depend on a package visual module.
+iframe. Other URLs become links. New embeds inserted inside the connected root by Turbo Morph or Turbo Streams are
+processed automatically. It emits no classes and does not depend on a package visual module.
 
 CKEditor commonly generates source markup like:
 

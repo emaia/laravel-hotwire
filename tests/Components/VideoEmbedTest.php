@@ -38,6 +38,21 @@ it('supports eager loading, a custom ratio and YouTube privacy mode', function (
     expect($xpath->query('//*[@data-slot="video-embed" and contains(@style, "--video-embed-aspect-ratio: 4/3") and contains(@style, "max-width: 60rem")]/iframe[@src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" and @loading="eager"]')->count())->toBe(1);
 });
 
+it('normalizes ratio whitespace before rendering it as CSS', function () {
+    $view = $this->blade('<x-hw::video-embed url="https://vimeo.com/123456789" ratio=" 4 / 3 " />');
+
+    $view->assertSee('style="--video-embed-aspect-ratio: 4/3;"', false);
+});
+
+it('rejects ratios that are not positive numbers or numeric fractions', function (string $ratio) {
+    $this->blade('<x-hw::video-embed url="https://vimeo.com/123456789" :ratio="$ratio" />', ['ratio' => $ratio]);
+})->with([
+    'CSS declaration injection' => '16/9; color: red',
+    'CSS function' => 'calc(16 / 9)',
+    'zero numerator' => '0/9',
+    'zero denominator' => '16/0',
+])->throws(ViewException::class, 'Video Embed ratio must be a positive number or numeric fraction.');
+
 it('server-renders Vimeo URLs', function () {
     $view = $this->blade('<x-hw::video-embed url="https://vimeo.com/123456789" />');
 

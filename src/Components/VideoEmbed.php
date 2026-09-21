@@ -25,7 +25,7 @@ class VideoEmbed extends Component
     ) {
         $this->url = trim($url);
         $this->title = trim($title) !== '' ? trim($title) : 'Embedded media';
-        $this->ratio = trim($ratio) !== '' ? trim($ratio) : '16/9';
+        $this->ratio = $this->normalizeRatio($ratio);
         $this->loading = strtolower(trim($loading));
 
         if (! in_array($this->loading, ['lazy', 'eager'], true)) {
@@ -57,6 +57,20 @@ class VideoEmbed extends Component
         }
 
         return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+    }
+
+    private function normalizeRatio(string $ratio): string
+    {
+        $ratio = trim($ratio) !== '' ? trim($ratio) : '16/9';
+        $number = '(?:\d+(?:\.\d+)?|\.\d+)';
+
+        if (preg_match("~^({$number})(?:\s*/\s*({$number}))?$~", $ratio, $matches) !== 1
+            || (float) $matches[1] <= 0
+            || (isset($matches[2]) && (float) $matches[2] <= 0)) {
+            throw new InvalidArgumentException('Video Embed ratio must be a positive number or numeric fraction.');
+        }
+
+        return isset($matches[2]) ? "{$matches[1]}/{$matches[2]}" : $matches[1];
     }
 
     private function resolveEmbedUrl(): ?string

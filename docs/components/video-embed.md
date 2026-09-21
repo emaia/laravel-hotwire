@@ -41,7 +41,7 @@ HTML and style its structural slots in application CSS. The controller does not 
 |-----------|------------------|--------------------------------------------------------------------------|
 | `url`     | Required         | Absolute HTTP or HTTPS media URL.                                        |
 | `title`   | `Embedded media` | Accessible title for supported-provider iframes.                         |
-| `ratio`   | `16/9`           | CSS aspect ratio applied to the responsive wrapper.                      |
+| `ratio`   | `16/9`           | Positive number or numeric fraction applied to the responsive wrapper.  |
 | `loading` | `lazy`           | Iframe loading strategy: `lazy` or `eager`. Use `eager` for hero media.  |
 | `privacy` | `false`          | Uses `youtube-nocookie.com` for YouTube embeds. Ignored for other hosts. |
 
