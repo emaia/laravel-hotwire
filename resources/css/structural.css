@@ -48,14 +48,14 @@
         inset-block-end: var(--sticky-offset);
     }
 
-    [data-slot="oembed"] {
+    [data-slot="video-embed"] {
         display: block;
         width: 100%;
-        aspect-ratio: var(--oembed-aspect-ratio, 16 / 9);
+        aspect-ratio: var(--video-embed-aspect-ratio, 16 / 9);
         overflow: hidden;
     }
 
-    [data-slot="oembed-frame"] {
+    [data-slot="video-embed-frame"] {
         width: 100%;
         height: 100%;
     }

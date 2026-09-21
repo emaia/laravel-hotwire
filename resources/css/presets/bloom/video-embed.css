@@ -1,0 +1,6 @@
+@layer components {
+    /* Video Embed */
+    [data-slot="video-embed"] { @apply my-7 rounded-2xl border border-primary/15 bg-card shadow-xl; }
+    [data-slot="video-embed-frame"] { @apply border-0; }
+    [data-slot="video-embed-link"] { @apply inline-flex break-all rounded-[var(--radius-action)] border border-primary/20 bg-primary/10 px-3 py-2 font-medium text-primary no-underline shadow-sm transition-colors hover:bg-primary/15; }
+}

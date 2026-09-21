@@ -69,7 +69,7 @@ $visualModules = [
     'toggle-controls',
     'toggle-group',
     'tooltip',
-    'oembed',
+    'video-embed',
 ];
 
 return [
@@ -241,11 +241,11 @@ return [
         'tabs' => $module(['tabs']),
         'textarea' => $module(['textarea']),
         'timeago' => $module(['timeago']),
+        'toaster' => $module(['toaster']),
         'toggle-controls' => $module(['toggle', 'toggle-group', 'toggle-group.item']),
         'toggle-group' => $module(['toggle-group', 'toggle-group.item']),
         'tooltip' => $module(['button', 'color-scheme.toggle', 'sidebar', 'tooltip'], dependencies: ['floating-presence', 'kbd']),
-        'oembed' => $module(controllers: ['oembed']),
-        'toaster' => $module(['toaster']),
+        'video-embed' => $module(['video-embed']),
     ],
     'presets' => [
         'bloom' => [

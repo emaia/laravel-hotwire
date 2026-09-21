@@ -1,0 +1,6 @@
+@layer components {
+    /* Video Embed */
+    [data-slot="video-embed"] { @apply my-5 rounded-lg bg-muted; }
+    [data-slot="video-embed-frame"] { @apply border-0; }
+    [data-slot="video-embed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
+}

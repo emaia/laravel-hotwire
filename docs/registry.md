@@ -156,12 +156,11 @@ References can combine declarations from multiple families. Use `only` when an e
 ```
 
 The resolver reads class constants through reflection and never constructs a component, renders a view or resolves the
-container. Missing local keys and conflicting `visual`/`structural` classifications are rejected. Component families
-use class declarations; literal maps remain available for controller-created anatomy that has no component family. The
-projection retains each slot's declaring family so scaffolds group shared slots under their owner rather than whichever
-consumer happens to appear first.
+container. Missing local keys and conflicting `visual`/`structural` classifications are rejected. Package component
+families use class declarations so the projection retains each slot's declaring family and scaffolds group shared slots
+under their owner rather than whichever consumer happens to appear first.
 
-Structural slots are containers, assistive nodes or geometry a controller stylesheet already owns; presets are not
+Structural slots are containers, assistive nodes or geometry the shared structural stylesheet already owns; presets are not
 expected to style them, and `hotwire:make-preset` leaves them out of the scaffold.
 
 Use `preset_properties` only when structural CSS consumes a value that every complete preset must define. The registry
@@ -231,20 +230,20 @@ deliberately omitted slot is valid in a bundle even though it would be an error 
 ],
 ```
 
-| Key           | Description                                                                    |
-|---------------|--------------------------------------------------------------------------------|
-| `source`      | Path to the controller file, relative to the package root                      |
-| `docs`        | Relative path to the controller's doc file                                     |
-| `category`    | Public category                                                                |
-| `description` | Public discovery and search summary                                            |
-| `npm`         | External npm packages required at runtime (package → version constraint)       |
-| `styling`     | Same shape as a component's, only when JavaScript itself creates visual anatomy |
+| Key           | Description                                                              |
+|---------------|--------------------------------------------------------------------------|
+| `source`      | Path to the controller file, relative to the package root                |
+| `docs`        | Relative path to the controller's doc file                               |
+| `category`    | Public category                                                          |
+| `description` | Public discovery and search summary                                      |
+| `npm`         | External npm packages required at runtime (package → version constraint) |
+| `styling`     | Structural slots emitted directly by controller behavior                 |
 
-A controller declares `styling` only when JavaScript itself creates visual anatomy. Tooltip accepts an
-application-owned standalone template and declares no slots; `<hw:tooltip>` separately owns `Tooltip::SLOTS` and the
-package visual module used by it and component integrations. Toaster follows the same ownership rule with a private
-component-authored card template: `Toaster::SLOTS` owns the package visuals while the controller only clones and manages
-their lifecycle.
+Package controllers do not own visual slots. Tooltip accepts an application-owned standalone template while
+`<hw:tooltip>` owns the package-styled anatomy. The `oembed` controller emits structural, application-styled hooks for
+editor content; the separate `<hw:video-embed>` component server-renders known video URLs with package styling. Toaster
+follows the same ownership rule with a private component-authored card template: `Toaster::SLOTS` owns the package
+visuals while the controller only clones and manages their lifecycle.
 
 Controllers inside substrate folders use `/` in the key: `'turbo/progress'`.  
 The identifier is derived automatically: `/` → `--`, `_` → `-`.
@@ -276,9 +275,10 @@ lifecycle mechanics and claims already conveyed by its name or category.
 ## Adding a new controller
 
 1. Create the controller file in `resources/js/controllers/` (`{name}_controller.{js|ts}`).
-2. Add the controller entry to `catalog.php`. Declare any external npm packages in `npm` and, if the controller
-   builds its own DOM, the slots it creates under `styling`.
-3. If it has visual slots, register its module ownership and every official preset source in `styles.php`.
+2. Add the controller entry to `catalog.php`, declare external npm packages in `npm` and register any emitted
+   presentation-free slots as structural styling.
+3. If behavior needs package-styled runtime anatomy, author it in a Component Blade template, declare the component's
+   slots and register that component's module ownership in `styles.php`. Keep standalone controller markup application-owned.
 4. Create `tests/Controllers/<name>_controller.test.js` covering the controller's behavior (follow
    `tests/Controllers/auto_save_controller.test.js` as reference).
 5. Create `docs/controllers/<name>.md`.

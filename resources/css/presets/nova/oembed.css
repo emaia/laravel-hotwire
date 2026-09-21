@@ -1,6 +1,0 @@
-@layer components {
-    /* Oembed controller */
-    [data-slot="oembed"] { @apply my-5 rounded-lg bg-muted; }
-    [data-slot="oembed-frame"] { @apply border-0; }
-    [data-slot="oembed-link"] { @apply break-all text-primary underline underline-offset-4 hover:no-underline; }
-}

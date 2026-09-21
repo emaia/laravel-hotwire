@@ -579,9 +579,9 @@ it('resolves migrated integrations to exact canonical visual sources', function 
         [],
         ['presets/nova/toaster.css'],
     ],
-    'OEmbed controller anatomy' => [
+    'Video Embed component anatomy' => [
+        ['video-embed'],
         [],
-        ['oembed'],
-        ['presets/nova/oembed.css'],
+        ['presets/nova/video-embed.css'],
     ],
 ]);
