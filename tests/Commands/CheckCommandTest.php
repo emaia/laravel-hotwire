@@ -727,7 +727,7 @@ it('reports externally edited generated CSS with a regeneration command and diff
         ->and(Artisan::output())
         ->toContain(
             'generated CSS was edited outside Laravel Hotwire',
-            "php artisan hotwire:bundle-preset --from='resources/css/hotwire.css' --force",
+            'php artisan hotwire:bundle-preset --from='.escapeshellarg('resources/css/hotwire.css').' --force',
             '--- resources/css/hotwire.css (current)',
             '+++ resources/css/hotwire.css (expected)',
         )
