@@ -46,7 +46,7 @@ class CheckCommand extends Command
 
     public $description = 'Check Stimulus controllers, dependencies, and generated CSS';
 
-    /** @var array<int, array{key: string, line: string}> Buffered "needs attention" entries, printed at the end alphabetically so they sit right next to the prompt. */
+    /** @var array<int, array{key: string, line: string, fix?: string}> Buffered "needs attention" entries, printed at the end alphabetically so they sit right next to the prompt. */
     private array $problemLines = [];
 
     /** @var string[] OK status lines for component-driven controllers, kept in component-scan order so each component's controllers stay grouped. */
@@ -164,12 +164,19 @@ class CheckCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->printProblemLines();
-        $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
+        $deferProblemOutput = (bool) $this->option('fix');
+
+        if (! $deferProblemOutput) {
+            $this->printCurrentProblems($issues, $missingDeps, $excludedFromStub, $policyDrift);
+        }
 
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
         if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasPolicyDrift && ! $hasStubDrift && $this->styleFixes === []) {
+            if ($deferProblemOutput) {
+                $this->printCurrentProblems($issues, $missingDeps, $excludedFromStub, $policyDrift);
+            }
+
             $this->printStyleIssueSummary($styleIssues);
 
             return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
@@ -195,11 +202,20 @@ class CheckCommand extends Command
             } catch (RuntimeException $exception) {
                 warning($exception->getMessage());
 
+                if ($deferProblemOutput) {
+                    $this->printCurrentProblems($issues, $missingDeps, $excludedFromStub, $policyDrift);
+                }
+
                 return self::FAILURE;
             }
 
             if ($regeneratedLoader) {
+                $this->forgetFixedProblems(['loader']);
                 $this->warnAboutViteRebuild();
+            }
+
+            if ($deferProblemOutput) {
+                $this->printCurrentProblems($issues, $missingDeps, $excludedFromStub, $policyDrift);
             }
 
             if ($depsAdded > 0) {
@@ -277,6 +293,7 @@ class CheckCommand extends Command
             $this->problemLines[] = [
                 'key' => $identifier,
                 'line' => "  <error>✗</error>  $identifier  excluded from loader stub  <fg=gray>(used in views; re-run install with --with-deps including $identifier, or `hotwire:check --fix`)</>",
+                'fix' => 'loader',
             ];
         }
 
@@ -418,6 +435,7 @@ class CheckCommand extends Command
         $this->problemLines[] = [
             'key' => 'resources/js/controllers/index.js',
             'line' => "  <comment>!</comment>  resources/js/controllers/index.js  outdated  <fg=gray>(controller loading policy differs from config; {$detail})</>",
+            'fix' => 'loader',
         ];
 
         return true;
@@ -656,6 +674,7 @@ class CheckCommand extends Command
                     $this->problemLines[] = [
                         'key' => "styles-content-{$path}",
                         'line' => "  <error>✗</error>  {$path}  generated CSS is outdated  <fg=gray>({$detail})</>",
+                        'fix' => "style:{$path}",
                     ];
                     $issues++;
 
@@ -1198,16 +1217,19 @@ class CheckCommand extends Command
                 $this->okComponentControllerLines[] = $line;
             }
         } else {
-            $this->problemLines[] = ['key' => $controller->identifier, 'line' => $line];
+            $problem = ['key' => $controller->identifier, 'line' => $line];
 
             // User-owned divergence is informational: --fix can't (and shouldn't) touch it.
             if ($status !== 'diverged (user-owned)') {
+                $problem['fix'] = "controller:{$controller->identifier}";
                 $issues[] = [
                     'identifier' => $controller->identifier,
                     'source_file' => $sourceFile,
                     'target_file' => $targetFile,
                 ];
             }
+
+            $this->problemLines[] = $problem;
         }
 
         if (! $localOverride) {
@@ -1276,15 +1298,18 @@ class CheckCommand extends Command
             if ($status === 'up to date' || $status === 'auto-loaded from vendor') {
                 $this->okHelperLines[] = ['key' => $name, 'line' => $line];
             } else {
-                $this->problemLines[] = ['key' => $name, 'line' => $line];
+                $problem = ['key' => $name, 'line' => $line];
 
                 if ($status !== 'diverged (user-owned)') {
+                    $problem['fix'] = "controller:{$name}";
                     $issues[] = [
                         'identifier' => $name,
                         'source_file' => $depSource,
                         'target_file' => $depTarget,
                     ];
                 }
+
+                $this->problemLines[] = $problem;
             }
         }
     }
@@ -1386,6 +1411,7 @@ class CheckCommand extends Command
             $this->problemLines[] = [
                 'key' => $package,
                 'line' => "  <error>✗</error>  $package {$info['version']}  <fg=gray>missing from package.json (used by $usedBy)</>",
+                'fix' => "dependency:{$package}",
             ];
             $missing[$package] = $info['version'];
         }
@@ -1463,6 +1489,44 @@ class CheckCommand extends Command
         $this->line('');
     }
 
+    /**
+     * @param  array<int, array{identifier: string, source_file: string, target_file: string}>  $issues
+     * @param  array<string, string>  $missingDeps
+     * @param  string[]  $excludedFromStub
+     */
+    private function printCurrentProblems(array $issues, array $missingDeps, array $excludedFromStub, bool $policyDrift): void
+    {
+        $remainingFixes = array_fill_keys(array_filter(array_column($this->problemLines, 'fix')), true);
+        $remainingIssues = array_values(array_filter(
+            $issues,
+            fn (array $issue): bool => isset($remainingFixes["controller:{$issue['identifier']}"]),
+        ));
+        $remainingDeps = array_filter(
+            $missingDeps,
+            fn (string $package): bool => isset($remainingFixes["dependency:{$package}"]),
+            ARRAY_FILTER_USE_KEY,
+        );
+        $loaderNeedsAttention = isset($remainingFixes['loader']);
+
+        $this->printProblemLines();
+        $this->printIssueSummary(
+            $remainingIssues,
+            $remainingDeps,
+            $loaderNeedsAttention ? $excludedFromStub : [],
+            $loaderNeedsAttention && $policyDrift,
+        );
+    }
+
+    /** @param string[] $fixes */
+    private function forgetFixedProblems(array $fixes): void
+    {
+        $fixed = array_fill_keys($fixes, true);
+        $this->problemLines = array_values(array_filter(
+            $this->problemLines,
+            fn (array $entry): bool => ! isset($entry['fix'], $fixed[$entry['fix']]),
+        ));
+    }
+
     private function printStyleIssueSummary(int $issues): void
     {
         if ($issues === 0) {
@@ -1504,6 +1568,7 @@ class CheckCommand extends Command
                 }
 
                 info("Regenerated: {$fix['path']}");
+                $this->forgetFixedProblems(["style:{$fix['path']}"]);
                 $fixed++;
             } finally {
                 flock($lock, LOCK_UN);
@@ -1663,12 +1728,29 @@ class CheckCommand extends Command
             $lines[] = ' '.OutputFormatter::escape($line);
         }
 
-        foreach (array_slice($currentLines, $prefix, $afterStartCurrent - $prefix) as $line) {
-            $lines[] = '-'.OutputFormatter::escape($line);
-        }
+        foreach ([
+            ['lines' => array_slice($currentLines, $prefix, $afterStartCurrent - $prefix), 'marker' => '-', 'side' => 'current'],
+            ['lines' => array_slice($expectedLines, $prefix, $afterStartExpected - $prefix), 'marker' => '+', 'side' => 'expected'],
+        ] as $change) {
+            $changed = $change['lines'];
 
-        foreach (array_slice($expectedLines, $prefix, $afterStartExpected - $prefix) as $line) {
-            $lines[] = '+'.OutputFormatter::escape($line);
+            if (count($changed) <= 20) {
+                foreach ($changed as $line) {
+                    $lines[] = $change['marker'].OutputFormatter::escape($line);
+                }
+
+                continue;
+            }
+
+            foreach (array_slice($changed, 0, 10) as $line) {
+                $lines[] = $change['marker'].OutputFormatter::escape($line);
+            }
+
+            $lines[] = '... '.(count($changed) - 20)." {$change['side']} lines omitted";
+
+            foreach (array_slice($changed, -10) as $line) {
+                $lines[] = $change['marker'].OutputFormatter::escape($line);
+            }
         }
 
         foreach (array_slice($currentLines, $afterStartCurrent, $currentEnd - $afterStartCurrent) as $line) {
@@ -1781,6 +1863,7 @@ class CheckCommand extends Command
             $this->files->ensureDirectoryExists($targetDir);
             $this->files->copy($issue['source_file'], $issue['target_file']);
             info("Published: {$issue['identifier']}");
+            $this->forgetFixedProblems(["controller:{$issue['identifier']}"]);
         }
     }
 
@@ -1794,6 +1877,11 @@ class CheckCommand extends Command
         foreach ($added as $package => $version) {
             info("Added to devDependencies: $package $version");
         }
+
+        $this->forgetFixedProblems(array_map(
+            fn (string $package): string => "dependency:{$package}",
+            array_keys($added),
+        ));
 
         return count($added);
     }

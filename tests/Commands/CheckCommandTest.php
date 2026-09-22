@@ -734,6 +734,23 @@ it('reports externally edited generated CSS with a regeneration command and diff
         ->not->toContain('not covered by any generated CSS bundle');
 });
 
+it('caps generated CSS diffs at twenty changed lines per side', function () {
+    writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge><x-hw::modal />');
+    $this->artisan('hotwire:bundle-preset --components=badge,modal --no-interaction')->assertSuccessful();
+    $path = resource_path('css/hotwire.css');
+    $header = array_slice(explode("\n", File::get($path)), 0, 3);
+    $changed = array_map(fn (int $line): string => ".changed-current-{$line} {}", range(1, 60));
+    File::put($path, implode("\n", [...$header, ...$changed])."\n");
+
+    $exit = Artisan::call('hotwire:check --no-interaction');
+    $output = Artisan::output();
+
+    expect($exit)->toBe(1)
+        ->and($output)->toContain('... 40 current lines omitted')
+        ->toMatch('/\.\.\. \d+ expected lines omitted/')
+        ->and(substr_count($output, 'changed-current-'))->toBe(20);
+});
+
 it('regenerates untouched v2 package drift with fix', function () {
     writeView('page.blade.php', '<x-hw::badge>New</x-hw::badge>');
     $this->artisan('hotwire:bundle-preset --components=badge --no-interaction')->assertSuccessful();
@@ -748,10 +765,9 @@ it('regenerates untouched v2 package drift with fix', function () {
 
     expect($exit)->toBe(0)
         ->and(Artisan::output())->toContain(
-            'generated CSS is outdated',
-            'hotwire:bundle-preset --from=',
             'Regenerated: resources/css/hotwire.css',
-        );
+        )
+        ->not->toContain('Needs attention', 'generated CSS is outdated');
 
     expect(File::get($path))
         ->not->toBe($before)
@@ -831,8 +847,8 @@ it('recalculates v2 modules from components instead of trusting recorded modules
     File::put($path, $bundle->render('resources/css/hotwire.css', $source, 'nova', ['badge'], []));
 
     $this->artisan('hotwire:check --fix --no-interaction')
-        ->expectsOutputToContain('generated CSS is outdated')
         ->expectsOutputToContain('Regenerated: resources/css/hotwire.css')
+        ->doesntExpectOutputToContain('Needs attention')
         ->assertSuccessful();
 
     expect($bundle->planFromContent(File::get($path))['modules'])->toBe(['badge']);

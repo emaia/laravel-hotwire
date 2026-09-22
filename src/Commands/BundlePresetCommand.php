@@ -46,7 +46,7 @@ class BundlePresetCommand extends Command
         }
 
         if ($from !== '') {
-            $output = $this->outputPath($from);
+            $output = $this->outputPath($from, '--from');
 
             if ($output === null) {
                 return self::FAILURE;
@@ -231,7 +231,7 @@ class BundlePresetCommand extends Command
         ))));
     }
 
-    private function outputPath(string $value): ?string
+    private function outputPath(string $value, string $option = '--output'): ?string
     {
         $output = str_replace('\\', '/', trim($value));
         $segments = explode('/', $output);
@@ -239,7 +239,7 @@ class BundlePresetCommand extends Command
         if ($output === '' || str_starts_with($output, '/') || preg_match('/^[A-Za-z]:\//', $output) === 1
             || str_contains($output, ':') || in_array('..', $segments, true)
             || pathinfo($output, PATHINFO_EXTENSION) !== 'css') {
-            warning('Output must be a relative .css path under resources/css.');
+            warning("{$option} must be a relative .css path under resources/css.");
 
             return null;
         }
@@ -249,7 +249,7 @@ class BundlePresetCommand extends Command
 
         if (! str_starts_with($output, 'resources/css/')
             || array_filter($segments, fn (string $segment): bool => str_starts_with($segment, '.')) !== []) {
-            warning('Output must be a relative .css path under resources/css.');
+            warning("{$option} must be a relative .css path under resources/css.");
 
             return null;
         }
