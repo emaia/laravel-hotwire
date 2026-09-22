@@ -186,18 +186,42 @@ it('reports all ok when no hotwire components used', function () {
         ->assertSuccessful();
 });
 
-it('reports legacy view ownership without scanning overrides as application usage', function () {
+it('reports legacy view ownership without scanning identical or orphaned overrides', function () {
     $source = dirname(__DIR__, 2).'/resources/views/component-views/chart.blade.php';
     writeView('vendor/hotwire/component-views/chart.blade.php', File::get($source));
-    writeView('vendor/hotwire/component-views/badge.blade.php', '<x-hw::chart />');
+    writeView('vendor/hotwire/component-views/badge.blade.php', '<span>Customized badge</span>');
     writeView('vendor/hotwire/component-views/removed.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('Legacy view overrides (3)')
         ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/chart.blade.php  identical shadow')
         ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/badge.blade.php  modified soft fork')
         ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/removed.blade.php  orphaned override')
+        ->doesntExpectOutputToContain('Needs attention')
         ->doesntExpectOutputToContain('Required npm dependencies')
         ->doesntExpectOutputToContain('echarts')
+        ->assertSuccessful();
+});
+
+it('scans modified soft forks as application usage', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    writeView('vendor/hotwire/component-views/badge.blade.php', '<x-hw::chart />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('modified soft fork')
+        ->expectsOutputToContain('echarts')
+        ->expectsOutputToContain('missing from package.json')
+        ->assertFailed();
+});
+
+it('classifies line-ending-only view copies as identical shadows', function () {
+    $source = dirname(__DIR__, 2).'/resources/views/component-views/badge.blade.php';
+    $content = str_replace("\n", "\r\n", str_replace("\r\n", "\n", File::get($source)));
+    writeView('vendor/hotwire/component-views/badge.blade.php', $content);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('badge.blade.php  identical shadow')
+        ->doesntExpectOutputToContain('modified soft fork')
         ->assertSuccessful();
 });
 
@@ -214,16 +238,36 @@ it('preserves legacy view overrides byte for byte with fix', function () {
 });
 
 it('does not scan the legacy override tree when passed as an explicit path', function () {
-    writeView('vendor/hotwire/component-views/chart.blade.php', '<x-hw::chart />');
+    writeView('vendor/hotwire/component-views/removed.blade.php', '<x-hw::chart />');
 
     $this->artisan('hotwire:check', [
         '--path' => [resource_path('views/vendor/hotwire')],
         '--no-interaction' => true,
     ])
-        ->expectsOutputToContain('modified soft fork')
+        ->expectsOutputToContain('orphaned override')
         ->doesntExpectOutputToContain('Required npm dependencies')
         ->doesntExpectOutputToContain('echarts')
         ->assertSuccessful();
+});
+
+it('does not scan identical shadows when a relative view path is passed', function () {
+    $source = dirname(__DIR__, 2).'/resources/views/component-views/rich-text.blade.php';
+    writeView('vendor/hotwire/component-views/rich-text.blade.php', File::get($source));
+    $workingDirectory = getcwd();
+    chdir(base_path());
+
+    try {
+        $this->artisan('hotwire:check', [
+            '--path' => ['resources/views'],
+            '--no-interaction' => true,
+        ])
+            ->expectsOutputToContain('identical shadow')
+            ->doesntExpectOutputToContain('used by standalone')
+            ->doesntExpectOutputToContain('<x-hw::icon>')
+            ->assertSuccessful();
+    } finally {
+        chdir($workingDirectory);
+    }
 });
 
 // --- Semantic token contrast ---

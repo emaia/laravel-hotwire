@@ -78,7 +78,8 @@ it('keeps conventional application view overrides working', function () {
     File::put($override, 'application override');
     config()->set('view.paths', [resource_path('views')]);
     view()->getFinder()->replaceNamespace('hotwire', []);
-    (new LaravelHotwireServiceProvider(app()))->boot();
+    $resources = new ReflectionMethod(LaravelHotwireServiceProvider::class, 'bootPackageResources');
+    $resources->invoke(new LaravelHotwireServiceProvider(app()));
     view()->getFinder()->flush();
 
     try {

@@ -197,11 +197,13 @@ The check scans Blade components, `data-controller` attributes and Stimulus help
 and shared-helper drift, npm dependencies, controller loader policy, selective bundle integrity and coverage, and
 application preset contracts. Repeat `--path` or `--preset` to supply more than one value.
 
-Legacy component overrides under `resources/views/vendor/hotwire` are reported separately and never counted as
-application view usage, even when that directory is passed through `--path`. An `identical shadow` still matches its
-current package source, a `modified soft fork` owns different application markup, and an `orphaned override` has no
-matching package view in the installed version. Remove an identical shadow to resume package-managed updates; review
-modified and orphaned files manually. `--fix` never deletes, moves or rewrites these application-owned views.
+Legacy component overrides under `resources/views/vendor/hotwire` appear in a separate informational section. An
+`identical shadow` still matches its current package source, a `modified soft fork` owns different application markup,
+and an `orphaned override` has no matching package view in the installed version. Identical shadows and orphaned
+overrides are not counted as application usage, even when that directory is passed through `--path`. Modified soft forks
+remain part of application view scanning so their component, controller, npm and selective CSS requirements are checked.
+Remove an identical shadow to resume package-managed updates; review modified and orphaned files manually. `--fix` never
+deletes, moves or rewrites these application-owned views.
 
 Missing local controller files are valid because package controllers auto-load from `vendor`. A differing user-owned
 file is reported but not overwritten. CSS selection and application preset problems require manual changes. An untouched

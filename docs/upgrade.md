@@ -16,7 +16,8 @@ precedence for compatibility.
 Those existing files are soft forks: only their Blade layer belongs to the application, while their PHP classes,
 controllers, shared helpers, semantic slots and preset CSS continue to follow the installed package. Run
 `php artisan hotwire:check --no-interaction` before upgrading. It classifies each file as an identical shadow, a modified
-soft fork or an orphaned override without treating the copied package tree as application component usage.
+soft fork or an orphaned override in a separate informational section. Identical and orphaned files are excluded from
+application usage discovery; modified soft forks remain in the scan so their frontend requirements are still checked.
 
 Delete identical shadows to resume package-managed template updates. Review modified and orphaned overrides against the
 installed package and keep only intentional forks. `hotwire:check --fix` preserves every file under the legacy override

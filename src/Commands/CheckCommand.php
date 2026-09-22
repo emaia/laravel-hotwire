@@ -64,6 +64,9 @@ class CheckCommand extends Command
     /** @var string[] Valid application preset lines. */
     private array $okStyleLines = [];
 
+    /** @var array<int, array{key: string, line: string}> Legacy application view override lines. */
+    private array $viewOverrideLines = [];
+
     /** @var array<int, array{target: string, path: string, observed: string, expected: string}> */
     private array $styleFixes = [];
 
@@ -117,7 +120,7 @@ class CheckCommand extends Command
         }
 
         if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0
-            && $this->problemLines === [] && $this->okStyleLines === []) {
+            && $this->problemLines === [] && $this->okStyleLines === [] && $this->viewOverrideLines === []) {
             info('No Hotwire components or controllers found in views.');
 
             if (! $policyDrift) {
@@ -250,6 +253,7 @@ class CheckCommand extends Command
         $this->okStandaloneLines = [];
         $this->okHelperLines = [];
         $this->okStyleLines = [];
+        $this->viewOverrideLines = [];
         $this->styleFixes = [];
         $this->controllerResolver = null;
     }
@@ -537,7 +541,9 @@ class CheckCommand extends Command
             $files = Finder::create()->files()->name('*.blade.php')->in($path);
 
             foreach ($files as $file) {
-                if ($this->isViewOverridePath($file->getPathname())) {
+                $overrideStatus = $this->viewOverrideStatus($file->getPathname());
+
+                if ($overrideStatus !== null && $overrideStatus !== 'modified soft fork') {
                     continue;
                 }
 
@@ -573,38 +579,56 @@ class CheckCommand extends Command
             return;
         }
 
-        $packageRoot = dirname(__DIR__, 2).'/resources/views';
         $files = Finder::create()->files()->name('*.blade.php')->sortByName()->in($root);
 
         foreach ($files as $file) {
             $relative = str_replace('\\', '/', $file->getRelativePathname());
             $path = "resources/views/vendor/hotwire/{$relative}";
-            $source = "{$packageRoot}/{$relative}";
+            $status = $this->viewOverrideStatus($file->getPathname());
+            $detail = match ($status) {
+                'orphaned override' => 'no matching package view; review and remove it manually when unused',
+                'identical shadow' => 'remove it to resume package-managed updates',
+                'modified soft fork' => 'application-owned and scanned for dependencies; package updates and --fix preserve it',
+                default => throw new LogicException("View override [{$path}] is outside the legacy override root."),
+            };
 
-            if (! $this->files->exists($source)) {
-                $status = 'orphaned override';
-                $detail = 'no matching package view; review and remove it manually when unused';
-            } elseif ($this->files->hash($source) === $this->files->hash($file->getPathname())) {
-                $status = 'identical shadow';
-                $detail = 'remove it to resume package-managed updates';
-            } else {
-                $status = 'modified soft fork';
-                $detail = 'application-owned; package updates and --fix preserve it';
-            }
-
-            $this->problemLines[] = [
+            $this->viewOverrideLines[] = [
                 'key' => "view-override-{$relative}",
                 'line' => "  <comment>~</comment>  {$path}  {$status}  <fg=gray>({$detail})</>",
             ];
         }
     }
 
-    private function isViewOverridePath(string $path): bool
+    private function viewOverrideStatus(string $path): ?string
     {
-        $path = str_replace('\\', '/', $path);
-        $root = rtrim(str_replace('\\', '/', resource_path('views/vendor/hotwire')), '/');
+        $relative = $this->viewOverrideRelativePath($path);
 
-        return $path === $root || str_starts_with($path, $root.'/');
+        if ($relative === null) {
+            return null;
+        }
+
+        $source = dirname(__DIR__, 2).'/resources/views/'.$relative;
+
+        if (! $this->files->exists($source)) {
+            return 'orphaned override';
+        }
+
+        $sourceContents = str_replace(["\r\n", "\r"], "\n", $this->files->get($source));
+        $overrideContents = str_replace(["\r\n", "\r"], "\n", $this->files->get($path));
+
+        return $sourceContents === $overrideContents ? 'identical shadow' : 'modified soft fork';
+    }
+
+    private function viewOverrideRelativePath(string $path): ?string
+    {
+        $path = $this->comparablePath($path);
+        $root = rtrim($this->comparablePath(resource_path('views/vendor/hotwire')), '/');
+
+        if (! $this->containsPath($root, $path) || $path === $root) {
+            return null;
+        }
+
+        return ltrim(substr($path, strlen($root)), '/');
     }
 
     /**
@@ -1486,6 +1510,17 @@ class CheckCommand extends Command
 
     private function emitScanOutput(): void
     {
+        if ($this->viewOverrideLines !== []) {
+            usort($this->viewOverrideLines, fn (array $a, array $b) => strcmp($a['key'], $b['key']));
+            $count = count($this->viewOverrideLines);
+
+            $this->line("<options=bold>Legacy view overrides ({$count}):</>");
+            foreach ($this->viewOverrideLines as $entry) {
+                $this->line($entry['line']);
+            }
+            $this->line('');
+        }
+
         foreach ($this->okStyleLines as $line) {
             $this->line($line);
         }
