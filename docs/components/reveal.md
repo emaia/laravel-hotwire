@@ -56,6 +56,12 @@ and keeps the partial markup neutral. The controller assigns missing indexes in 
 after it connects. Set `--reveal-index` server-side when the visual order differs or when the stagger must be correct on
 the first paint rather than progressively corrected after controller loading.
 
+`<hw:reveal.item>` receives deterministic server owner identity and sequence from the nearest `<hw:reveal>` or
+`<hw:sidebar reveal>` root. It can also render under a manually mounted `data-controller="reveal"` root or through a
+Blade wrapper slot. Without Blade owner context it omits `data-reveal-owner` and `--reveal-index`; the controller assigns
+the missing index in document order after connecting. Outside any Reveal controller it remains a CSS animation item with
+the default index `0`, but has no controller lifecycle.
+
 When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
 available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing
 surface and accepts explicit `data-reveal-item` descendants.

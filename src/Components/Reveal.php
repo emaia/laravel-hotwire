@@ -4,9 +4,9 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
+use Emaia\LaravelHotwire\Support\RevealContext;
 use Illuminate\Contracts\Support\Htmlable;
 use InvalidArgumentException;
-use stdClass;
 
 class Reveal extends Component
 {
@@ -15,7 +15,22 @@ class Reveal extends Component
         'item' => ['name' => 'reveal-item', 'kind' => 'structural'],
     ];
 
-    public stdClass $revealCounter;
+    protected $except = [
+        'trigger',
+        'scope',
+        'motion',
+        'stagger',
+        'duration',
+        'delay',
+        'maxSteps',
+        'threshold',
+        'rootMargin',
+        'once',
+        'as',
+        'stimulus',
+    ];
+
+    private RevealContext $context;
 
     public function __construct(
         public string $trigger = 'load',
@@ -39,7 +54,7 @@ class Reveal extends Component
             ['div', 'section', 'main', 'header', 'footer', 'aside', 'nav', 'ul', 'ol'],
             'reveal',
         );
-        $this->revealCounter = (object) ['index' => 0];
+        $this->context = new RevealContext;
     }
 
     public function render()
@@ -47,6 +62,16 @@ class Reveal extends Component
         return view('hotwire::component-views.reveal', [
             'slotName' => self::SLOTS['root']['name'],
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = parent::data();
+        $data['revealRoot'] = $this;
+        $data['revealContext'] = $this->context;
+
+        return $data;
     }
 
     /** @param string[] $allowed */

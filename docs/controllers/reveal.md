@@ -67,8 +67,9 @@ new items synchronized after DOM mutations.
 For nested explicit items, a missing `--reveal-index` resolves to `0` until the controller connects. Rendering indexes
 server-side is therefore the only deterministic first-paint stagger. Eager controller loading usually assigns them
 before paint and is a reasonable concise option for application chrome, but it cannot provide the same no-JavaScript or
-delayed-bundle guarantee. `<hw:reveal.item>` supplies server indexes automatically; raw component markup must write them
-when that guarantee matters.
+delayed-bundle guarantee. `<hw:reveal.item>` supplies server indexes automatically under `<hw:reveal>` and
+`<hw:sidebar reveal>`. Under a manually mounted controller it omits the server index so the controller can assign one;
+raw markup must write the index itself when the first-paint guarantee matters.
 
 ## Scroll lifecycle
 

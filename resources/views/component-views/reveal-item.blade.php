@@ -1,15 +1,16 @@
-@aware(['revealCounter' => null])
+@aware(['revealContext' => null])
 
 @php
-    $index = $revealCounter?->index ?? 0;
-    $revealOwner = $revealCounter !== null ? spl_object_id($revealCounter) : null;
-
-    if ($revealCounter !== null) {
-        $revealCounter->index++;
-    }
+    $hasRevealContext = $revealContext instanceof \Emaia\LaravelHotwire\Support\RevealContext;
+    $index = $hasRevealContext ? $revealContext->nextIndex() : null;
+    $revealOwner = $hasRevealContext ? $revealContext->owner() : null;
 
     $userStyle = trim((string) $attributes->get('style'));
-    $style = "--reveal-index: {$index};".($userStyle !== '' ? " {$userStyle}" : '');
+    $style = collect([
+        $index !== null ? "--reveal-index: {$index}" : null,
+        $userStyle !== '' ? $userStyle : null,
+    ])->filter()->implode('; ');
+    $style = $style !== '' ? $style.';' : null;
 @endphp
 
 <{{ $as }}

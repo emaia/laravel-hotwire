@@ -6,6 +6,20 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Reveal context keys are scoped
+
+Reveal now exposes descendant ownership through `revealContext` instead of the generic `revealCounter` key. Application
+subcomponents consuming that context must replace `@aware(['revealCounter' => null])` with
+`@aware(['revealContext' => null])`, then call `$revealContext?->nextIndex()` for the server-rendered sequence and
+`$revealContext?->owner()` for the stable owner identity. Reveal's public props are no longer exposed as generic Blade
+component data, so intermediate components cannot shadow its configuration or sequence.
+
+`<hw:reveal.item>` remains valid under a manually mounted `data-controller="reveal"` root. Without a Blade
+`RevealContext`, it omits the server owner and index so the controller can assign document-order indexes after connecting.
+`<hw:reveal>` and `<hw:sidebar reveal>` both provide independent contexts and deterministic server indexes. Caller slot
+content renders before a wrapper view; an item passed to a wrapper that creates the Reveal root therefore uses the
+runtime fallback.
+
 ### Selective preset command renamed
 
 `hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output
