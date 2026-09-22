@@ -103,6 +103,34 @@ for (const preset of ["nova", "bloom"]) {
                 await expect(page.locator(`#${id}-container`)).toHaveCSS("right", "42px");
             }
         });
+
+        test("does not let a collapsed group label intercept menu button clicks", async ({ page }) => {
+            await page.setViewportSize({ width: 1024, height: 800 });
+            await page.setContent(`
+                <style>${css}</style>
+                <aside data-slot="sidebar" data-collapsible="icon" style="width: 48px">
+                    <div data-slot="sidebar-group">
+                        <div data-slot="sidebar-group-content">
+                            <div data-slot="sidebar-menu-item">
+                                <a id="menu-button" data-slot="sidebar-menu-button" data-size="default" href="#clicked">Item</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div data-slot="sidebar-group">
+                        <div data-slot="sidebar-group-label">Next group</div>
+                        <div data-slot="sidebar-group-content"></div>
+                    </div>
+                </aside>
+            `);
+
+            const menuButton = page.locator("#menu-button");
+            const box = await menuButton.boundingBox();
+
+            expect(box).not.toBeNull();
+            await page.mouse.click(box.x + box.width / 2, box.y + box.height - 2);
+
+            await expect(page).toHaveURL(/#clicked$/);
+        });
     });
 }
 
