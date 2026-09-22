@@ -186,6 +186,46 @@ it('reports all ok when no hotwire components used', function () {
         ->assertSuccessful();
 });
 
+it('reports legacy view ownership without scanning overrides as application usage', function () {
+    $source = dirname(__DIR__, 2).'/resources/views/component-views/chart.blade.php';
+    writeView('vendor/hotwire/component-views/chart.blade.php', File::get($source));
+    writeView('vendor/hotwire/component-views/badge.blade.php', '<x-hw::chart />');
+    writeView('vendor/hotwire/component-views/removed.blade.php', '<x-hw::chart />');
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/chart.blade.php  identical shadow')
+        ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/badge.blade.php  modified soft fork')
+        ->expectsOutputToContain('resources/views/vendor/hotwire/component-views/removed.blade.php  orphaned override')
+        ->doesntExpectOutputToContain('Required npm dependencies')
+        ->doesntExpectOutputToContain('echarts')
+        ->assertSuccessful();
+});
+
+it('preserves legacy view overrides byte for byte with fix', function () {
+    $path = 'vendor/hotwire/component-views/badge.blade.php';
+    $content = "customized\r\n<x-hw::chart />\r\n";
+    writeView($path, $content);
+
+    $this->artisan('hotwire:check --fix --no-interaction')
+        ->expectsOutputToContain('modified soft fork')
+        ->assertSuccessful();
+
+    expect(File::get(resource_path("views/{$path}")))->toBe($content);
+});
+
+it('does not scan the legacy override tree when passed as an explicit path', function () {
+    writeView('vendor/hotwire/component-views/chart.blade.php', '<x-hw::chart />');
+
+    $this->artisan('hotwire:check', [
+        '--path' => [resource_path('views/vendor/hotwire')],
+        '--no-interaction' => true,
+    ])
+        ->expectsOutputToContain('modified soft fork')
+        ->doesntExpectOutputToContain('Required npm dependencies')
+        ->doesntExpectOutputToContain('echarts')
+        ->assertSuccessful();
+});
+
 // --- Semantic token contrast ---
 
 // Application CSS is deliberately outside hotwire:check. These regressions prevent a future

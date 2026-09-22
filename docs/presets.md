@@ -223,7 +223,7 @@ Moving those preludes behind the imported sources could change encoding or casca
 in the ordered visual sources after their imports. These checks do not change the generated CSS of Nova or Bloom.
 
 A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
-publishing package views. Publishing or overriding a component template is instead an application-owned fork of markup
+publishing package views. Copying or overriding a component template is instead an application-owned fork of markup
 and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and
 accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
 treatment, must change.

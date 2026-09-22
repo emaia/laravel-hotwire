@@ -6,6 +6,22 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Package views are no longer publishable
+
+The `hotwire-views` publish tag has been removed. Publishing by provider or through `vendor:publish --all` no longer
+copies package component views and icons into `resources/views/vendor/hotwire`. Package-managed components continue to
+render directly from the package, and existing conventional Laravel overrides in that directory continue to take
+precedence for compatibility.
+
+Those existing files are soft forks: only their Blade layer belongs to the application, while their PHP classes,
+controllers, shared helpers, semantic slots and preset CSS continue to follow the installed package. Run
+`php artisan hotwire:check --no-interaction` before upgrading. It classifies each file as an identical shadow, a modified
+soft fork or an orphaned override without treating the copied package tree as application component usage.
+
+Delete identical shadows to resume package-managed template updates. Review modified and orphaned overrides against the
+installed package and keep only intentional forks. `hotwire:check --fix` preserves every file under the legacy override
+directory byte for byte; it never migrates or overwrites application markup automatically.
+
 ### Selective preset command renamed
 
 `hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output

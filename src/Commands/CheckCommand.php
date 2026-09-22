@@ -94,6 +94,8 @@ class CheckCommand extends Command
         $targetBase = resource_path('js/controllers');
         $registry = HotwireRegistry::make();
 
+        $this->reportViewOverrides();
+
         $totalFiles = 0;
         ['components' => $usedComponentKeys, 'controllers' => $standaloneControllers] =
             $this->scanViews($paths, $prefix, $registry, $totalFiles);
@@ -535,6 +537,10 @@ class CheckCommand extends Command
             $files = Finder::create()->files()->name('*.blade.php')->in($path);
 
             foreach ($files as $file) {
+                if ($this->isViewOverridePath($file->getPathname())) {
+                    continue;
+                }
+
                 $totalFiles++;
                 // Strip comments/scripts/styles once so neither components nor
                 // controllers are detected inside commented-out or non-markup code.
@@ -557,6 +563,48 @@ class CheckCommand extends Command
         }
 
         return ['components' => $components, 'controllers' => $controllers];
+    }
+
+    private function reportViewOverrides(): void
+    {
+        $root = resource_path('views/vendor/hotwire');
+
+        if (! is_dir($root)) {
+            return;
+        }
+
+        $packageRoot = dirname(__DIR__, 2).'/resources/views';
+        $files = Finder::create()->files()->name('*.blade.php')->sortByName()->in($root);
+
+        foreach ($files as $file) {
+            $relative = str_replace('\\', '/', $file->getRelativePathname());
+            $path = "resources/views/vendor/hotwire/{$relative}";
+            $source = "{$packageRoot}/{$relative}";
+
+            if (! $this->files->exists($source)) {
+                $status = 'orphaned override';
+                $detail = 'no matching package view; review and remove it manually when unused';
+            } elseif ($this->files->hash($source) === $this->files->hash($file->getPathname())) {
+                $status = 'identical shadow';
+                $detail = 'remove it to resume package-managed updates';
+            } else {
+                $status = 'modified soft fork';
+                $detail = 'application-owned; package updates and --fix preserve it';
+            }
+
+            $this->problemLines[] = [
+                'key' => "view-override-{$relative}",
+                'line' => "  <comment>~</comment>  {$path}  {$status}  <fg=gray>({$detail})</>",
+            ];
+        }
+    }
+
+    private function isViewOverridePath(string $path): bool
+    {
+        $path = str_replace('\\', '/', $path);
+        $root = rtrim(str_replace('\\', '/', resource_path('views/vendor/hotwire')), '/');
+
+        return $path === $root || str_starts_with($path, $root.'/');
     }
 
     /**
