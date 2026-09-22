@@ -302,7 +302,7 @@ it('mounts Reveal directly on the collapsible sidebar container', function () {
         ->assertDontSee('<div data-slot="reveal"', false);
 });
 
-it('provides its own server indexes to Reveal items', function () {
+it('provides structurally independent server indexes to Reveal items', function () {
     $html = (string) $this->blade(<<<'BLADE'
         <x-hw::reveal>
             <x-hw::reveal.item>Outer first</x-hw::reveal.item>
@@ -316,17 +316,12 @@ it('provides its own server indexes to Reveal items', function () {
         </x-hw::reveal>
     BLADE);
 
-    preg_match_all(
-        '/data-slot="reveal-item"[^>]*data-reveal-owner="([0-9]+)"[^>]*style="--reveal-index: ([0-9]+);"/',
-        $html,
-        $items,
-    );
-
-    expect($items[1])->toHaveCount(4)
-        ->and($items[1][0])->toBe($items[1][3])
-        ->and($items[1][1])->toBe($items[1][2])
-        ->and($items[1][1])->not->toBe($items[1][0])
-        ->and($items[2])->toBe(['0', '0', '1', '1']);
+    expect($html)
+        ->not->toContain('data-reveal-owner')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Outer first/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Sidebar first/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Sidebar second/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Outer second/s');
 });
 
 it('omits Reveal wiring from the sidebar by default', function () {

@@ -4,7 +4,6 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
-use Emaia\LaravelHotwire\Support\RevealContext;
 use Illuminate\Contracts\Support\Htmlable;
 use InvalidArgumentException;
 
@@ -30,8 +29,6 @@ class Reveal extends Component
         'stimulus',
     ];
 
-    private RevealContext $context;
-
     public function __construct(
         public string $trigger = 'load',
         public string $scope = 'render',
@@ -54,7 +51,6 @@ class Reveal extends Component
             ['div', 'section', 'main', 'header', 'footer', 'aside', 'nav', 'ul', 'ol'],
             'reveal',
         );
-        $this->context = new RevealContext;
     }
 
     public function render()
@@ -69,7 +65,6 @@ class Reveal extends Component
     {
         $data = parent::data();
         $data['revealRoot'] = $this;
-        $data['revealContext'] = $this->context;
 
         return $data;
     }

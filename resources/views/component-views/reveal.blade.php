@@ -3,10 +3,12 @@
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
 
     $reveal = $revealRoot;
-    $resolvedItems = RevealItems::resolve($slot->toHtml(), $revealContext);
+    $resolvedItems = RevealItems::resolve($slot->toHtml());
     $slotHtml = $resolvedItems['html'];
-    $revealOwner = $revealContext->owner();
     $hasExplicitItems = $resolvedItems['declaresItems'];
+    foreach ($resolvedItems['warnings'] as $warning) {
+        logger()->warning($warning);
+    }
     $userStyle = trim((string) $attributes->get('style'));
     $style = collect([
         $reveal->stagger !== null ? "--reveal-stagger: {$reveal->stagger}" : null,
@@ -24,7 +26,6 @@
         'data-reveal-root-margin-value' => $reveal->rootMargin,
         'data-reveal-once-value' => $reveal->once ? 'true' : 'false',
         'data-reveal-scope' => $reveal->scope,
-        'data-reveal-owner' => $revealOwner,
         'data-motion' => $reveal->motion,
         'data-reveal-children' => $hasExplicitItems ? null : true,
         'style' => $style,
@@ -32,7 +33,6 @@
         'data-reveal-',
         'data-slot',
         'data-motion',
-        'data-reveal-owner',
     ]);
 @endphp
 

@@ -5,10 +5,10 @@ use Emaia\LaravelHotwire\Components\Reveal\Item;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\CssPresetFiles;
-use Emaia\LaravelHotwire\Support\RevealContext;
 use Emaia\LaravelHotwire\Support\RevealItems;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 it('renders direct children as reveal items without per-item markup', function () {
     $view = $this->blade(<<<'BLADE'
@@ -45,7 +45,7 @@ it('switches to explicit item mode and shares sequential indexes', function () {
         ->toContain('<section');
 });
 
-it('keeps reveal context through an intermediate component with a colliding prop', function () {
+it('indexes items structurally through an intermediate component with a colliding prop', function () {
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 
     $html = (string) $this->blade(<<<'BLADE'
@@ -60,10 +60,11 @@ it('keeps reveal context through an intermediate component with a colliding prop
     expect($html)
         ->toContain('style="--reveal-index: 0;"')
         ->toContain('style="--reveal-index: 1;"')
+        ->not->toContain('data-reveal-owner')
         ->not->toContain('style="--reveal-index: 99;"');
 });
 
-it('uses independent owners and resumes the outer sequence across nested reveals', function () {
+it('uses independent sequences and resumes the outer sequence across nested reveals', function () {
     $html = (string) $this->blade(<<<'BLADE'
         <x-hw::reveal>
             <x-hw::reveal.item>Outer first</x-hw::reveal.item>
@@ -74,16 +75,11 @@ it('uses independent owners and resumes the outer sequence across nested reveals
         </x-hw::reveal>
     BLADE);
 
-    preg_match_all(
-        '/data-slot="reveal-item"[^>]*data-reveal-owner="([0-9]+)"[^>]*style="--reveal-index: ([0-9]+);"/',
-        $html,
-        $items,
-    );
-
-    expect($items[1])->toHaveCount(3)
-        ->and($items[1][0])->toBe($items[1][2])
-        ->and($items[1][1])->not->toBe($items[1][0])
-        ->and($items[2])->toBe(['0', '0', '1']);
+    expect($html)
+        ->not->toContain('data-reveal-owner')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Outer first/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Inner/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Outer second/s');
 });
 
 it('degrades an orphan item to runtime indexing', function () {
@@ -95,7 +91,7 @@ it('degrades an orphan item to runtime indexing', function () {
         ->assertDontSee('--reveal-index', false);
 });
 
-it('degrades through a slot boundary when a wrapper creates the reveal owner', function () {
+it('indexes through a slot boundary when a wrapper creates the reveal root', function () {
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 
     $html = (string) $this->blade(<<<'BLADE'
@@ -107,8 +103,8 @@ it('degrades through a slot boundary when a wrapper creates the reveal owner', f
     expect($html)
         ->toContain('data-reveal-item')
         ->toContain('Adopted item')
-        ->not->toContain('--reveal-index')
-        ->toMatch('/<[^>]*data-slot="reveal-item"(?![^>]*data-reveal-owner)[^>]*>Adopted item/s');
+        ->toContain('style="--reveal-index: 0;"')
+        ->not->toContain('data-reveal-owner');
 });
 
 it('does not expose reveal root props as generic component data', function () {
@@ -128,7 +124,7 @@ it('does not expose reveal root props as generic component data', function () {
     $data = $reveal->data();
 
     expect($data['revealRoot'])->toBe($reveal)
-        ->and($data['revealContext'])->toBeInstanceOf(RevealContext::class)
+        ->and($data)->not->toHaveKey('revealContext')
         ->and($data)->not->toHaveKeys([
             'trigger',
             'scope',
@@ -280,7 +276,7 @@ it('keeps direct-children mode when the only raw items belong to a nested reveal
     $view->assertSee('data-reveal-children', false);
 });
 
-it('releases a component item inherited across a nested manual reveal', function () {
+it('indexes a component item within a nested manual reveal', function () {
     $html = (string) $this->blade(<<<'BLADE'
         <x-hw::reveal>
             <article>Outer item</article>
@@ -292,7 +288,61 @@ it('releases a component item inherited across a nested manual reveal', function
 
     expect($html)
         ->toContain('data-reveal-children')
-        ->toMatch('/<[^>]*data-slot="reveal-item"(?![^>]*data-reveal-owner)(?![^>]*--reveal-index)[^>]*>Nested manual item/s');
+        ->toMatch('/<[^>]*data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Nested manual item/s')
+        ->not->toContain('data-reveal-owner');
+});
+
+it('keeps nested manual reveal sequences independent', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <x-hw::reveal.item>Outer first</x-hw::reveal.item>
+            <div data-controller="analytics reveal">
+                <x-hw::reveal.item>Inner first</x-hw::reveal.item>
+                <x-hw::reveal.item>Inner second</x-hw::reveal.item>
+            </div>
+            <x-hw::reveal.item>Outer second</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
+
+    expect($html)
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Outer first/s')
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Inner first/s')
+        ->toMatch('/style="--reveal-index: 1;"[^>]*>Inner second/s')
+        ->toMatch('/style="--reveal-index: 1;"[^>]*>Outer second/s');
+});
+
+it('does not reuse sequences across sibling manual reveal roots', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <div data-controller="reveal"><x-hw::reveal.item>First root</x-hw::reveal.item></div>
+            <div data-controller="reveal"><x-hw::reveal.item>Second root</x-hw::reveal.item></div>
+            <div data-controller="reveal"><x-hw::reveal.item>Third root</x-hw::reveal.item></div>
+        </x-hw::reveal>
+    BLADE);
+
+    expect($html)
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>First root/s')
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Second root/s')
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Third root/s')
+        ->not->toContain('style="--reveal-index: 1;"');
+});
+
+it('does not count an item that is itself a nested reveal root', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <x-hw::reveal.item data-controller="reveal">
+                Nested root
+                <x-hw::reveal.item>Nested child</x-hw::reveal.item>
+            </x-hw::reveal.item>
+            <x-hw::reveal.item>Outer item</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
+
+    expect($html)
+        ->toMatch('/data-slot="reveal-item"[^>]*data-controller="reveal"(?![^>]*--reveal-index)[^>]*>/s')
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Nested child/s')
+        ->toMatch('/style="--reveal-index: 0;"[^>]*>Outer item/s')
+        ->not->toContain('style="--reveal-index: 1;"');
 });
 
 it('compacts the outer sequence around a nested manual reveal', function () {
@@ -309,24 +359,59 @@ it('compacts the outer sequence around a nested manual reveal', function () {
     expect($html)
         ->toContain('style="--reveal-index: 0;"')
         ->not->toContain('style="--reveal-index: 2;')
-        ->toContain('style="color: red;"')
+        ->toContain('style="--reveal-index: 0; color: red;"')
         ->toContain('style="--reveal-index: 1; color: blue;"');
 });
 
-it('rewrites real item attributes instead of attribute-like text inside values', function () {
-    $source = new RevealContext;
-    $target = new RevealContext;
-    $html = '<div data-slot="reveal-item" data-reveal-item title=\' data-reveal-owner="999" style="color: red"\' data-reveal-owner="'.$source->owner().'">Item</div>';
+it('indexes component items by their position among raw items', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <div data-reveal-item>Raw first</div>
+            <x-hw::reveal.item>Component second</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
 
-    $resolved = RevealItems::resolve($html, $target);
+    expect($html)
+        ->toMatch('/<div data-reveal-item>Raw first<\/div>/')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Component second/s')
+        ->not->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Component second/s');
+});
+
+it('adds indexes to real style attributes instead of attribute-like text inside values', function () {
+    $html = '<div data-slot="reveal-item" data-reveal-item title=\' style="color: red"\' style="color: blue">Item</div>';
+
+    $resolved = RevealItems::resolve($html);
     $scoped = $resolved['html'];
 
     expect($scoped)
-        ->toContain('title=\' data-reveal-owner="999" style="color: red"\'')
-        ->toContain('data-reveal-owner="'.$target->owner().'"')
-        ->toContain('style="--reveal-index: 0;"')
-        ->not->toContain('data-reveal-owner="'.$source->owner().'"')
+        ->toContain('title=\' style="color: red"\'')
+        ->toContain('style="--reveal-index: 0; color: blue"')
+        ->not->toContain('data-reveal-owner')
         ->and($resolved['declaresItems'])->toBeTrue();
+});
+
+it('preserves an explicit reveal index instead of replacing it', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <x-hw::reveal.item style="color: red; --reveal-index: 7">Pinned</x-hw::reveal.item>
+            <x-hw::reveal.item>Following</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
+
+    expect($html)
+        ->toContain('style="color: red; --reveal-index: 7;"')
+        ->not->toContain('style="--reveal-index: 0; color: red; --reveal-index: 7;"')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Following/s');
+});
+
+it('treats reveal index custom property names as case-sensitive', function () {
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <x-hw::reveal.item style="--REVEAL-INDEX: 7">Item</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
+
+    $view->assertSee('style="--reveal-index: 0; --REVEAL-INDEX: 7;"', false);
 });
 
 it('ignores item signatures inside raw-text and nested template content', function () {
@@ -369,13 +454,11 @@ it('does not end raw-text masking on a closing tag prefix', function () {
 });
 
 it('ignores component item signatures in every opaque HTML element', function (string $html) {
-    $source = new RevealContext;
-    $context = new RevealContext;
-    $signature = '<div data-slot="reveal-item" data-reveal-item data-reveal-owner="'.$source->owner().'">Inert</div>';
+    $signature = '<div data-slot="reveal-item" data-reveal-item>Inert</div>';
     $html = str_replace('{item}', $signature, $html);
 
     expect(RevealItems::declaresItems($html))->toBeFalse()
-        ->and(RevealItems::scopeComponentItems($html, $context))->toBe($html);
+        ->and(RevealItems::resolve($html)['html'])->toBe($html);
 })->with([
     'iframe' => '<iframe>{item}</iframe>',
     'noembed' => '<noembed>{item}</noembed>',
@@ -391,17 +474,26 @@ it('ignores component item signatures in every opaque HTML element', function (s
 ]);
 
 it('aligns source tags with decoded case-sensitive XPath slot values', function () {
-    $source = new RevealContext;
-    $target = new RevealContext;
-    $html = '<div data-slot="REVEAL-ITEM" data-reveal-item data-reveal-owner="'.$source->owner().'">Lookalike</div>'
-        .'<div data-slot="reveal&#45;item" data-reveal-item data-reveal-owner="'.$source->owner().'">Item</div>';
+    $html = '<div data-slot="REVEAL-ITEM" data-reveal-item>Lookalike</div>'
+        .'<div data-slot="reveal&#45;item" data-reveal-item>Item</div>';
 
-    $scoped = RevealItems::scopeComponentItems($html, $target);
+    $scoped = RevealItems::resolve($html)['html'];
 
     expect($scoped)
-        ->toContain('data-slot="REVEAL-ITEM" data-reveal-item data-reveal-owner="'.$source->owner().'"')
-        ->toContain('data-slot="reveal&#45;item" data-reveal-item data-reveal-owner="'.$target->owner().'"')
-        ->toContain('style="--reveal-index: 0;"');
+        ->toContain('data-slot="REVEAL-ITEM" data-reveal-item>Lookalike')
+        ->toContain('data-slot="reveal&#45;item" data-reveal-item style="--reveal-index: 1;"')
+        ->toContain('style="--reveal-index: 1;"');
+});
+
+it('logs when DOM and source component item counts diverge', function () {
+    Log::spy();
+    $markup = '<?app <div data-slot="reveal-item" data-reveal-item>Ignored</div>?>';
+
+    $this->blade('<x-hw::reveal>{!! $markup !!}</x-hw::reveal>', ['markup' => $markup]);
+
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message): bool => str_contains($message, 'Reveal item indexing was skipped'));
 });
 
 it('counts template depth only from structural tags', function (string $inertToken) {

@@ -7,7 +7,14 @@
 
     $sidebarIdentifier = StimulusIdentifier::guard((string) $sidebarIdentifier, 'sidebar');
     $collapsed = $sidebarState === 'collapsed';
-    $slotHtml = $reveal ? RevealItems::scopeComponentItems($slot->toHtml(), $revealContext) : $slot->toHtml();
+    $slotHtml = $slot->toHtml();
+    if ($reveal) {
+        $resolvedItems = RevealItems::resolve($slotHtml);
+        $slotHtml = $resolvedItems['html'];
+        foreach ($resolvedItems['warnings'] as $warning) {
+            logger()->warning($warning);
+        }
+    }
     $userStyle = trim((string) $attributes->get('style'));
     $revealStyle = $reveal ? collect([
         $revealStagger !== null ? "--reveal-stagger: {$revealStagger}" : null,
@@ -21,7 +28,6 @@
         'data-controller' => $reveal ? 'reveal' : null,
         'data-reveal-trigger-value' => $reveal ? 'load' : null,
         'data-reveal-scope' => $reveal ? 'document' : null,
-        'data-reveal-owner' => $reveal ? $revealContext->owner() : null,
         'data-motion' => $reveal ? $revealMotion : ($internal['data-motion'] ?? null),
         'style' => $style,
     ]), $attributes, except: ['style'], protectedPrefixes: array_values(array_filter([

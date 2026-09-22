@@ -179,10 +179,10 @@ sidebar column, fixed positioning, and view-transition selectors keep their exis
 units with `data-reveal-item`; automatic direct-child mode is deliberately not enabled because the sidebar's internal
 wrappers are layout mechanics rather than animation units.
 
-`<hw:sidebar reveal>` owns an independent Reveal sequence. A nested `<hw:reveal.item>` receives that owner and a
-deterministic server index, even when the Sidebar itself sits inside another `<hw:reveal>`. Use the item component when
-its wrapper fits the Sidebar composition; keep raw `data-reveal-item` on an existing Sidebar part when an additional
-element would alter the layout.
+`<hw:sidebar reveal>` owns an independent Reveal sequence. A nested `<hw:reveal.item>` receives a deterministic server
+index from the rendered Sidebar structure, even when the Sidebar itself sits inside another `<hw:reveal>`. Use the item
+component when its wrapper fits the Sidebar composition; keep raw `data-reveal-item` on an existing Sidebar part when an
+additional element would alter the layout.
 
 `--reveal-index` is optional after the controller connects: missing indexes are assigned in document order. That lets an
 eagerly loaded Reveal produce the expected cascade with only `data-reveal-item` in most browsers. For a deterministic

@@ -3,7 +3,6 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
-use Emaia\LaravelHotwire\Support\RevealContext;
 use InvalidArgumentException;
 
 class Sidebar extends Component
@@ -43,8 +42,6 @@ class Sidebar extends Component
         'inner' => ['name' => 'sidebar-inner', 'kind' => 'visual'],
     ];
 
-    private ?RevealContext $revealContext;
-
     public function __construct(
         public string $side = 'left',
         public string $variant = 'sidebar',
@@ -63,8 +60,6 @@ class Sidebar extends Component
         if (! in_array($this->revealMotion, ['rise', 'flat', 'fade'], true)) {
             throw new InvalidArgumentException('Unsupported sidebar reveal motion. Supported values: rise, flat, fade.');
         }
-
-        $this->revealContext = $this->reveal ? new RevealContext : null;
     }
 
     public function render()
@@ -76,17 +71,5 @@ class Sidebar extends Component
             'containerSlotName' => self::SLOTS['container']['name'],
             'innerSlotName' => self::SLOTS['inner']['name'],
         ]);
-    }
-
-    /** @return array<string, mixed> */
-    public function data(): array
-    {
-        $data = parent::data();
-
-        if ($this->revealContext !== null) {
-            $data['revealContext'] = $this->revealContext;
-        }
-
-        return $data;
     }
 }

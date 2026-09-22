@@ -12,41 +12,46 @@ final class RevealItems
     /** Report whether a slot declares items outside a nested Reveal root. */
     public static function declaresItems(string $html): bool
     {
-        return self::analyze($html)['declaresItems'];
+        return self::analyze($html, false)['declaresItems'];
     }
 
     /**
-     * Scope component items and report whether the root owns explicit items in one structural pass.
+     * Index component items and report whether the root owns explicit items in one structural pass.
      *
-     * @return array{html: string, declaresItems: bool}
+     * @return array{html: string, declaresItems: bool, warnings: string[]}
      */
-    public static function resolve(string $html, RevealContext $context): array
+    public static function resolve(string $html): array
     {
-        return self::analyze($html, $context);
+        return self::analyze($html, true);
     }
 
-    /** Adopt component items into the nearest package root and release items owned across a nested manual root. */
-    public static function scopeComponentItems(string $html, RevealContext $context): string
+    /** @return array{html: string, declaresItems: bool, warnings: string[]} */
+    private static function analyze(string $html, bool $indexItems): array
     {
-        return self::analyze($html, $context)['html'];
-    }
+        if (stripos($html, 'data-reveal-item') === false) {
+            return ['html' => $html, 'declaresItems' => false, 'warnings' => []];
+        }
 
-    /** @return array{html: string, declaresItems: bool} */
-    private static function analyze(string $html, ?RevealContext $context = null): array
-    {
         $structuralHtml = self::maskInertContent($html);
 
         if (stripos($structuralHtml, 'data-reveal-item') === false) {
-            return ['html' => $html, 'declaresItems' => false];
+            return ['html' => $html, 'declaresItems' => false, 'warnings' => []];
         }
 
         $document = self::loadFragment($structuralHtml);
 
         if ($document === null) {
-            return ['html' => $html, 'declaresItems' => true];
+            return [
+                'html' => $html,
+                'declaresItems' => true,
+                'warnings' => $indexItems
+                    ? ['Reveal item indexing was skipped because the rendered fragment could not be parsed.']
+                    : [],
+            ];
         }
 
-        $items = (new DOMXPath($document))->query('//*[@data-reveal-item]');
+        $xpath = new DOMXPath($document);
+        $items = $xpath->query('//*[@data-reveal-item]');
         $declaresItems = $items === false;
 
         if ($items !== false) {
@@ -59,69 +64,104 @@ final class RevealItems
             }
         }
 
-        if ($context === null) {
-            return ['html' => $html, 'declaresItems' => $declaresItems];
+        if (! $indexItems) {
+            return ['html' => $html, 'declaresItems' => $declaresItems, 'warnings' => []];
         }
 
-        $componentItems = (new DOMXPath($document))->query(
-            '//*[@data-slot="reveal-item"][@data-reveal-item][@data-reveal-owner]'
+        if ($items === false) {
+            return [
+                'html' => $html,
+                'declaresItems' => true,
+                'warnings' => ['Reveal item indexing was skipped because the rendered item query failed.'],
+            ];
+        }
+
+        $componentItems = $xpath->query(
+            '//*[@data-slot="reveal-item"][@data-reveal-item]'
         );
 
         if ($componentItems === false) {
-            return ['html' => $html, 'declaresItems' => $declaresItems];
+            return [
+                'html' => $html,
+                'declaresItems' => $declaresItems,
+                'warnings' => ['Reveal item indexing was skipped because the component item query failed.'],
+            ];
         }
 
+        $indexed = self::indexParsedComponentItems($html, $structuralHtml, $items, $componentItems);
+
         return [
-            'html' => self::scopeParsedComponentItems($html, $structuralHtml, $componentItems, $context),
+            'html' => $indexed['html'],
             'declaresItems' => $declaresItems,
+            'warnings' => $indexed['warnings'],
         ];
     }
 
-    /** @param DOMNodeList<\DOMNode> $items */
-    private static function scopeParsedComponentItems(
+    /**
+     * @param  DOMNodeList<\DOMNode>  $items
+     * @param  DOMNodeList<\DOMNode>  $componentItems
+     * @return array{html: string, warnings: string[]}
+     */
+    private static function indexParsedComponentItems(
         string $html,
         string $structuralHtml,
         DOMNodeList $items,
-        RevealContext $context,
-    ): string {
+        DOMNodeList $componentItems,
+    ): array {
         $tags = self::componentItemTags($structuralHtml);
 
-        if (count($tags) !== $items->length) {
-            return $html;
+        if (count($tags) !== $componentItems->length) {
+            return [
+                'html' => $html,
+                'warnings' => [sprintf(
+                    'Reveal item indexing was skipped because the source scanner found %d component item tags while the rendered DOM exposed %d.',
+                    count($tags),
+                    $componentItems->length,
+                )],
+            ];
         }
 
-        $owner = $context->owner();
-        $index = 0;
-        $changes = [];
+        $indexes = [];
+        $nextIndexes = [];
 
         foreach ($items as $item) {
+            if (! $item instanceof DOMElement) {
+                continue;
+            }
+
+            $root = self::nearestRevealRoot($item);
+
+            if ($root === $item) {
+                continue;
+            }
+
+            $group = $root?->getNodePath() ?? '';
+            $indexes[spl_object_id($item)] = $nextIndexes[$group] ?? 0;
+            $nextIndexes[$group] = ($nextIndexes[$group] ?? 0) + 1;
+        }
+
+        $changes = [];
+
+        foreach ($componentItems as $item) {
             if (! $item instanceof DOMElement) {
                 $changes[] = null;
 
                 continue;
             }
 
-            $itemOwner = (int) $item->getAttribute('data-reveal-owner');
+            $index = $indexes[spl_object_id($item)] ?? null;
 
-            if (self::insideNestedReveal($item)) {
-                $changes[] = $itemOwner === $owner
-                    ? ['owner' => null, 'index' => null]
-                    : null;
+            if ($index === null || self::declaresIndex($item->getAttribute('style'))) {
+                $changes[] = null;
 
                 continue;
             }
 
-            $style = $item->getAttribute('style');
-            $expectedIndex = "--reveal-index: {$index};";
-
-            $changes[] = $itemOwner !== $owner || ! str_starts_with(ltrim($style), $expectedIndex)
-                ? ['owner' => $owner, 'index' => $index]
-                : null;
-            $index++;
+            $changes[] = $index;
         }
 
-        if (! array_filter($changes)) {
-            return $html;
+        if (! array_filter($changes, fn (?int $change): bool => $change !== null)) {
+            return ['html' => $html, 'warnings' => []];
         }
 
         for ($i = count($tags) - 1; $i >= 0; $i--) {
@@ -132,61 +172,28 @@ final class RevealItems
             }
 
             $tag = substr($html, $tags[$i]['start'], $tags[$i]['length']);
-            $tag = self::replaceOwner($tag, $change['owner']);
-            $tag = self::replaceGeneratedIndex($tag, $change['index']);
+            $tag = self::addIndex($tag, $change);
             $html = substr_replace($html, $tag, $tags[$i]['start'], $tags[$i]['length']);
         }
 
-        return $html;
+        return ['html' => $html, 'warnings' => []];
     }
 
-    private static function replaceOwner(string $tag, ?int $owner): string
+    private static function declaresIndex(string $style): bool
     {
-        $attribute = self::attribute($tag, 'data-reveal-owner');
-
-        if ($attribute === null) {
-            return $tag;
-        }
-
-        if ($owner === null) {
-            return substr_replace($tag, '', $attribute['start'], $attribute['length']);
-        }
-
-        if ($attribute['valueStart'] !== null) {
-            return substr_replace($tag, (string) $owner, $attribute['valueStart'], $attribute['valueLength']);
-        }
-
-        return substr_replace(
-            $tag,
-            ' data-reveal-owner="'.$owner.'"',
-            $attribute['start'],
-            $attribute['length'],
-        );
+        return preg_match('/(?:^|;)\s*--reveal-index\s*:/', $style) === 1;
     }
 
-    private static function replaceGeneratedIndex(string $tag, ?int $index): string
+    private static function addIndex(string $tag, int $index): string
     {
         $attribute = self::attribute($tag, 'style');
 
         if ($attribute === null) {
-            return $index === null ? $tag : self::appendAttribute($tag, 'style="--reveal-index: '.$index.';"');
+            return self::appendAttribute($tag, 'style="--reveal-index: '.$index.';"');
         }
 
-        $style = preg_replace(
-            '/^\s*--reveal-index\s*:\s*[^;]+;\s*/i',
-            '',
-            $attribute['value'] ?? '',
-            1,
-        ) ?? '';
-        $style = trim($style);
-
-        if ($index !== null) {
-            $style = "--reveal-index: {$index};".($style !== '' ? " {$style}" : '');
-        }
-
-        if ($style === '') {
-            return substr_replace($tag, '', $attribute['start'], $attribute['length']);
-        }
+        $style = trim($attribute['value'] ?? '');
+        $style = "--reveal-index: {$index};".($style !== '' ? " {$style}" : '');
 
         if ($attribute['valueStart'] !== null && $attribute['quote'] !== null) {
             return substr_replace($tag, $style, $attribute['valueStart'], $attribute['valueLength']);
@@ -234,7 +241,6 @@ final class RevealItems
                 $slot !== null
                 && html_entity_decode($slot['value'] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8') === 'reveal-item'
                 && self::attribute($tag, 'data-reveal-item') !== null
-                && self::attribute($tag, 'data-reveal-owner') !== null
             ) {
                 $tags[] = [
                     'start' => $token['start'],
@@ -545,14 +551,19 @@ final class RevealItems
 
     private static function insideNestedReveal(DOMElement $item): bool
     {
-        for ($node = $item->parentNode; $node instanceof DOMElement; $node = $node->parentNode) {
+        return self::nearestRevealRoot($item) !== null;
+    }
+
+    private static function nearestRevealRoot(DOMElement $item): ?DOMElement
+    {
+        for ($node = $item; $node instanceof DOMElement; $node = $node->parentNode) {
             $controllers = preg_split('/\s+/', trim($node->getAttribute('data-controller'))) ?: [];
 
             if (in_array('reveal', $controllers, true)) {
-                return true;
+                return $node;
             }
         }
 
-        return false;
+        return null;
     }
 }

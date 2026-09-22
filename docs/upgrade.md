@@ -6,19 +6,28 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
-### Reveal context keys are scoped
+### Reveal indexes are structural
 
-Reveal now exposes descendant ownership through `revealContext` instead of the generic `revealCounter` key. Application
-subcomponents consuming that context must replace `@aware(['revealCounter' => null])` with
-`@aware(['revealContext' => null])`, then call `$revealContext?->nextIndex()` for the server-rendered sequence and
-`$revealContext?->owner()` for the stable owner identity. Reveal's public props are no longer exposed as generic Blade
-component data, so intermediate components cannot shadow its configuration or sequence.
+Reveal no longer exposes or consumes the generic `revealCounter` Blade context. Application subcomponents that used
+`@aware(['revealCounter' => null])` must remove that context, direct `$revealCounter?->index` reads, and
+`$revealCounter->index++` mutations. Opt into server indexing by emitting the structural item contract instead:
 
-`<hw:reveal.item>` remains valid under a manually mounted `data-controller="reveal"` root. Without a Blade
-`RevealContext`, it omits the server owner and index so the controller can assign document-order indexes after connecting.
-`<hw:reveal>` and `<hw:sidebar reveal>` both provide independent contexts and deterministic server indexes. Caller slot
-content renders before a wrapper view; an item passed to a wrapper that creates the Reveal root therefore uses the
-runtime fallback.
+```blade
+<div data-slot="reveal-item" data-reveal-item>
+    {{ $slot }}
+</div>
+```
+
+`<hw:reveal>` and `<hw:sidebar reveal>` now assign missing indexes from the rendered HTML structure. The nearest
+`data-controller~="reveal"` root owns each item, nested roots maintain independent sequences, and every raw
+`data-reveal-item` participates in document order. An inline `--reveal-index` remains authoritative and is never
+replaced. `data-reveal-owner` is no longer emitted or read; remove application selectors or integrations that depend on
+it.
+
+A manually mounted `data-controller="reveal"` outside a package root still uses runtime indexing. A manual root nested
+inside a package root and a package root created by a Blade wrapper can now receive deterministic server indexes because
+the resolver runs after slot rendering. Reveal's public props also remain isolated from generic Blade component data, so
+intermediate components cannot shadow its configuration.
 
 ### Selective preset command renamed
 
