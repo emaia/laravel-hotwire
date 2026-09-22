@@ -65,6 +65,58 @@ it('supports the configured tag prefix', function () {
         ->assertSeeText('Save');
 });
 
+it('does not compile short tags inside native component attributes', function () {
+    $view = $this->blade('<x-hw::button title="Press <hw:kbd>O</hw:kbd>">Save</x-hw::button>');
+
+    $view->assertSee('title="Press <hw:kbd>O</hw:kbd>"', false)
+        ->assertSeeText('Save');
+});
+
+it('does not compile short tags inside php strings', function () {
+    $view = $this->blade(<<<'BLADE'
+        <?php $markup = '<hw:badge>Example</hw:badge>'; ?>
+        {{ $markup }}
+    BLADE);
+
+    $view->assertSee('&lt;hw:badge&gt;Example&lt;/hw:badge&gt;', false);
+});
+
+it('does not compile short tags inside php heredocs and nowdocs', function (string $declaration) {
+    $view = $this->blade("<?php \$label = 'Example'; \$markup = {$declaration}; ?>\n{{ \$markup }}");
+
+    $view->assertSee('&lt;hw:badge&gt;Example&lt;/hw:badge&gt;', false);
+})->with([
+    'heredoc' => '<<<BLADE'."\n".'<hw:badge>{$label}</hw:badge>'."\n".'BLADE',
+    'nowdoc' => "<<<'BLADE'\n<hw:badge>Example</hw:badge>\nBLADE",
+]);
+
+it('still compiles short tags in markup between php blocks', function () {
+    $view = $this->blade(<<<'BLADE'
+        <?php $label = 'Save'; ?>
+        <hw:button>{{ $label }}</hw:button>
+    BLADE);
+
+    $view->assertSee('data-slot="button"', false)
+        ->assertSeeText('Save');
+});
+
+it('leaves short tags untouched in blade protected regions', function () {
+    $view = $this->blade(<<<'BLADE'
+        @php
+            $markup = '<hw:badge>PHP</hw:badge>';
+        @endphp
+        {{ $markup }}
+        @verbatim
+            <hw:badge>Verbatim</hw:badge>
+        @endverbatim
+        {{-- <hw:badge>Comment</hw:badge> --}}
+    BLADE);
+
+    $view->assertSee('&lt;hw:badge&gt;PHP&lt;/hw:badge&gt;', false)
+        ->assertSee('<hw:badge>Verbatim</hw:badge>', false)
+        ->assertDontSee('Comment');
+});
+
 it('does not register implicit class namespaces that confuse completion', function () {
     expect(Blade::getClassComponentNamespaces())
         ->not->toHaveKey('hw')

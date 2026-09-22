@@ -16,6 +16,25 @@ class HotwireTagCompiler extends ComponentTagCompiler
         parent::__construct($aliases, $namespaces, $blade);
     }
 
+    /** Compile short component tags without entering PHP tokens. */
+    public function compile(string $value): string
+    {
+        $compiled = '';
+
+        foreach (token_get_all($value) as $token) {
+            if (is_string($token)) {
+                $compiled .= $token;
+
+                continue;
+            }
+
+            [$id, $content] = $token;
+            $compiled .= $id === T_INLINE_HTML ? parent::compile($content) : $content;
+        }
+
+        return $compiled;
+    }
+
     protected function compileOpeningTags(string $value): array|string|null
     {
         $prefixPattern = $this->prefixPattern();

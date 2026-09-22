@@ -218,6 +218,33 @@ inherit the package controller's npm dependencies.
 
 ---
 
+## Literal component tags in Blade
+
+Short tags such as `<hw:button>` compile when they appear in Blade markup. When the tag itself should be displayed as
+text, encode its angle brackets:
+
+```blade
+<code>&lt;hw:button&gt;Save&lt;/hw:button&gt;</code>
+```
+
+Tags stored inside PHP strings, heredocs and nowdocs stay literal. For multi-line examples, use Blade's documented PHP
+block form and escape the value when rendering it:
+
+```blade
+@php
+    $example = <<<'BLADE'
+<hw:button>Save</hw:button>
+BLADE;
+@endphp
+
+<pre>{{ $example }}</pre>
+```
+
+Prefer `@php ... @endphp` over inline `@php(...)` when the template contains another PHP block later. Blade stores PHP
+blocks before compiling inline directives, so an inline directive can otherwise be paired with the later `@endphp`.
+
+---
+
 ## Laravel Idea metadata
 
 Laravel Hotwire ships package-level `ide.json` metadata for Blade components. Laravel Idea reads it from the Composer
