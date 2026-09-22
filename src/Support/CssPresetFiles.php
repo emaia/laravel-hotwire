@@ -63,9 +63,8 @@ final readonly class CssPresetFiles
      * Resolve a shipped preset for selected catalog owners.
      *
      * @param  string[]  $components
-     * @param  string[]  $controllers
      */
-    public function sourceForSelection(string $name, array $components = [], array $controllers = []): ?PresetSource
+    public function sourceForSelection(string $name, array $components = []): ?PresetSource
     {
         $path = $this->path($name);
 
@@ -73,7 +72,7 @@ final readonly class CssPresetFiles
             return null;
         }
 
-        $modules = $this->manifest->modulesFor($components, $controllers);
+        $modules = $this->manifest->modulesFor($components);
         $source = $this->sources->resolve($path, baseSources: $this->manifest->baseFor($name));
         $this->validateSource($name, $source);
 

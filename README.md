@@ -173,6 +173,9 @@ php artisan hotwire:bundle-preset \
   --components=badge,button,field,input,navbar,pagination \
   --include=tooltip \
   --output=resources/css/hotwire-front.css
+
+# After a package upgrade, replay the recorded component selection in place.
+php artisan hotwire:bundle-preset --from=resources/css/hotwire-front.css --force
 ```
 
 See [Presets](docs/presets.md) and [Theming](docs/theming.md).
@@ -190,8 +193,9 @@ php artisan hotwire:check --fix --skip-install
 
 Imported application presets are validated automatically; `--preset` accepts a preset name or a path under
 `resources/css` for explicit CI checks. Run the application's production asset build separately to verify Tailwind
-utilities and imports. `hotwire:check --fix` regenerates the controller loader and adds missing npm dependencies. By
-default it also runs the detected package manager install command; use `--skip-install` when CI handles that separately.
+utilities and imports. `hotwire:check --fix` regenerates the controller loader, untouched v2 selective CSS bundles and
+adds missing npm dependencies. Edited bundles and legacy plans remain manual. By default it also runs the detected
+package manager install command; use `--skip-install` when CI handles that separately.
 
 ## Development
 

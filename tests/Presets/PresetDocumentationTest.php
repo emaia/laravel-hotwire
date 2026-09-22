@@ -72,6 +72,22 @@ it('documents how application-owned presets are maintained across package upgrad
         ->toContain('Generated selective bundles');
 });
 
+it('documents safe selective bundle regeneration and the v1 boundary', function () {
+    $presets = File::get(__DIR__.'/../../docs/presets.md');
+    $commands = File::get(__DIR__.'/../../docs/commands.md');
+
+    expect($presets)
+        ->toContain('hotwire:bundle-preset --from=resources/css/hotwire-front.css --force')
+        ->toContain('Controllers are not recorded')
+        ->toContain('Modules are diagnostic output, not regeneration input')
+        ->toMatch('/V1 plans remain\s+readable/')
+        ->toContain('external edit')
+        ->and($commands)
+        ->toContain('It cannot be combined with `--preset`, `--components`, `--include` or `--output`')
+        ->toContain('untouched v2 selective bundles')
+        ->toContain('It never rewrites edited bundles, v1 plans, invalid metadata or missing presets');
+});
+
 it('keeps visual preset ownership separate from component template ownership', function () {
     $presets = File::get(__DIR__.'/../../docs/presets.md');
 

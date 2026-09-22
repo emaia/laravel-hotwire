@@ -10,7 +10,7 @@ final readonly class CssModuleManifest
     private const array PROPERTY_SCOPES = ['global', 'themed'];
 
     /**
-     * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
+     * @param  array<string, array{components: string[], dependencies: string[]}>  $modules
      * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
      * @param  array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>  $presets
      */
@@ -53,7 +53,14 @@ final readonly class CssModuleManifest
                 throw new PresetSourceException('CSS module manifest contains an invalid module definition.');
             }
 
-            foreach (['components', 'controllers', 'dependencies'] as $key) {
+            $keys = array_keys($module);
+            sort($keys);
+
+            if ($keys !== ['components', 'dependencies']) {
+                throw new PresetSourceException("CSS module [{$name}] may only define components and dependencies.");
+            }
+
+            foreach (['components', 'dependencies'] as $key) {
                 if (! isset($module[$key]) || ! is_array($module[$key])) {
                     throw new PresetSourceException("CSS module [{$name}] must define {$key}.");
                 }
@@ -73,7 +80,7 @@ final readonly class CssModuleManifest
         self::validateDependencyCycles($modules);
         $presets = self::validatePresets($presets, $modules, $foundation);
 
-        /** @var array<string, array{components: string[], controllers: string[], dependencies: string[]}> $modules */
+        /** @var array<string, array{components: string[], dependencies: string[]}> $modules */
         /** @var array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}> $presets */
         return new self($modules, $foundation, $presets);
     }
@@ -202,16 +209,14 @@ final readonly class CssModuleManifest
      * Return dependency-closed modules for catalog owners.
      *
      * @param  string[]  $components
-     * @param  string[]  $controllers
      * @return string[]
      */
-    public function modulesFor(array $components, array $controllers): array
+    public function modulesFor(array $components): array
     {
         $selected = [];
 
         foreach ($this->modules as $name => $module) {
-            if (array_intersect($components, $module['components']) !== []
-                || array_intersect($controllers, $module['controllers']) !== []) {
+            if (array_intersect($components, $module['components']) !== []) {
                 $selected[$name] = true;
             }
         }
@@ -294,7 +299,7 @@ final readonly class CssModuleManifest
     }
 
     /**
-     * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
+     * @param  array<string, array{components: string[], dependencies: string[]}>  $modules
      */
     private static function validateDependencyCycles(array $modules): void
     {
@@ -332,7 +337,7 @@ final readonly class CssModuleManifest
 
     /**
      * @param  array<string, mixed>  $presets
-     * @param  array<string, array{components: string[], controllers: string[], dependencies: string[]}>  $modules
+     * @param  array<string, array{components: string[], dependencies: string[]}>  $modules
      * @param  array{properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>}  $foundation
      * @return array<string, array{base: string[], properties: array<string, 'global'|'themed'>, aliases: array<string, string>, contrast_pairs: array<string, array{foreground: string, background: string}>, sources: list<array{path: string, modules: string[]}>}>
      */
@@ -568,19 +573,12 @@ final readonly class CssModuleManifest
     {
         $registry = HotwireRegistry::make();
         $components = $registry->components();
-        $controllers = $registry->controllers();
         $cssRoot = dirname(__DIR__, 2).'/resources/css/';
 
         foreach ($this->modules as $name => $module) {
             foreach ($module['components'] as $component) {
                 if (! isset($components[$component])) {
                     throw new PresetSourceException("CSS module [{$name}] references unknown component [{$component}].");
-                }
-            }
-
-            foreach ($module['controllers'] as $controller) {
-                if (! isset($controllers[$controller])) {
-                    throw new PresetSourceException("CSS module [{$name}] references unknown controller [{$controller}].");
                 }
             }
         }

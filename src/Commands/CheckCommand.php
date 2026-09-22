@@ -25,6 +25,7 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use LogicException;
 use RuntimeException;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Finder\Finder;
 
 use function Laravel\Prompts\confirm;
@@ -40,7 +41,7 @@ class CheckCommand extends Command
     public $signature = 'hotwire:check
                         {--path=* : Paths to scan for blade files (default: resources/views)}
                         {--preset=* : Application preset names or paths to validate (repeatable)}
-                        {--fix   : Apply all fixes (publish controllers, regenerate loader stub, add missing npm deps) without prompting}
+                        {--fix   : Apply safe package-owned fixes without prompting}
                         {--skip-install : Do not run the package manager (bun/npm/pnpm/yarn) install after --fix adds new deps}';
 
     public $description = 'Check Stimulus controllers, dependencies, and generated CSS';
@@ -62,6 +63,9 @@ class CheckCommand extends Command
 
     /** @var string[] Valid application preset lines. */
     private array $okStyleLines = [];
+
+    /** @var array<int, array{target: string, path: string, observed: string, expected: string}> */
+    private array $styleFixes = [];
 
     private ?ControllerResolver $controllerResolver = null;
 
@@ -93,7 +97,7 @@ class CheckCommand extends Command
         $totalFiles = 0;
         ['components' => $usedComponentKeys, 'controllers' => $standaloneControllers] =
             $this->scanViews($paths, $prefix, $registry, $totalFiles);
-        $styleIssues = $this->reportStyleCoverage($usedComponentKeys, $standaloneControllers, $registry);
+        $styleIssues = $this->reportStyleCoverage($usedComponentKeys, $registry);
 
         $this->line('Scanning '.implode(', ', array_map('basename', $paths))." ($totalFiles files)...");
         $this->line('');
@@ -163,14 +167,11 @@ class CheckCommand extends Command
         $this->printProblemLines();
         $this->printIssueSummary($issues, $missingDeps, $excludedFromStub, $policyDrift);
 
-        if ($styleIssues > 0) {
-            $this->line("<comment>{$styleIssues} CSS validation issue(s) require manual changes or regeneration.</comment>");
-            $this->line('');
-        }
-
         // Only user-owned divergences are present — nothing for --fix to do.
         // Report visibility but keep the exit code green (e.g. CI stays happy).
-        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasPolicyDrift && ! $hasStubDrift) {
+        if (! $hasControllerIssues && ! $hasMissingDeps && ! $hasPolicyDrift && ! $hasStubDrift && $this->styleFixes === []) {
+            $this->printStyleIssueSummary($styleIssues);
+
             return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
 
@@ -178,7 +179,10 @@ class CheckCommand extends Command
             $hasControllerIssues,
             $hasMissingDeps,
             $hasPolicyDrift || $hasStubDrift,
+            $this->styleFixes !== [],
         )) {
+            $resolvedStyleIssues = $this->applyStyleFixes();
+            $remainingStyleIssues = max(0, $styleIssues - $resolvedStyleIssues);
             $this->publishIssues($issues);
             $depsAdded = $this->writeMissingDependencies($missingDeps);
             try {
@@ -201,16 +205,21 @@ class CheckCommand extends Command
             if ($depsAdded > 0) {
                 if ($this->shouldInstallDependencies()) {
                     $status = $this->installDependencies();
+                    $this->printStyleIssueSummary($remainingStyleIssues);
 
-                    return $status === self::SUCCESS && $styleIssues > 0 ? self::FAILURE : $status;
+                    return $status === self::SUCCESS && $remainingStyleIssues > 0 ? self::FAILURE : $status;
                 }
 
                 $this->line('');
                 $this->line('<comment>Run your package manager install command to fetch the new dependencies.</comment>');
             }
 
-            return $styleIssues > 0 ? self::FAILURE : self::SUCCESS;
+            $this->printStyleIssueSummary($remainingStyleIssues);
+
+            return $remainingStyleIssues > 0 ? self::FAILURE : self::SUCCESS;
         }
+
+        $this->printStyleIssueSummary($styleIssues);
 
         return self::FAILURE;
     }
@@ -223,6 +232,7 @@ class CheckCommand extends Command
         $this->okStandaloneLines = [];
         $this->okHelperLines = [];
         $this->okStyleLines = [];
+        $this->styleFixes = [];
         $this->controllerResolver = null;
     }
 
@@ -539,9 +549,8 @@ class CheckCommand extends Command
      * coverage. Mapping a view/layout to selective bundles requires an explicit application contract.
      *
      * @param  array<string, string>  $components
-     * @param  array<string, ControllerDefinition>  $standaloneControllers
      */
-    private function reportStyleCoverage(array $components, array $standaloneControllers, HotwireRegistry $registry): int
+    private function reportStyleCoverage(array $components, HotwireRegistry $registry): int
     {
         $directory = resource_path('css');
 
@@ -570,14 +579,42 @@ class CheckCommand extends Command
             $stylesheet = $file->getPathname();
             $path = 'resources/css/'.ltrim(str_replace('\\', '/', $file->getRelativePathname()), '/');
 
+            if (($plan !== null || $this->styleBundle->looksGenerated($content))
+                && ! $this->safeGeneratedStyleTarget($stylesheet)) {
+                $this->problemLines[] = [
+                    'key' => "styles-path-{$path}",
+                    'line' => "  <error>✗</error>  {$path}  generated CSS path must resolve inside resources/css without symlinks",
+                ];
+                $issues++;
+                $bundleCoverageUnknowable = true;
+
+                continue;
+            }
+
             if ($plan !== null) {
+                $unknownComponents = array_values(array_filter(
+                    $plan['components'],
+                    fn (string $component): bool => $registry->component($component) === null,
+                ));
+
+                if ($unknownComponents !== []) {
+                    $this->problemLines[] = [
+                        'key' => "styles-metadata-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS plan is invalid  <fg=gray>(unknown components: ".implode(', ', $unknownComponents).')</>',
+                    ];
+                    $issues++;
+                    $bundleCoverageUnknowable = true;
+
+                    continue;
+                }
+
                 try {
-                    $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components'], $plan['controllers']);
-                    $modules = $this->styleManifest->modulesFor($plan['components'], $plan['controllers']);
+                    $source = $this->presetFiles->sourceForSelection($plan['preset'], $plan['components']);
+                    $modules = $this->styleManifest->modulesFor($plan['components']);
                 } catch (PresetSourceException $exception) {
                     $this->problemLines[] = [
                         'key' => "styles-content-{$path}",
-                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>({$exception->getMessage()})</>",
+                        'line' => "  <error>✗</error>  {$path}  recorded preset cannot be rendered  <fg=gray>({$exception->getMessage()})</>",
                     ];
                     $issues++;
                     $bundleCoverageUnknowable = true;
@@ -585,17 +622,25 @@ class CheckCommand extends Command
                     continue;
                 }
 
-                if ($source === null || ! $this->styleBundle->matches($content, $this->styleBundle->render(
-                    $path,
-                    $source,
-                    $plan['preset'],
-                    $plan['components'],
-                    $plan['controllers'],
-                    $modules,
-                ))) {
+                if ($source === null) {
+                    $this->problemLines[] = [
+                        'key' => "styles-preset-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  recorded preset [{$plan['preset']}] is no longer available  <fg=gray>(recreate the bundle with an available preset)</>",
+                    ];
+                    $issues++;
+                    $bundleCoverageUnknowable = true;
+
+                    continue;
+                }
+
+                $expected = $this->styleBundle->renderFromPlan($path, $source, $plan, $modules);
+                $command = 'php artisan hotwire:bundle-preset --from='.escapeshellarg($path).' --force';
+
+                if ($plan['version'] === 2 && ! $this->styleBundle->hashMatches($content)) {
                     $this->problemLines[] = [
                         'key' => "styles-content-{$path}",
-                        'line' => "  <error>✗</error>  {$path}  generated CSS content does not match its plan  <fg=gray>(regenerate with the recorded `hotwire:bundle-preset` selection and --force)</>",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS was edited outside Laravel Hotwire  <fg=gray>({$command})</>\n"
+                            .$this->styleDiff($path, $content, $expected),
                     ];
                     $issues++;
                     $bundleCoverageUnknowable = true;
@@ -603,7 +648,33 @@ class CheckCommand extends Command
                     continue;
                 }
 
-                $plans[] = array_fill_keys($plan['modules'], true);
+                if (! $this->styleBundle->matches($content, $expected)) {
+                    $legacy = $plan['version'] === 1;
+                    $detail = $legacy
+                        ? "legacy v1 plan cannot be auto-fixed; {$command}"
+                        : "package content changed; {$command}";
+                    $this->problemLines[] = [
+                        'key' => "styles-content-{$path}",
+                        'line' => "  <error>✗</error>  {$path}  generated CSS is outdated  <fg=gray>({$detail})</>",
+                    ];
+                    $issues++;
+
+                    if ($legacy) {
+                        $bundleCoverageUnknowable = true;
+                    } else {
+                        $plans[] = array_fill_keys($modules, true);
+                        $this->styleFixes[] = [
+                            'target' => $stylesheet,
+                            'path' => $path,
+                            'observed' => $content,
+                            'expected' => $expected,
+                        ];
+                    }
+
+                    continue;
+                }
+
+                $plans[] = array_fill_keys($modules, true);
 
                 continue;
             }
@@ -611,7 +682,7 @@ class CheckCommand extends Command
             if ($this->styleBundle->looksGenerated($content)) {
                 $this->problemLines[] = [
                     'key' => "styles-metadata-{$path}",
-                    'line' => "  <error>✗</error>  {$path}  generated CSS metadata unavailable  <fg=gray>(regenerate with the original `hotwire:bundle-preset` selection and --force)</>",
+                    'line' => "  <error>✗</error>  {$path}  generated CSS plan is invalid  <fg=gray>(recreate the bundle from its original selection)</>",
                 ];
                 $issues++;
                 $bundleCoverageUnknowable = true;
@@ -669,8 +740,6 @@ class CheckCommand extends Command
             return $issues;
         }
 
-        $mountedControllers = [];
-
         foreach ($components as $key => $tag) {
             $component = $registry->component($key);
 
@@ -678,29 +747,12 @@ class CheckCommand extends Command
                 continue;
             }
 
-            $controllers = array_map(
-                fn (ControllerDefinition $controller): string => $controller->identifier,
-                $registry->controllersForComponent($component),
-            );
-            $mountedControllers = [...$mountedControllers, ...$controllers];
-            $required = $this->styleManifest->modulesFor([$key], $controllers);
+            $required = $this->styleManifest->modulesFor([$key]);
 
             if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
                 $this->problemLines[] = [
                     'key' => "styles-component-{$key}",
                     'line' => "  <error>✗</error>  {$tag}  not covered by any generated CSS bundle  <fg=gray>(add `{$key}` to the appropriate `hotwire:bundle-preset` selection and regenerate with --force)</>",
-                ];
-                $issues++;
-            }
-        }
-
-        foreach (array_diff_key($standaloneControllers, array_fill_keys($mountedControllers, true)) as $identifier => $_controller) {
-            $required = $this->styleManifest->modulesFor([], [$identifier]);
-
-            if ($required !== [] && ! $this->modulesCovered($required, $plans)) {
-                $this->problemLines[] = [
-                    'key' => "styles-controller-{$identifier}",
-                    'line' => "  <error>✗</error>  {$identifier}  not covered by any generated CSS bundle  <fg=gray>(add it with `--include={$identifier}` and regenerate with --force)</>",
                 ];
                 $issues++;
             }
@@ -1411,6 +1463,221 @@ class CheckCommand extends Command
         $this->line('');
     }
 
+    private function printStyleIssueSummary(int $issues): void
+    {
+        if ($issues === 0) {
+            return;
+        }
+
+        $this->line("<comment>{$issues} CSS validation issue(s) require manual changes or regeneration.</comment>");
+        $this->line('');
+    }
+
+    private function applyStyleFixes(): int
+    {
+        $fixed = 0;
+
+        foreach ($this->styleFixes as $fix) {
+            $lock = @fopen(sys_get_temp_dir().'/laravel-hotwire-style-'.hash('sha256', $fix['target']).'.lock', 'c');
+
+            if ($lock === false || ! flock($lock, LOCK_EX)) {
+                if (is_resource($lock)) {
+                    fclose($lock);
+                }
+
+                warning("Skipped {$fix['path']} because it could not be locked.");
+
+                continue;
+            }
+
+            try {
+                if (! $this->styleTargetMatches($fix['target'], $fix['observed'])) {
+                    warning("Skipped {$fix['path']} because it changed while hotwire:check was running.");
+
+                    continue;
+                }
+
+                if (! $this->replaceStyleAtomically($fix)) {
+                    warning("Failed to regenerate {$fix['path']}.");
+
+                    continue;
+                }
+
+                info("Regenerated: {$fix['path']}");
+                $fixed++;
+            } finally {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+        }
+
+        return $fixed;
+    }
+
+    /** @param resource $stream */
+    private function writeStream($stream, string $content): bool
+    {
+        $offset = 0;
+        $length = strlen($content);
+
+        while ($offset < $length) {
+            $written = fwrite($stream, substr($content, $offset));
+
+            if ($written === false || $written === 0) {
+                return false;
+            }
+
+            $offset += $written;
+        }
+
+        return true;
+    }
+
+    /** @param array{target: string, path: string, observed: string, expected: string} $fix */
+    private function replaceStyleAtomically(array $fix): bool
+    {
+        $temporary = @tempnam(dirname($fix['target']), basename($fix['target']));
+
+        if ($temporary === false) {
+            return false;
+        }
+
+        $stream = @fopen($temporary, 'wb');
+
+        try {
+            if ($stream === false
+                || ! $this->writeStream($stream, $fix['expected'])
+                || ! fflush($stream)
+                || function_exists('fsync') && ! fsync($stream)) {
+                return false;
+            }
+
+            fclose($stream);
+            $stream = null;
+
+            $permissions = @fileperms($fix['target']);
+
+            if ($permissions !== false) {
+                @chmod($temporary, $permissions & 0777);
+            }
+
+            clearstatcache(true, $fix['target']);
+
+            if (! $this->styleTargetMatches($fix['target'], $fix['observed'])) {
+                return false;
+            }
+
+            return @rename($temporary, $fix['target']);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+
+            if (file_exists($temporary)) {
+                @unlink($temporary);
+            }
+        }
+    }
+
+    private function styleTargetMatches(string $target, string $observed): bool
+    {
+        if (! $this->safeGeneratedStyleTarget($target)) {
+            return false;
+        }
+
+        try {
+            return $this->styleBundle->matches($this->files->get($target), $observed);
+        } catch (FileNotFoundException) {
+            return false;
+        }
+    }
+
+    private function safeGeneratedStyleTarget(string $target): bool
+    {
+        $application = realpath(base_path());
+        $styles = resource_path('css');
+        $root = realpath($styles);
+        $resolved = realpath($target);
+
+        return $application !== false
+            && $root !== false
+            && $resolved !== false
+            && ! is_link($styles)
+            && ! $this->traversesSymlink($application, $styles)
+            && $this->containsPath($application, $root)
+            && is_file($target)
+            && ! $this->traversesSymlink($root, $target)
+            && $this->containsPath($root, $resolved);
+    }
+
+    private function traversesSymlink(string $root, string $target): bool
+    {
+        $root = rtrim(str_replace('\\', '/', $root), '/');
+        $target = str_replace('\\', '/', $target);
+        $current = $root;
+
+        foreach (explode('/', substr($target, strlen($root) + 1)) as $segment) {
+            $current .= '/'.$segment;
+
+            if (is_link($current)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function styleDiff(string $path, string $current, string $expected): string
+    {
+        $currentLines = explode("\n", str_replace(["\r\n", "\r"], "\n", $current));
+        $expectedLines = explode("\n", str_replace(["\r\n", "\r"], "\n", $expected));
+        $prefix = 0;
+        $limit = min(count($currentLines), count($expectedLines));
+
+        while ($prefix < $limit && $currentLines[$prefix] === $expectedLines[$prefix]) {
+            $prefix++;
+        }
+
+        $suffix = 0;
+
+        while ($suffix < count($currentLines) - $prefix
+            && $suffix < count($expectedLines) - $prefix
+            && $currentLines[count($currentLines) - $suffix - 1] === $expectedLines[count($expectedLines) - $suffix - 1]) {
+            $suffix++;
+        }
+
+        $context = 2;
+        $start = max(0, $prefix - $context);
+        $currentEnd = min(count($currentLines), count($currentLines) - $suffix + $context);
+        $expectedEnd = min(count($expectedLines), count($expectedLines) - $suffix + $context);
+        $beforeEnd = $prefix;
+        $afterStartCurrent = count($currentLines) - $suffix;
+        $afterStartExpected = count($expectedLines) - $suffix;
+        $lines = [
+            "--- {$path} (current)",
+            "+++ {$path} (expected)",
+            '@@ -'.($start + 1).','.($currentEnd - $start).' +'.($start + 1).','.($expectedEnd - $start).' @@',
+        ];
+
+        foreach (array_slice($currentLines, $start, $beforeEnd - $start) as $line) {
+            $lines[] = ' '.OutputFormatter::escape($line);
+        }
+
+        foreach (array_slice($currentLines, $prefix, $afterStartCurrent - $prefix) as $line) {
+            $lines[] = '-'.OutputFormatter::escape($line);
+        }
+
+        foreach (array_slice($expectedLines, $prefix, $afterStartExpected - $prefix) as $line) {
+            $lines[] = '+'.OutputFormatter::escape($line);
+        }
+
+        foreach (array_slice($currentLines, $afterStartCurrent, $currentEnd - $afterStartCurrent) as $line) {
+            $lines[] = ' '.OutputFormatter::escape($line);
+        }
+
+        return implode("\n", $lines);
+    }
+
     /**
      * @param  array<int, array{identifier: string, source_file: string, target_file: string}>  $issues
      * @param  array<string, string>  $missingDeps
@@ -1449,6 +1716,7 @@ class CheckCommand extends Command
         bool $controllerIssues,
         bool $missingDependencies,
         bool $regenerateLoader,
+        bool $regenerateStyles,
     ): bool {
         if ($this->option('fix')) {
             return true;
@@ -1478,6 +1746,10 @@ class CheckCommand extends Command
 
         if ($missingDependencies) {
             $actions[] = 'add missing npm dependencies';
+        }
+
+        if ($regenerateStyles) {
+            $actions[] = 'regenerate untouched selective CSS bundles';
         }
 
         return confirm('Apply --fix now? This will '.$this->sentenceList($actions).'.', default: false);

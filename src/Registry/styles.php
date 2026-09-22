@@ -2,9 +2,8 @@
 
 $module = static fn (
     array $components = [],
-    array $controllers = [],
     array $dependencies = [],
-): array => compact('components', 'controllers', 'dependencies');
+): array => compact('components', 'dependencies');
 
 $visualModules = [
     'accordion',

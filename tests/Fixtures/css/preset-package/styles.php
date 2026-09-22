@@ -22,17 +22,14 @@ return [
     'modules' => [
         'surfaces' => [
             'components' => ['panel'],
-            'controllers' => [],
             'dependencies' => [],
         ],
         'actions' => [
             'components' => ['action'],
-            'controllers' => [],
             'dependencies' => ['surfaces'],
         ],
         'feedback' => [
-            'components' => [],
-            'controllers' => ['status'],
+            'components' => ['status'],
             'dependencies' => [],
         ],
     ],

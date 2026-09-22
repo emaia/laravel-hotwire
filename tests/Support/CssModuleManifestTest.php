@@ -9,17 +9,14 @@ it('closes dependencies while preserving canonical preset source order', functio
         'modules' => [
             'button-surfaces' => [
                 'components' => ['button'],
-                'controllers' => [],
                 'dependencies' => [],
             ],
             'modal' => [
                 'components' => ['modal'],
-                'controllers' => ['modal'],
                 'dependencies' => ['button-surfaces', 'overlay-foundation'],
             ],
             'overlay-foundation' => [
                 'components' => [],
-                'controllers' => [],
                 'dependencies' => [],
             ],
         ],
@@ -35,7 +32,7 @@ it('closes dependencies while preserving canonical preset source order', functio
         ],
     ]));
 
-    $modules = $manifest->modulesFor(['modal'], []);
+    $modules = $manifest->modulesFor(['modal']);
 
     expect($modules)->toEqualCanonicalizing(['modal', 'button-surfaces', 'overlay-foundation'])
         ->and($manifest->sourcesFor('nova', $modules))->toBe([
@@ -46,17 +43,15 @@ it('closes dependencies while preserving canonical preset source order', functio
         ]);
 });
 
-it('selects controller-owned visual modules and their dependencies', function () {
+it('selects only component-owned visual modules and their dependencies', function () {
     $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'floating-presence' => [
-                'components' => [],
-                'controllers' => ['tooltip'],
+                'components' => ['tooltip'],
                 'dependencies' => [],
             ],
             'tooltip' => [
-                'components' => [],
-                'controllers' => ['tooltip'],
+                'components' => ['tooltip'],
                 'dependencies' => ['floating-presence'],
             ],
         ],
@@ -71,21 +66,32 @@ it('selects controller-owned visual modules and their dependencies', function ()
         ],
     ]));
 
-    expect($manifest->modulesFor([], ['tooltip']))
+    expect($manifest->modulesFor(['tooltip']))
         ->toEqualCanonicalizing(['floating-presence', 'tooltip']);
 });
+
+it('rejects legacy controller ownership in visual modules', function () {
+    CssModuleManifest::fromArray(withEmptyTokenMetadata([
+        'modules' => [
+            'tooltip' => [
+                'components' => [],
+                'controllers' => ['tooltip'],
+                'dependencies' => [],
+            ],
+        ],
+        'presets' => ['nova' => ['base' => [], 'sources' => []]],
+    ]));
+})->throws(PresetSourceException::class, 'CSS module [tooltip] may only define components and dependencies.');
 
 it('resolves a synthetic preset without official name or source organization assumptions', function () {
     $manifest = CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
             'surface' => [
                 'components' => ['card'],
-                'controllers' => [],
                 'dependencies' => [],
             ],
             'action' => [
                 'components' => ['button'],
-                'controllers' => [],
                 'dependencies' => ['surface'],
             ],
         ],
@@ -102,7 +108,7 @@ it('resolves a synthetic preset without official name or source organization ass
         ],
     ]));
 
-    expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['button'], [])))
+    expect($manifest->sourcesFor('contrast-fixture', $manifest->modulesFor(['button'])))
         ->toBe(['presets/contrast-fixture/layout/surfaces.css']);
 });
 
@@ -111,7 +117,6 @@ it('includes preset base before modules even when the module closure is empty', 
         'modules' => [
             'surface' => [
                 'components' => ['card'],
-                'controllers' => [],
                 'dependencies' => [],
             ],
         ],
@@ -355,7 +360,6 @@ it('rejects unsafe private source paths', function (string $path) {
         'modules' => [
             'surface' => [
                 'components' => ['card'],
-                'controllers' => [],
                 'dependencies' => [],
             ],
         ],
@@ -397,7 +401,7 @@ it('rejects unsafe preset base paths', function (string $path) {
 it('rejects paths repeated between preset base and module sources', function () {
     CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
-            'surface' => ['components' => [], 'controllers' => [], 'dependencies' => []],
+            'surface' => ['components' => [], 'dependencies' => []],
         ],
         'presets' => [
             'nova' => [
@@ -434,29 +438,29 @@ it('selects Tooltip visuals through package components but not the standalone co
         ->and($manifest->propertiesFor('nova'))->toBe($manifest->foundationProperties())
         ->and($manifest->aliasesFor('nova'))->toBe($manifest->foundationAliases())
         ->and($manifest->contrastPairsFor('nova'))->toBe($manifest->foundationContrastPairs())
-        ->and($manifest->modulesFor(['tooltip'], []))->toContain('floating-presence', 'kbd', 'tooltip')
-        ->and($manifest->modulesFor(['button'], ['tooltip']))->toContain('tooltip')
-        ->and($manifest->modulesFor(['color-scheme.toggle'], ['color-scheme', 'tooltip']))->toContain('tooltip')
-        ->and($manifest->modulesFor(['sidebar'], ['sidebar', 'reveal', 'tooltip']))->toContain('sidebar', 'tooltip')
-        ->and($manifest->modulesFor([], ['tooltip']))->toBe([]);
+        ->and($manifest->modulesFor(['tooltip']))->toContain('floating-presence', 'kbd', 'tooltip')
+        ->and($manifest->modulesFor(['button']))->toContain('tooltip')
+        ->and($manifest->modulesFor(['color-scheme.toggle']))->toContain('tooltip')
+        ->and($manifest->modulesFor(['sidebar']))->toContain('sidebar', 'tooltip')
+        ->and($manifest->modulesFor([]))->toBe([]);
 });
 
 it('selects Toaster visuals through the package component but not the standalone controller', function () {
     $manifest = app(CssModuleManifest::class);
 
-    expect($manifest->modulesFor(['toaster'], []))->toContain('toaster')
-        ->and($manifest->modulesFor([], ['toaster']))->toBe([]);
+    expect($manifest->modulesFor(['toaster']))->toContain('toaster')
+        ->and($manifest->modulesFor([]))->toBe([]);
 });
 
 it('selects Video Embed visuals through the package component but not the standalone OEmbed controller', function () {
     $manifest = app(CssModuleManifest::class);
 
-    expect($manifest->modulesFor(['video-embed'], []))->toContain('video-embed')
-        ->and($manifest->modulesFor([], ['oembed']))->toBe([]);
+    expect($manifest->modulesFor(['video-embed']))->toContain('video-embed')
+        ->and($manifest->modulesFor([]))->toBe([]);
 });
 
 it('includes upload state styling with the file upload component', function () {
-    expect(app(CssModuleManifest::class)->modulesFor(['file-upload'], []))
+    expect(app(CssModuleManifest::class)->modulesFor(['file-upload']))
         ->toContain('file-upload', 'text-shimmer');
 });
 
@@ -465,7 +469,6 @@ it('rejects dependencies on undefined modules', function () {
         'modules' => [
             'modal' => [
                 'components' => ['modal'],
-                'controllers' => [],
                 'dependencies' => ['missing'],
             ],
         ],
@@ -476,9 +479,9 @@ it('rejects dependencies on undefined modules', function () {
 it('reports the complete module dependency cycle', function () {
     CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
-            'modal' => ['components' => [], 'controllers' => [], 'dependencies' => ['overlay']],
-            'overlay' => ['components' => [], 'controllers' => [], 'dependencies' => ['floating']],
-            'floating' => ['components' => [], 'controllers' => [], 'dependencies' => ['modal']],
+            'modal' => ['components' => [], 'dependencies' => ['overlay']],
+            'overlay' => ['components' => [], 'dependencies' => ['floating']],
+            'floating' => ['components' => [], 'dependencies' => ['modal']],
         ],
         'presets' => ['nova' => ['base' => [], 'sources' => []]],
     ]));
@@ -487,8 +490,8 @@ it('reports the complete module dependency cycle', function () {
 it('rejects presets that omit a declared module source', function () {
     CssModuleManifest::fromArray(withEmptyTokenMetadata([
         'modules' => [
-            'button-surfaces' => ['components' => [], 'controllers' => [], 'dependencies' => []],
-            'modal' => ['components' => ['modal'], 'controllers' => [], 'dependencies' => ['button-surfaces']],
+            'button-surfaces' => ['components' => [], 'dependencies' => []],
+            'modal' => ['components' => ['modal'], 'dependencies' => ['button-surfaces']],
         ],
         'presets' => [
             'nova' => [
@@ -507,13 +510,7 @@ it('covers every catalog owner with visual slots', function () {
 
     foreach ($registry->components() as $key => $component) {
         if ($component->styling->visualSlots() !== []) {
-            expect($manifest->modulesFor([$key], []))->not->toBeEmpty("Component [{$key}] has no CSS module.");
-        }
-    }
-
-    foreach ($registry->controllers() as $key => $controller) {
-        if ($controller->styling->visualSlots() !== []) {
-            expect($manifest->modulesFor([], [$key]))->not->toBeEmpty("Controller [{$key}] has no CSS module.");
+            expect($manifest->modulesFor([$key]))->not->toBeEmpty("Component [{$key}] has no CSS module.");
         }
     }
 });

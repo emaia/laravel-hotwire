@@ -20,9 +20,10 @@ class BundlePresetCommand extends Command
                         {--components=* : Component keys to include (comma-separated or repeated)}
                         {--include=* : Additional component or controller keys}
                         {--output=resources/css/hotwire.css : Output path under resources/css}
+                        {--from= : Regenerate an existing generated bundle under resources/css}
                         {--force : Replace an existing generated bundle}';
 
-    public $description = 'Bundle selected components and controllers from a CSS preset';
+    public $description = 'Bundle selected components from a CSS preset';
 
     public function __construct(
         private readonly Filesystem $files,
@@ -35,42 +36,88 @@ class BundlePresetCommand extends Command
 
     public function handle(): int
     {
-        $preset = (string) $this->option('preset');
+        $from = trim((string) $this->option('from'));
+        $existing = null;
+
+        if ($from !== '' && $this->hasExplicitGenerationOption()) {
+            warning('Cannot combine --from with --preset, --components, --include, or --output.');
+
+            return self::FAILURE;
+        }
+
+        if ($from !== '') {
+            $output = $this->outputPath($from);
+
+            if ($output === null) {
+                return self::FAILURE;
+            }
+
+            $target = $this->outputTarget($output);
+
+            if ($target === null) {
+                return self::FAILURE;
+            }
+
+            if (! $this->files->isFile($target)) {
+                warning('--from must reference an existing generated CSS file.');
+
+                return self::FAILURE;
+            }
+
+            $existing = $this->files->get($target);
+            $plan = $this->bundle->planFromContent($existing);
+
+            if ($plan === null) {
+                warning("Bundle [{$output}] does not contain a readable generation plan.");
+
+                return self::FAILURE;
+            }
+
+            $preset = $plan['preset'];
+            $components = $plan['components'];
+
+            if (! $this->validateComponents($components)) {
+                return self::FAILURE;
+            }
+        } else {
+            $preset = (string) $this->option('preset');
+            $selection = $this->selection();
+
+            if ($selection === null) {
+                return self::FAILURE;
+            }
+
+            [$components, $selected] = $selection;
+
+            if (! $selected) {
+                warning('Select at least one component or controller.');
+
+                return self::FAILURE;
+            }
+
+            $output = $this->outputPath((string) $this->option('output'));
+
+            if ($output === null) {
+                return self::FAILURE;
+            }
+
+            $target = $this->outputTarget($output);
+
+            if ($target === null) {
+                return self::FAILURE;
+            }
+        }
 
         if (! in_array($preset, $this->presets->names(), true)) {
-            warning("Unknown preset \"{$preset}\". Use one of: ".implode(', ', $this->presets->names()).'.');
+            warning($from !== ''
+                ? "Recorded preset \"{$preset}\" is no longer available. Recreate the bundle with one of: ".implode(', ', $this->presets->names()).'.'
+                : "Unknown preset \"{$preset}\". Use one of: ".implode(', ', $this->presets->names()).'.');
 
-            return self::FAILURE;
-        }
-
-        $selection = $this->selection();
-
-        if ($selection === null) {
-            return self::FAILURE;
-        }
-
-        [$components, $controllers] = $selection;
-
-        if ($components === [] && $controllers === []) {
-            warning('Select at least one component or controller.');
-
-            return self::FAILURE;
-        }
-
-        $output = $this->outputPath();
-
-        if ($output === null) {
-            return self::FAILURE;
-        }
-
-        $target = $this->outputTarget($output);
-
-        if ($target === null) {
             return self::FAILURE;
         }
 
         try {
-            $source = $this->presets->sourceForSelection($preset, $components, $controllers);
+            $source = $this->presets->sourceForSelection($preset, $components);
         } catch (PresetSourceException $exception) {
             warning($exception->getMessage());
 
@@ -83,18 +130,17 @@ class BundlePresetCommand extends Command
             return self::FAILURE;
         }
 
-        $modules = $this->manifest->modulesFor($components, $controllers);
+        $modules = $this->manifest->modulesFor($components);
         $content = $this->bundle->render(
             $output,
             $source,
             $preset,
             $components,
-            $controllers,
             $modules,
         );
 
-        if ($this->files->exists($target)) {
-            $existing = $this->files->get($target);
+        if ($existing !== null || $this->files->exists($target)) {
+            $existing ??= $this->files->get($target);
 
             if ($this->bundle->matches($existing, $content)) {
                 info("Up to date: {$output}");
@@ -124,13 +170,13 @@ class BundlePresetCommand extends Command
     }
 
     /**
-     * @return array{string[], string[]}|null
+     * @return array{string[], bool}|null
      */
     private function selection(): ?array
     {
         $registry = HotwireRegistry::make();
         $components = [];
-        $controllers = [];
+        $selected = false;
 
         foreach ($this->optionValues('components') as $key) {
             $component = $registry->component($key);
@@ -142,10 +188,7 @@ class BundlePresetCommand extends Command
             }
 
             $components[] = $key;
-
-            foreach ($registry->controllersForComponent($component) as $controller) {
-                $controllers[] = $controller->identifier;
-            }
+            $selected = true;
         }
 
         foreach ($this->optionValues('include') as $key) {
@@ -153,10 +196,7 @@ class BundlePresetCommand extends Command
 
             if ($component !== null) {
                 $components[] = $key;
-
-                foreach ($registry->controllersForComponent($component) as $controller) {
-                    $controllers[] = $controller->identifier;
-                }
+                $selected = true;
 
                 continue;
             }
@@ -170,12 +210,12 @@ class BundlePresetCommand extends Command
                 return null;
             }
 
-            $controllers[] = $controller->identifier;
+            $selected = true;
         }
 
         return [
             array_values(array_unique($components)),
-            array_values(array_unique($controllers)),
+            $selected,
         ];
     }
 
@@ -191,9 +231,9 @@ class BundlePresetCommand extends Command
         ))));
     }
 
-    private function outputPath(): ?string
+    private function outputPath(string $value): ?string
     {
-        $output = str_replace('\\', '/', trim((string) $this->option('output')));
+        $output = str_replace('\\', '/', trim($value));
         $segments = explode('/', $output);
 
         if ($output === '' || str_starts_with($output, '/') || preg_match('/^[A-Za-z]:\//', $output) === 1
@@ -215,6 +255,33 @@ class BundlePresetCommand extends Command
         }
 
         return $output;
+    }
+
+    private function hasExplicitGenerationOption(): bool
+    {
+        foreach (['--preset', '--components', '--include', '--output'] as $option) {
+            if ($this->input->hasParameterOption($option)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param string[] $components */
+    private function validateComponents(array $components): bool
+    {
+        $registry = HotwireRegistry::make();
+
+        foreach ($components as $component) {
+            if ($registry->component($component) === null) {
+                warning("Recorded component \"{$component}\" is no longer available.");
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function outputTarget(string $output): ?string

@@ -27,7 +27,7 @@ The complete Hotwire stack for Laravel — Turbo Drive, Turbo Streams, Stimulus 
 | `hotwire:install`         | Scaffold JS/CSS setup, add npm deps to package.json                                                                    |
 | `hotwire:make-controller` | Create a new Stimulus controller (interactive scaffolding)                                                             |
 | `hotwire:make-preset`     | Generate a complete custom CSS preset scaffold or clone a shipped preset                                               |
-| `hotwire:bundle-preset`   | Generate a selective preset bundle from explicit component and controller selections                                  |
+| `hotwire:bundle-preset`   | Generate or regenerate a selective preset bundle from explicit component selections                                   |
 | `hotwire:controllers`     | Publish package Stimulus controllers to the app for customization (`--outdated` to update only published+changed ones) |
 | `hotwire:components`      | List available Blade components and their controller dependencies                                                      |
 | `hotwire:check`           | Verify npm/controller drift, generated CSS and complete application preset contracts (CI-friendly)                      |
