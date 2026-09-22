@@ -197,7 +197,8 @@ it('requires from to reference an existing generated css file under resources cs
         ->assertFailed();
 })->with([
     'missing' => ['resources/css/missing.css', 'existing generated CSS file'],
-    'outside' => ['storage/hotwire.css', 'under resources/css'],
+    'outside' => ['storage/hotwire.css', '--from must be a relative .css path under resources/css.'],
+    'absolute' => ['/tmp/hotwire.css', '--from must be a relative .css path under resources/css.'],
 ]);
 
 it('generates a selective Bloom bundle with its preset recorded', function () {
