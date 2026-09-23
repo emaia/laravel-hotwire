@@ -33,7 +33,7 @@
         "@tailwindcss/cli": "^4",
         "@types/bun": "^1.4.2",
         "happy-dom": "^20.14.5",
-        "prettier": "^3.9.6",
+        "prettier": "^3.9.8",
         "prettier-plugin-blade": "^2.1.21",
         "prettier-plugin-tailwindcss": "^0.8.1",
         "tailwindcss": "^4",
