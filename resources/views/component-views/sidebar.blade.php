@@ -1,11 +1,20 @@
 @aware(['sidebarState' => 'expanded', 'sidebarIdentifier' => 'sidebar'])
 
 @php
+    use Emaia\LaravelHotwire\Support\RevealItems;
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
     use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 
     $sidebarIdentifier = StimulusIdentifier::guard((string) $sidebarIdentifier, 'sidebar');
     $collapsed = $sidebarState === 'collapsed';
+    $slotHtml = $slot->toHtml();
+    if ($reveal) {
+        $resolvedItems = RevealItems::resolve($slotHtml);
+        $slotHtml = $resolvedItems['html'];
+        foreach ($resolvedItems['warnings'] as $warning) {
+            logger()->warning($warning);
+        }
+    }
     $userStyle = trim((string) $attributes->get('style'));
     $revealStyle = $reveal ? collect([
         $revealStagger !== null ? "--reveal-stagger: {$revealStagger}" : null,
@@ -41,7 +50,7 @@
             'data-variant' => $variant,
             'data-collapsible' => 'none',
         ]) }}
-    >{{ $slot }}</aside>
+    >{!! $slotHtml !!}</aside>
 @else
     <div
         data-slot="{{ $slotName }}"
@@ -68,7 +77,7 @@
             ]) }}
         >
             <aside data-slot="{{ $innerSlotName }}" data-sidebar="sidebar">
-                {{ $slot }}
+                {!! $slotHtml !!}
             </aside>
         </div>
     </div>
