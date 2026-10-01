@@ -136,47 +136,43 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
 ## Collaboration Rules
 
 - Do not expose local absolute paths in user-facing messages.
-- Always ask the user to confirm commit, PR, tag and release messages before pushing, publishing or creating them.
+- Before committing, pushing, opening a PR, creating a tag or publishing a release, get the user's explicit confirmation of the action. One confirmation may cover a clearly specified sequence; ask again if its scope changes. Approval of the exact wording is only required if the user requests it.
 
 ## Release Workflow
 
 ### Commits
 
 - **Subject**: Imperative mood, no period at end (e.g. `Add progress bar and counter targets to carousel`)
-- **Body**: Bullet points prefixed with `-`, each describing a specific change
+- **Body**: Optional. Explain rationale, tradeoffs or technical details when they help understand the change; keep it clear and avoid narrating what the diff already shows. Use `-` bullets only for distinct, relevant points, not to meet a quota
 - **PR reference**: Appended as `(#N)` in the subject when applicable
 - Always signed (GPG)
-- Ask to confirm the message is correct before pushing
 
 ### Pull Requests
 
 - Push feature branch, open PR on GitHub
 - Branch naming: descriptive kebab-case (e.g. `radio-group`, `alert-dialog`)
-- PR title matches commit subject convention; body summarizes changes
+- PR title matches commit subject convention; body summarizes the outcome and why it matters
 - Review required; merge from the GitHub UI (not the CLI)
 - Remote merge (GitHub UI):
     - **Default: squash-merge** — for PRs where iterative review/fixup commits should collapse into a single clean
       commit reflecting the deliverable
     - **Merge commit (no squash)** — for PRs that bundle multiple isolated changes that each deserve their own commit in
       history
-- Ask to confirm the message is correct before pushing
-- **PR body template** — `## Summary` (bullet points) + `## Test plan`. The Test plan combines automated checks with a
-  manual smoke section covering what tests can't verify (visual, browser-specific behavior, real interaction). Each item
-  is a checkbox so the reviewer can tick it as they go.
-- PR Summary should contain only principal changes, fixes, or features. Omit supporting implementation details such as
-  catalog registration, IDE metadata, docs, examples, and test coverage unless they are themselves the purpose of the
-  PR.
+- **PR body template** — `## Summary` (a short paragraph or bullets for distinct principal changes) + `## Test plan`.
+  Include only applicable automated checks and manual smokes for what tests cannot verify (visual, browser-specific
+  behavior, real interaction). Use checkboxes for actual verification steps; do not add filler to reach a bullet count.
+- Write the PR Summary in concise, natural language for a reviewer: focus on the deliverable, relevant decisions and
+  limitations. Add technical details only when they clarify behavior, impact or review; don't narrate files or obvious
+  diff details. Omit supporting implementation details such as catalog registration, IDE metadata, docs, examples, and
+  test coverage unless they are themselves the purpose of the PR.
 
-  Example:
+  Example (include only checks that apply):
 
   ```markdown
   ## Test plan
 
   - [x] `composer test` — N/N passing
-  - [x] `bun run test` — N/N passing
-  - [ ] Manual smoke: <render this component in a fresh app, click X, expect Y; tweak prop Z, expect Y'>
-  - [ ] Manual smoke: <one scenario per non-trivial code path — error path, edge case, prop variant>
-  - [ ] Manual smoke: <accessibility / keyboard / screen reader if relevant>
+  - [ ] Manual smoke: <exercise the changed interaction and expected result, when relevant>
   ```
 
   Skip the manual lines that don't apply (a pure internal refactor with full test coverage may legitimately have only
@@ -198,7 +194,6 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
     - Section per feature and referer docs for examples
     - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
 - CHANGELOG.md is updated automatically by the release workflow; do not edit manually
-- Ask to confirm the message is correct before pushing
 
 ## Development
 
@@ -413,5 +408,5 @@ controllers. It no longer flags "not published" as a problem since controllers a
 
 ### Teamwork
 
-- Project: 761179
-- Notebook: 429404 (Always load these additional instructions)
+- Project: Laravel Hotwire
+- Operational notebook: `task-workflow.md` (always read before changing Teamwork tasks; contains project-specific rules)
