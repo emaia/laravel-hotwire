@@ -302,6 +302,28 @@ it('mounts Reveal directly on the collapsible sidebar container', function () {
         ->assertDontSee('<div data-slot="reveal"', false);
 });
 
+it('provides structurally independent server indexes to Reveal items', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::reveal>
+            <x-hw::reveal.item>Outer first</x-hw::reveal.item>
+            <x-hw::sidebar.provider>
+                <x-hw::sidebar reveal>
+                    <x-hw::reveal.item>Sidebar first</x-hw::reveal.item>
+                    <x-hw::reveal.item>Sidebar second</x-hw::reveal.item>
+                </x-hw::sidebar>
+            </x-hw::sidebar.provider>
+            <x-hw::reveal.item>Outer second</x-hw::reveal.item>
+        </x-hw::reveal>
+    BLADE);
+
+    expect($html)
+        ->not->toContain('data-reveal-owner')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Outer first/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 0;"[^>]*>Sidebar first/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Sidebar second/s')
+        ->toMatch('/data-slot="reveal-item"[^>]*style="--reveal-index: 1;"[^>]*>Outer second/s');
+});
+
 it('omits Reveal wiring from the sidebar by default', function () {
     $view = $this->blade('<x-hw::sidebar.provider><x-hw::sidebar>Nav</x-hw::sidebar></x-hw::sidebar.provider>');
 

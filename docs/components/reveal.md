@@ -26,8 +26,8 @@ The root and items are polymorphic:
 
 ## Explicit nested items
 
-Use `<hw:reveal.item>` when the animated units are not direct children. The parent supplies sequential indexes across
-the nested markup:
+Use `<hw:reveal.item>` when the animated units are not direct children. The parent analyzes the rendered structure and
+supplies sequential indexes across the nested markup:
 
 ```blade
 <hw:reveal as="section" delay="110ms" motion="flat">
@@ -46,15 +46,34 @@ the nested markup:
 ```
 
 The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` is a low-level escape hatch
-for explicit items inside a Reveal root, not a root-scoped annotation. Structural CSS matches `data-reveal-item` globally,
-so putting it in a reusable partial animates that partial wherever it renders; a stream insertion outside a Reveal root
-replays the entrance. Add the marker at the Reveal composition site instead. For an intentionally standalone item, add
-`data-reveal-skip` to the stream payload when its entrance should not replay.
+for explicit items inside a Reveal root, not a root-scoped annotation. Every raw item participates in the document-order
+sequence, but the server only writes a missing index to an item that also opts in with `data-slot="reveal-item"`.
+Structural CSS matches `data-reveal-item` globally, so putting it in a reusable partial animates that partial wherever it
+renders; a stream insertion outside a Reveal root replays the entrance. Add the marker at the Reveal composition site
+instead. For an intentionally standalone item, add `data-reveal-skip` to the stream payload
+when its entrance should not replay.
 
 For a list of reusable partials, let `<hw:reveal>` own direct-child mode. It emits `data-reveal-children` automatically
 and keeps the partial markup neutral. The controller assigns missing indexes in document order, but that happens only
 after it connects. Set `--reveal-index` server-side when the visual order differs or when the stagger must be correct on
 the first paint rather than progressively corrected after controller loading.
+
+`<hw:reveal.item>` receives a deterministic server index from the rendered HTML structure of its nearest
+`<hw:reveal>` or `<hw:sidebar reveal>` root. Nested roots maintain independent sequences, including a manually mounted
+`data-controller="reveal"` inside a package root. A Blade wrapper that creates a package root can index item markup passed
+through its slot because indexing happens after the slot renders. A manually mounted root outside a package root has no
+server resolver, so the controller assigns missing indexes in document order after connecting. Outside any Reveal
+controller an item remains a CSS animation item with the default index `0`, but has no controller lifecycle.
+
+An application component can opt into the same server indexing contract without consuming Blade context:
+
+```blade
+<div data-slot="reveal-item" data-reveal-item>
+    {{ $slot }}
+</div>
+```
+
+The resolver only adds a missing `--reveal-index`; an inline value supplied by the application is always preserved.
 
 When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
 available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing
