@@ -29,7 +29,7 @@
         "maska": "^3.2.2"
     },
     "devDependencies": {
-        "@playwright/test": "^1.63.0",
+        "@playwright/test": "^1.64.0",
         "@tailwindcss/cli": "^4",
         "@types/bun": "^1.4.2",
         "happy-dom": "^20.14.5",
