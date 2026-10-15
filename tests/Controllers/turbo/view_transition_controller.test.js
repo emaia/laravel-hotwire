@@ -88,6 +88,34 @@ test.serial("transitions the first render of a frame that already holds content"
     expect(firstRender).toHaveBeenCalledWith("fallback", "edit");
 });
 
+test.serial("renders without document snapshots while modal dialogs are stacked and resumes afterward", async () => {
+    await mount(`<div>
+        <div role="dialog" aria-modal="true" data-state="open"></div>
+        <div role="dialog" aria-modal="true" data-state="open">
+            <turbo-frame data-controller="turbo--view-transition">Customer form</turbo-frame>
+        </div>
+    </div>`);
+    document.startViewTransition = mock((cb) => cb());
+    const frame = mounted.root;
+    const render = mock(() => {});
+    const event = dispatchBeforeFrameRender(frame, render);
+    event.detail.render("form", "validation errors");
+
+    expect(document.startViewTransition).not.toHaveBeenCalled();
+    expect(render).toHaveBeenCalledWith("form", "validation errors");
+
+    const background = document.querySelector('[role="dialog"]');
+    background.hidden = true;
+    const next = dispatchBeforeFrameRender(frame, render);
+    next.detail.render("errors", "next form");
+    expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+
+    background.hidden = false;
+    background.dataset.state = "closed";
+    dispatchBeforeFrameRender(frame, render).detail.render("next form", "another form");
+    expect(document.startViewTransition).toHaveBeenCalledTimes(2);
+});
+
 test.serial("only wraps events fired on this.element", async () => {
     await mount(`<div data-controller="turbo--view-transition"><span id="child"></span></div>`);
     document.startViewTransition = mock((cb) => cb());

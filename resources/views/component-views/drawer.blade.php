@@ -17,6 +17,10 @@
         <x-hw::drawer.content />
     @endif
 
+    @if ($drawerFrame !== null)
+        @include('hotwire::component-views.shared.overlay-return-feedback')
+    @endif
+
     @if (isset($loading_template))
         <template data-drawer-target="loadingTemplate">
             {{ $loading_template }}

@@ -3,6 +3,8 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Support\OverlayFrameContext;
+use Emaia\LaravelHotwire\Support\OverlayPresentation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Compilers\ComponentTagCompiler;
@@ -17,14 +19,23 @@ class FrameOrPage extends Component
 
     public ?string $activeFrameId;
 
+    public ?string $activeFrameHost;
+
     public ?string $layoutComponent;
+
+    /** @var array{family: ?string, side: ?string, size: ?string} */
+    public array $presentation;
 
     /** @param iterable<array-key, string|object>|null $frames */
     public function __construct(
         public string|object|null $frame = null,
         public ?string $layout = null,
         public ?iterable $frames = null,
+        public ?string $overlay = null,
+        public ?string $overlaySide = null,
+        public ?string $overlaySize = null,
     ) {
+        $this->presentation = OverlayPresentation::resolve($overlay, $overlaySide, $overlaySize);
         if (($frame === null) === ($frames === null)) {
             throw new InvalidArgumentException('Exactly one of the frame or frames props must be provided.');
         }
@@ -47,9 +58,27 @@ class FrameOrPage extends Component
 
         $this->layoutComponent = $this->resolveLayoutComponent($layout);
         $requestedFrame = request()->turboFrameId();
-        $this->activeFrameId = $requestedFrame !== null && in_array($requestedFrame, $this->frameIds, true)
-            ? $requestedFrame
-            : ($layout === null ? $this->frameId : null);
+        $overlayContext = OverlayFrameContext::fromHeaders(
+            $requestedFrame,
+            request()->header('X-Hotwire-Overlay-Host'),
+            request()->header('X-Hotwire-Overlay-Instance'),
+            request()->header('X-Hotwire-Overlay-Origin'),
+        );
+
+        $this->activeFrameHost = $overlayContext === null ? $requestedFrame : $overlayContext->host;
+        $this->activeFrameHost = in_array($this->activeFrameHost, $this->frameIds, true)
+            ? $this->activeFrameHost
+            : null;
+        if ($overlayContext !== null && $this->activeFrameHost === null && $layout === null) {
+            throw new InvalidArgumentException('This frame-only view is not configured for the requested overlay host.');
+        }
+        if ($this->activeFrameHost === null && $layout === null && $overlayContext === null) {
+            $this->activeFrameHost = $this->frameId;
+        }
+
+        $this->activeFrameId = $this->activeFrameHost === null
+            ? null
+            : ($overlayContext === null ? $this->activeFrameHost : $overlayContext->frameId);
     }
 
     public function render()

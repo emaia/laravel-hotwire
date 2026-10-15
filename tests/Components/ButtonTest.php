@@ -112,6 +112,32 @@ it('renders frame as a Turbo Frame target', function () {
         ->assertDontSee(' frame="modal"', false);
 });
 
+it('emits overlay hints for a framed anchor and drops them when disabled', function () {
+    $this->blade('<x-hw::button as="a" href="/edit" frame="sheet" overlay="sheet" overlay-side="left" overlay-size="28rem">Open</x-hw::button>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-side="left"', false)
+        ->assertSee('data-overlay-size="28rem"', false);
+
+    $this->blade('<x-hw::button as="a" href="/edit" frame="sheet" overlay="sheet" overlay-side="left" disabled>Open</x-hw::button>')
+        ->assertDontSee('data-overlay-family', false)
+        ->assertDontSee('data-overlay-side', false);
+
+    $this->blade('<x-hw::button as="a" href="/edit" data-turbo-frame="sheet" overlay="sheet" overlay-size="28rem">Open</x-hw::button>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-size="28rem"', false);
+});
+
+it('rejects overlay hints without an active framed anchor or a compatible family', function (string $props) {
+    $this->blade("<x-hw::button {$props}>Open</x-hw::button>");
+})->with([
+    'no family' => 'as="a" href="/edit" frame="modal" overlay-size="lg"',
+    'modal has no side' => 'as="a" href="/edit" frame="modal" overlay="modal" overlay-side="left"',
+    'not a frame link' => 'as="a" href="/edit" overlay="sheet" overlay-side="left"',
+    'not an anchor' => 'frame="sheet" overlay="sheet" overlay-size="28rem"',
+    'suppressed frame' => 'as="a" href="/edit" frame="sheet" :data-turbo-frame="false" overlay="sheet" overlay-size="28rem"',
+    'no URL' => 'as="a" frame="sheet" overlay="sheet" overlay-size="28rem"',
+])->throws(ViewException::class);
+
 it('lets an explicit data-turbo-frame attribute override the frame prop', function () {
     $view = $this->blade('<x-hw::button as="a" href="/tasks/create" frame="modal" data-turbo-frame="drawer">New task</x-hw::button>');
 

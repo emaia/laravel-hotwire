@@ -84,6 +84,12 @@ In the destination view, use [`<hw:frame-or-page>`](./frame-or-page.md):
 </hw:frame-or-page>
 ```
 
+One host can serve different directions and dimensions. On a framed anchor button use
+`overlay="drawer" overlay-side="right" overlay-size="32rem"` as a loading hint; the destination
+`<hw:frame-or-page>` can declare its own direction/size, overriding each hint it supplies. `top` and `bottom` map to
+`up` and `down`; switching between horizontal and vertical also switches width/height CSS variables. Defaults return
+on close or abandoned loading. See [presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
+
 Include a semantic title in any loading template that opens the drawer. Frame-loaded labels are linked before opening,
 and explicit unique label ids are preserved.
 
@@ -101,14 +107,20 @@ on the drawer host rather than only on the response's `<hw:frame-or-page>` becau
 does not copy attributes from the response frame.
 
 The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's
-`loading_template` slot. Return an empty `update` or `replace` stream for the drawer root or frame id, or a `refresh`
-stream, to close it after a successful action. Stream rendering waits for the actual exit motion to finish.
+`loading_template` slot. Return an empty `update` or `replace` stream for the requesting Frame id to close it after a
+successful action. Stream rendering waits for the actual exit motion to finish.
+
+One Drawer host can open several concrete instances. A link targeting its canonical Frame starts a new task; navigation
+inside an open instance without an explicit Frame target reuses it. To close only the submitting instance with an empty
+stream, use `turbo_stream()->update($request->turboFrameId())`, not the canonical host id. A global `refresh` can discard
+other open drafts. See [frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
 
 ## Requirements
 
 - No external dependencies.
 - Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
-  `_presence.js`, and `_top_layer.js`; publishing the `drawer` controller publishes these helpers too.
+  `_overlay_presentation.js`, `_presence.js`, and `_top_layer.js`; publishing the `drawer` controller publishes these
+  helpers too.
 
 ## Props
 

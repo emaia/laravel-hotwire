@@ -90,6 +90,19 @@ This renders `data-turbo-frame="modal"`. `frame` accepts a string or object; obj
 `false`, empty strings, and whitespace-only strings omit the attribute. If you pass an explicit `data-turbo-frame`, it
 wins over `frame`; bind it to `false` to suppress the prop explicitly.
 
+For a frame-backed Modal, Sheet or Drawer, `overlay` declares the receiving family and `overlay-size` / `overlay-side`
+provide presentation hints before loading content. These props require an enabled anchor targeting a frame; a disabled
+anchor omits the hints. Modal accepts size only, Sheet accepts `left`, `right`, `top`, `bottom`, and Drawer accepts `up`,
+`right`, `down`, `left` (`top`/`bottom` aliases). Invalid combinations throw rather than silently doing nothing.
+The `size` prop above styles the **button**; `overlay-size` styles the destination overlay.
+
+```blade
+<hw:button as="a" href="/customers/create" frame="modal" overlay="modal" overlay-size="sm">New customer</hw:button>
+<hw:button as="a" href="/sales/create" frame="drawer" overlay="drawer" overlay-side="right" overlay-size="32rem">New sale</hw:button>
+```
+
+See [frame-or-page presentation](./frame-or-page.md#presentation-per-frame-opening) for response precedence and reset.
+
 ## Controlling Turbo history
 
 Set the default history behavior on the destination frame. Use `advance` when each frame navigation should push a URL,

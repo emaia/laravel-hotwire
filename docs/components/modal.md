@@ -155,11 +155,26 @@ ids and updates the persistent dialog references before opening:
 ```
 
 When the frame receives content, the modal opens automatically. A successful action may close the modal by returning an
-empty `update` or `replace` stream for the frame id, or by returning a `refresh` stream:
+empty `update` or `replace` stream for **the requesting Frame id**:
 
 ```php
-return turbo_stream()->update('modal');
+return turbo_stream()->update($request->turboFrameId());
 ```
+
+The host can generate multiple instances from one declaration. Links targeting `modal` open a new instance (including
+links in an existing modal); links and forms without an explicit Frame target inside the opened content stay in that
+instance. The server view keeps `<hw:frame-or-page frame="modal">`, which emits the generated Frame id when responding
+to that instance. The package handles shell ids, accessible references, stacking and cleanup. Use the concrete id from
+the request for an empty close stream: updating the canonical `modal` host does not close a child instance. A global
+`refresh` may discard a parent draft, so it is not a substitute for closing only the child. See
+[frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
+
+A shared host can serve compact customer forms and wide sales forms: use
+`<hw:button as="a" frame="modal" overlay="modal" overlay-size="sm">` to size the loading state and
+`<hw:frame-or-page frame="modal" layout="layouts.app" overlay="modal" overlay-size="lg">` to let the response
+override it. Size accepts `sm`, `md`, `lg`, `xl`, `full`, `auto` or a CSS width. It updates the positioner, panel,
+content and close-icon hooks together; closing restores the host's `size`. Modal does not accept `overlay-side`.
+See [presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
 
 If the slot does not contain `<hw:modal.content>`, an empty content host is appended automatically. If the slot contains
 one content host, that host wraps the frame and its slot becomes fallback content. More than one content host with

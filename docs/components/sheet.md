@@ -87,6 +87,12 @@ and frame navigation renders only the panel payload:
 </hw:frame-or-page>
 ```
 
+The same host can serve other panels at different sides/sizes: add
+`overlay="sheet" overlay-side="left" overlay-size="28rem"` to a framed `<hw:button as="a">` for the loading state,
+or to `<hw:frame-or-page>` for the response. The response takes precedence per declared value; size alone keeps the
+host's current side. Close/error/abandon restores authored defaults. See
+[presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
+
 Include a semantic title in any loading template that opens the sheet. Frame-loaded labels are linked before opening,
 and explicit unique label ids are preserved.
 
@@ -106,21 +112,26 @@ not copy attributes from the response frame.
 When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
 `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.
 
-On successful submit, close the sheet by returning an empty update or replace for the sheet root or frame, or a refresh
-stream. Stream rendering waits for the actual exit motion to finish:
+On successful submit, close the instance by returning an empty update or replace for its requesting Frame id. Stream
+rendering waits for the actual exit motion to finish:
 
 ```php
 return turbo_stream()
-    ->refresh(method: 'morph')
-    ->update('settings-panel')
+    ->update($request->turboFrameId())
     ->toast('success', 'Saved');
 ```
+
+One Sheet host can open multiple concrete Frame instances. A link targeting the host's canonical frame creates a new
+instance, while unqualified navigation inside its content stays in the current instance. An empty update for the
+request's concrete Frame closes only that instance; a global `refresh` can discard other open drafts. See
+[frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
 
 ## Requirements
 
 - No external dependencies.
 - Ships with `_composition.js`, `_focus_trap.js`, `_frame_overlay.js`, `_overlay.js`, `_overlay_stack.js`,
-  `_presence.js`, and `_top_layer.js` through `drawer`; publishing the `sheet` controller publishes these helpers too.
+  `_overlay_presentation.js`, `_presence.js`, and `_top_layer.js` through `drawer`; publishing the `sheet` controller
+  publishes these helpers too.
 
 ## Props
 

@@ -3,6 +3,8 @@ import { Controller } from "@hotwired/stimulus";
 
 import { createOverlay } from "./_overlay.js";
 import { createFrameOverlay } from "./_frame_overlay.js";
+import { createOverlayPresentation } from "./_overlay_presentation.js";
+import { createOverlayHost, dismissOverlayInstance } from "./_overlay_host.js";
 
 export default class ModalController extends Controller {
     static targets = ["modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
@@ -17,10 +19,13 @@ export default class ModalController extends Controller {
     };
 
     frameOverlay = null;
+    frameHost = null;
     overlay = null;
     connected = false;
     hasConnected = false;
     overlayRefreshQueued = false;
+    framePresentation = createOverlayPresentation(this);
+    closeOverlayHandler = () => this.close();
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -29,12 +34,17 @@ export default class ModalController extends Controller {
     connect() {
         this.connected = true;
         this.#setupOverlay(false, null, null, !this.hasConnected);
+        this.element.addEventListener("hotwire:overlay-close", this.closeOverlayHandler);
+        this.frameHost = createOverlayHost(this);
         this.hasConnected = true;
     }
 
     disconnect() {
         this.connected = false;
         this.overlayRefreshQueued = false;
+        this.frameHost?.cleanup();
+        this.frameHost = null;
+        this.element.removeEventListener("hotwire:overlay-close", this.closeOverlayHandler);
         this.frameOverlay?.cleanup();
         this.frameOverlay = null;
 
@@ -105,6 +115,7 @@ export default class ModalController extends Controller {
             return;
         }
         const frameLink = trigger?.matches?.("a[href][data-turbo-frame]");
+        if (frameLink && event?.defaultPrevented) return;
         if (trigger?.matches?.("a[href]") && !frameLink) {
             event.preventDefault();
         }
@@ -131,13 +142,15 @@ export default class ModalController extends Controller {
         }
         if (!trigger?.matches?.("a[href]")) event?.preventDefault?.();
 
+        this.frameOverlay?.markDismissedWhileLoading();
+        dismissOverlayInstance(this);
         if (!this.overlay?.isOpen) return;
 
-        this.frameOverlay?.markDismissedWhileLoading();
         return this.overlay?.close();
     }
 
     closeForCache() {
+        this.frameOverlay?.resetPresentation();
         this.frameOverlay?.clearContent();
         this.overlay?.closeNow({ restoreFocus: false });
     }
@@ -180,9 +193,11 @@ export default class ModalController extends Controller {
 
     clickOutside(event) {
         if (this.closeOnClickOutsideValue && this.isOpen && this.overlay?.isTop) {
-            if (event.target !== this.dialogTarget
-                && !this.#isClickInsideModal(event)
-                && !this.#isClickOnModalRelatedElement(event.target)) {
+            if (
+                event.target !== this.dialogTarget &&
+                !this.#isClickInsideModal(event) &&
+                !this.#isClickOnModalRelatedElement(event.target)
+            ) {
                 this.close();
             }
         }
@@ -223,5 +238,4 @@ export default class ModalController extends Controller {
 
         return !!target.closest("[data-modal-ignore]");
     }
-
 }

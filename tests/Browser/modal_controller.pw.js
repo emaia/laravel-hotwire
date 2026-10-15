@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
 
 test("opens when dynamic content is inserted and closes cleanly through the public API", async ({ page }) => {
     await page.setContent(`
@@ -52,6 +53,222 @@ test("opens when dynamic content is inserted and closes cleanly through the publ
 });
 
 for (const family of ["modal", "sheet", "drawer"]) {
+    test(`closeOverlay closes a static ${family} without deleting its reusable content`, async ({ page }) => {
+        await page.setContent(`
+        <div id="static-dialog" data-controller="${family}">
+            <button id="open-static" data-action="${family}#open">Open</button>
+            <div data-${family}-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-${family}-target="backdrop"></div>
+                <div data-${family}-target="dialog"><p id="static-content">Reusable content</p></div>
+            </div>
+        </div>
+    `);
+        await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserOverlayControllerScript() });
+        await page.evaluate(() => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register("modal", window.ModalController);
+            window.StimulusApplication.register("sheet", window.SheetController);
+            window.StimulusApplication.register("drawer", window.DrawerController);
+        });
+
+        await page.locator("#open-static").click();
+        await expect(page.locator(`#static-dialog [data-${family}-target="modal"]`)).toHaveAttribute(
+            "data-state",
+            "open",
+        );
+        await page.evaluate(() =>
+            window.Turbo.renderStreamMessage(
+                '<turbo-stream action="hotwire-overlay-close" target="static-dialog"></turbo-stream>',
+            ),
+        );
+        await expect(page.locator(`#static-dialog [data-${family}-target="modal"]`)).toHaveAttribute("hidden", "");
+        await expect(page.locator("#static-content")).toHaveText("Reusable content");
+
+        await page.locator("#open-static").click();
+        await expect(page.locator(`#static-dialog [data-${family}-target="modal"]`)).toHaveAttribute(
+            "data-state",
+            "open",
+        );
+    });
+}
+
+test("a server Stream opens a Sheet from one host with presentation and a safe validation source", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    await page.route("http://overlays.test/", (route) =>
+        route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" }),
+    );
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <div id="sheet-shell" data-controller="sheet" data-hotwire-overlay-host="sheet" style="--sheet-width: 75%">
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog" data-side="right"><turbo-frame id="sheet" data-sheet-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("sheet", window.SheetController);
+    });
+
+    await expect
+        .poll(() => page.evaluate(() => typeof window.Turbo.StreamActions["hotwire-overlay-open"]))
+        .toBe("function");
+
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(`
+        <turbo-stream action="hotwire-overlay-open" target="sheet" data-overlay-family="sheet" data-overlay-side="bottom" data-overlay-size="40vh" data-overlay-source="/settings/edit">
+            <template><h2 data-slot="sheet-title">Review</h2><form action="/settings" method="post"><button type="submit">Save</button></form></template>
+        </turbo-stream>
+    `),
+    );
+
+    const instance = page.locator('[data-controller="sheet"][data-hotwire-overlay-instance]');
+    await expect(instance).toHaveCount(1);
+    await expect(instance.locator('[data-sheet-target="modal"]')).toHaveAttribute("data-state", "open");
+    await expect(instance.locator('[data-sheet-target="dialog"]')).toHaveAttribute("data-side", "bottom");
+    await expect.poll(() => instance.evaluate((el) => el.style.getPropertyValue("--sheet-height"))).toBe("40vh");
+    await expect(instance.locator('input[name="_turbo_frame_src"]')).toHaveValue("http://overlays.test/settings/edit");
+    await expect(instance.locator("turbo-frame")).not.toHaveAttribute("src", /.+/);
+    await expect(page.locator("#sheet-shell [data-sheet-target='dialog']")).toHaveAttribute("data-side", "right");
+
+    const parentId = await instance.first().locator("turbo-frame").getAttribute("id");
+    await instance.first().locator('button[type="submit"]').focus();
+    await page.evaluate(
+        (origin) =>
+            window.Turbo.renderStreamMessage(`
+        <turbo-stream action="hotwire-overlay-open" target="sheet" data-overlay-family="sheet" data-overlay-origin="${origin}">
+            <template><p>Nested review</p></template>
+        </turbo-stream>
+    `),
+        parentId,
+    );
+    await expect(instance).toHaveCount(2);
+    await expect(instance.last()).toContainText("Nested review");
+    const childId = await instance.last().locator("turbo-frame").getAttribute("id");
+    await page.evaluate(
+        (id) =>
+            window.Turbo.renderStreamMessage(
+                `<turbo-stream action="hotwire-overlay-close" target="${id}"></turbo-stream>`,
+            ),
+        childId,
+    );
+    await expect(instance).toHaveCount(1);
+    await expect(instance.first().locator('button[type="submit"]')).toBeFocused();
+
+    await page.evaluate(
+        (origin) =>
+            window.Turbo.renderStreamMessage(`
+            <turbo-stream action="hotwire-overlay-open" target="sheet" data-overlay-family="sheet" data-overlay-origin="${origin}">
+                <template><p>Nested review again</p></template>
+            </turbo-stream>
+        `),
+        parentId,
+    );
+    await expect(instance).toHaveCount(2);
+    await page.evaluate(
+        (origin) =>
+            window.Turbo.renderStreamMessage(
+                `<turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>`,
+            ),
+        parentId,
+    );
+    await expect(instance).toHaveCount(0);
+
+    await page.evaluate(
+        (origin) =>
+            window.Turbo.renderStreamMessage(`
+        <turbo-stream action="hotwire-overlay-open" target="sheet" data-overlay-family="sheet" data-overlay-origin="${origin}">
+            <template><p>Late review</p></template>
+        </turbo-stream>
+    `),
+        parentId,
+    );
+    await expect.poll(() => errors.filter((message) => message.includes("no longer active")).length).toBe(1);
+    await expect(instance).toHaveCount(0);
+});
+
+test("a form opened by a server Stream redirects validation back to its source instead of the background page", async ({
+    page,
+}) => {
+    const requests = [];
+    const server = createServer((request, response) => {
+        requests.push({
+            path: request.url,
+            frame: request.headers["turbo-frame"],
+            host: request.headers["x-hotwire-overlay-host"],
+        });
+        request.resume();
+        if (request.url === "/save") {
+            response.writeHead(303, { Location: "/edit" });
+            response.end();
+        } else if (request.url === "/edit") {
+            response.writeHead(200, { "Content-Type": "text/html" });
+            response.end(
+                `<turbo-frame id="${request.headers["turbo-frame"]}"><p>Validation error</p><form action="/save" method="post"><button>Retry</button></form></turbo-frame>`,
+            );
+        } else {
+            response.writeHead(200, { "Content-Type": "text/html" });
+            response.end("<html><body></body></html>");
+        }
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+        const address = server.address();
+        await page.goto(`http://127.0.0.1:${address.port}/`);
+        await page.setContent(`
+            <div data-controller="modal" data-hotwire-overlay-host="modal">
+                <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                    <div data-modal-target="backdrop"></div>
+                    <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+                </div>
+            </div>
+        `);
+        await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserOverlayControllerScript() });
+        await page.evaluate(() => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register("modal", window.ModalController);
+        });
+        await expect
+            .poll(() => page.evaluate(() => typeof window.Turbo.StreamActions["hotwire-overlay-open"]))
+            .toBe("function");
+        await page.evaluate(() =>
+            window.Turbo.renderStreamMessage(`
+            <turbo-stream action="hotwire-overlay-open" target="modal" data-overlay-family="modal" data-overlay-source="/edit">
+                <template><form action="/save" method="post"><button type="submit">Save</button></form></template>
+            </turbo-stream>
+        `),
+        );
+
+        const instance = page.locator('[data-controller="modal"][data-hotwire-overlay-instance]');
+        await expect(instance).toHaveCount(1);
+        const id = await instance.locator("turbo-frame").getAttribute("id");
+        await expect(instance.locator('input[name="_turbo_frame_src"]')).toHaveValue(
+            `http://127.0.0.1:${address.port}/edit`,
+        );
+        await instance.locator('button[type="submit"]').click();
+        await expect(instance).toContainText("Validation error");
+        await expect(instance).toHaveCount(1);
+        expect(requests.slice(1)).toEqual([
+            { path: "/save", frame: id, host: "modal" },
+            { path: "/edit", frame: id, host: "modal" },
+        ]);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+for (const family of ["modal", "sheet", "drawer"]) {
     test(`frame content names the ${family} before it opens`, async ({ page }) => {
         await mountFrameOverlay(page, family);
 
@@ -76,6 +293,967 @@ for (const family of ["modal", "sheet", "drawer"]) {
         await expect(overlay).not.toHaveAttribute("aria-describedby", /.+/);
     });
 }
+
+test("a morphed sheet retains its active size without freezing unrelated inline styles", async ({ page }) => {
+    await page.setContent(`
+        <style>[data-slot="sheet-content"] { width: var(--sheet-width); max-width: 24rem; }</style>
+        <div id="sheet-shell" data-controller="sheet" data-sheet-lock-scroll-class="overflow-hidden" style="--sheet-width: 75%; color: red">
+            <a id="open" data-turbo-frame="settings-panel" data-overlay-family="sheet" data-overlay-side="left" data-overlay-size="28rem">Settings</a>
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-slot="sheet-content" data-sheet-target="dialog" data-side="right">
+                    <turbo-frame id="settings-panel" data-sheet-target="dynamicContent"></turbo-frame>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("sheet", window.SheetController);
+    });
+
+    await page.locator("#open").click();
+    await expect(page.locator('[data-sheet-target="dialog"]')).toHaveAttribute("data-side", "left");
+    await expect(page.locator('[data-sheet-target="dialog"]')).toHaveCSS("max-width", "100%");
+
+    await page.evaluate(() => {
+        const root = document.querySelector("#sheet-shell");
+        const next = root.cloneNode(true);
+        next.style.cssText = "--sheet-width: 90%; color: blue";
+        next.querySelector('[data-sheet-target="dialog"]').dataset.side = "top";
+        next.querySelector('[data-sheet-target="dialog"]').style.removeProperty("max-width");
+        window.Turbo.morphElements(root, next);
+    });
+
+    await expect(page.locator("#sheet-shell")).toHaveCSS("color", "rgb(0, 0, 255)");
+    await expect(page.locator('[data-sheet-target="dialog"]')).toHaveAttribute("data-side", "left");
+    await expect
+        .poll(() => page.locator("#sheet-shell").evaluate((el) => el.style.getPropertyValue("--sheet-width")))
+        .toBe("28rem");
+
+    await page.evaluate(async () => {
+        const root = document.querySelector("#sheet-shell");
+        await window.StimulusApplication.getControllerForElementAndIdentifier(root, "sheet").open();
+        await window.StimulusApplication.getControllerForElementAndIdentifier(root, "sheet").close();
+    });
+    await expect(page.locator('[data-sheet-target="dialog"]')).toHaveAttribute("data-side", "top");
+    await expect
+        .poll(() => page.locator("#sheet-shell").evaluate((el) => el.style.getPropertyValue("--sheet-width")))
+        .toBe("90%");
+    await expect(page.locator('[data-sheet-target="dialog"]')).toHaveCSS("max-width", "384px");
+});
+
+test("a single modal host opens nested frame instances without replacing the parent's draft", async ({ page }) => {
+    const frameRequests = [];
+    const saveRequests = [];
+    await page.route("http://overlays.test/**", async (route) => {
+        const request = route.request();
+        if (new URL(request.url()).pathname === "/") {
+            await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+            return;
+        }
+        if (new URL(request.url()).pathname === "/save") {
+            saveRequests.push({
+                id: request.headers()["turbo-frame"],
+                host: request.headers()["x-hotwire-overlay-host"],
+                instance: request.headers()["x-hotwire-overlay-instance"],
+            });
+            await route.fulfill({
+                status: 422,
+                contentType: "text/html",
+                body: `<turbo-frame id="${request.headers()["turbo-frame"]}"><p>Validation error</p><button type="button" data-action="modal#close">Close</button></turbo-frame>`,
+            });
+            return;
+        }
+        frameRequests.push({
+            id: request.headers()["turbo-frame"],
+            host: request.headers()["x-hotwire-overlay-host"],
+            instance: request.headers()["x-hotwire-overlay-instance"],
+        });
+        const frameId = request.headers()["turbo-frame"];
+        await route.fulfill({
+            status: 200,
+            contentType: "text/html",
+            body: `<turbo-frame id="${frameId}"><h2 data-slot="modal-title">Editor</h2><input aria-label="Draft"><a href="/edit" data-turbo-frame="modal">Open child</a><a href="/step">Next step</a><form action="/save" method="post"><button type="submit">Save</button></form><button type="button" data-action="modal#close">Close</button></turbo-frame>`,
+        });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a id="open-editor" href="/edit" data-turbo-frame="modal">Open editor</a>
+        <div id="modal-shell" data-controller="modal" data-hotwire-overlay-host="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <div data-hotwire-overlay-labels data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" aria-describedby="shell-description" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><p id="shell-description">Hint</p><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open-editor").hover();
+    await page.waitForTimeout(150);
+    expect(frameRequests).toHaveLength(0);
+    await page.locator("#open-editor").click();
+    const instances = page.locator("[data-hotwire-overlay-instance]");
+    await expect(instances).toHaveCount(1);
+    const parent = instances.first();
+    const parentId = await parent.locator("turbo-frame").getAttribute("id");
+    await parent.locator("input").fill("Unsaved sale draft");
+    await parent.locator("a", { hasText: "Open child" }).click();
+
+    await expect(instances).toHaveCount(2);
+    const child = instances.last();
+    const childId = await child.locator("turbo-frame").getAttribute("id");
+    expect(childId).not.toBe(parentId);
+    await expect(child.locator("input")).toBeVisible();
+    const parentLabel = await parent.locator('[data-modal-target="modal"]').getAttribute("aria-labelledby");
+    const childLabel = await child.locator('[data-modal-target="modal"]').getAttribute("aria-labelledby");
+    expect(parentLabel).toBeTruthy();
+    expect(childLabel).toBeTruthy();
+    expect(childLabel).not.toBe(parentLabel);
+    const parentDescription = await parent.locator('[data-modal-target="modal"]').getAttribute("aria-describedby");
+    const childDescription = await child.locator('[data-modal-target="modal"]').getAttribute("aria-describedby");
+    expect(parentDescription).not.toBe(childDescription);
+    await expect(page.locator(`#${parentDescription}`)).toHaveText("Hint");
+    await expect(page.locator(`#${childDescription}`)).toHaveText("Hint");
+    expect(
+        await page.locator("[id]").evaluateAll((elements) => {
+            const ids = elements.map((element) => element.id);
+            return ids.length === new Set(ids).size;
+        }),
+    ).toBe(true);
+    expect(frameRequests).toEqual([
+        { id: parentId, host: "modal", instance: parentId.slice("modal--".length) },
+        { id: childId, host: "modal", instance: childId.slice("modal--".length) },
+    ]);
+
+    await child.locator("a", { hasText: "Next step" }).click();
+    await expect.poll(() => frameRequests.length).toBe(3);
+    expect(frameRequests[2]).toEqual({ id: childId, host: "modal", instance: childId.slice("modal--".length) });
+    await expect(instances).toHaveCount(2);
+
+    await child.locator('button[type="submit"]').click();
+    await expect.poll(() => saveRequests.length).toBe(1);
+    await expect(child).toContainText("Validation error");
+    expect(saveRequests).toEqual([{ id: childId, host: "modal", instance: childId.slice("modal--".length) }]);
+
+    await child.locator("button", { hasText: "Close" }).click();
+    await expect(instances).toHaveCount(1);
+    await expect(parent.locator("input")).toHaveValue("Unsaved sale draft");
+    await expect(parent.locator("a", { hasText: "Open child" })).toBeFocused();
+});
+
+test("a validation redirect preserves an instance's Frame context through the POST and redirected GET", async ({
+    page,
+}) => {
+    const requests = [];
+    let rejected = false;
+    let rejectedDetails = false;
+    const server = createServer((request, response) => {
+        requests.push({
+            path: request.url,
+            method: request.method,
+            frame: request.headers["turbo-frame"],
+            host: request.headers["x-hotwire-overlay-host"],
+            instance: request.headers["x-hotwire-overlay-instance"],
+            origin: request.headers["x-hotwire-overlay-origin"],
+        });
+        request.resume();
+        if (request.url === "/") {
+            response.writeHead(200, { "Content-Type": "text/html" });
+            response.end("<html><body></body></html>");
+        } else if (request.url === "/save") {
+            rejected = true;
+            response.writeHead(303, { Location: "/edit" });
+            response.end();
+        } else if (request.url === "/save-details") {
+            rejectedDetails = true;
+            response.writeHead(303, { Location: "/details" });
+            response.end();
+        } else if (request.url === "/details") {
+            response.writeHead(200, { "Content-Type": "text/html" });
+            response.end(
+                `<turbo-frame id="customer-details"><form action="/save-details" method="post"><input name="detail" aria-label="Detail"><button type="submit">Save detail</button></form>${rejectedDetails ? "<p>Detail validation error</p>" : ""}</turbo-frame>`,
+            );
+        } else {
+            response.writeHead(200, { "Content-Type": "text/html" });
+            response.end(`<turbo-frame id="${request.headers["turbo-frame"]}">
+                <form action="/save" method="post"><input name="name" aria-label="Name"><input name="_turbo_frame_src" type="hidden" value="/edit"><button type="submit">Save</button></form>
+                ${rejected ? "<p>Validation error</p>" : ""}
+                <turbo-frame id="customer-details" src="/details"></turbo-frame>
+            </turbo-frame>`);
+        }
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+        const address = server.address();
+        await page.goto(`http://127.0.0.1:${address.port}/`);
+        await page.setContent(`
+            <a id="edit" href="/edit" data-turbo-frame="modal">Edit</a>
+            <div id="modal-shell" data-controller="modal" data-hotwire-overlay-host="modal">
+                <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                    <div data-modal-target="backdrop"></div>
+                    <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+                </div>
+            </div>
+        `);
+        await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+        await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+        await page.addScriptTag({ content: await browserOverlayControllerScript() });
+        await page.evaluate(() => {
+            window.StimulusApplication = window.Stimulus.Application.start();
+            window.StimulusApplication.register("modal", window.ModalController);
+        });
+
+        await page.locator("#edit").click();
+        const instance = page.locator("[data-hotwire-overlay-instance]");
+        await instance.locator('input[name="name"]').fill("Unsubmitted parent data");
+        const id = await instance.locator('turbo-frame[data-modal-target="dynamicContent"]').getAttribute("id");
+        await instance.locator('turbo-frame[data-modal-target="dynamicContent"] > form button[type="submit"]').click();
+        await expect(instance).toContainText("Validation error");
+        await expect(instance).toHaveCount(1);
+        expect(requests.filter(({ path }) => path === "/edit" || path === "/save")).toEqual([
+            {
+                path: "/edit",
+                method: "GET",
+                frame: id,
+                host: "modal",
+                instance: id.slice("modal--".length),
+                origin: id,
+            },
+            {
+                path: "/save",
+                method: "POST",
+                frame: id,
+                host: "modal",
+                instance: id.slice("modal--".length),
+                origin: id,
+            },
+            {
+                path: "/edit",
+                method: "GET",
+                frame: id,
+                host: "modal",
+                instance: id.slice("modal--".length),
+                origin: id,
+            },
+        ]);
+
+        const inner = instance.locator("#customer-details");
+        await inner.locator('button[type="submit"]').click();
+        await expect(inner).toContainText("Detail validation error");
+        await expect(instance).toHaveCount(1);
+        const details = requests.filter(({ path }) => path === "/details" || path === "/save-details");
+        expect(details.slice(-3)).toEqual([
+            {
+                path: "/details",
+                method: "GET",
+                frame: "customer-details",
+                host: undefined,
+                instance: undefined,
+                origin: id,
+            },
+            {
+                path: "/save-details",
+                method: "POST",
+                frame: "customer-details",
+                host: undefined,
+                instance: undefined,
+                origin: id,
+            },
+            {
+                path: "/details",
+                method: "GET",
+                frame: "customer-details",
+                host: undefined,
+                instance: undefined,
+                origin: id,
+            },
+        ]);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test("a child Stream updates only its initiating form and closes only that instance", async ({ page }) => {
+    await page.route("http://overlays.test/**", async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+        if (path === "/") {
+            await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+            return;
+        }
+        const id = request.headers()["turbo-frame"];
+        if (path === "/customers") {
+            await route.fulfill({
+                status: 200,
+                contentType: "text/vnd.turbo-stream.html",
+                body: `<turbo-stream action="hotwire-overlay-return" target="${id}"><template><option value="1">Existing</option><option value="2" selected>New customer</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${id}"></turbo-stream>`,
+            });
+            return;
+        }
+        const html =
+            path === "/sale"
+                ? `<form><input name="notes" aria-label="Notes"><p class="server-errors">Unrelated error</p><select name="customer_id" aria-label="Customer" data-overlay-return-region="customer"><option value="1">Existing</option></select><a href="/customer" data-turbo-frame="modal" data-overlay-return-to="customer">New customer</a><a href="/sale" data-turbo-frame="modal">Open another sale</a></form>`
+                : `<form action="/customers" method="post"><input name="name" aria-label="New customer name"><button type="submit">Save customer</button></form>`;
+        await route.fulfill({
+            status: 200,
+            contentType: "text/html",
+            body: `<turbo-frame id="${id}">${html}</turbo-frame>`,
+        });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a id="sale" href="/sale" data-turbo-frame="modal">New sale</a>
+        <div id="modal-shell" data-controller="modal" data-hotwire-overlay-host="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#sale").click();
+    const instances = page.locator("[data-hotwire-overlay-instance]");
+    const firstSale = instances.first();
+    await firstSale.locator('input[name="notes"]').fill("First draft");
+    await firstSale.getByText("Open another sale").click();
+    await expect(instances).toHaveCount(2);
+    const secondSale = instances.last();
+    const firstForm = firstSale.locator("form");
+    const secondForm = page.locator(`#${await secondSale.getAttribute("id")} form`);
+    await secondForm.locator('input[name="notes"]').fill("Second draft");
+    await secondForm.evaluate((form) => {
+        form.dataset.preservedNode = "yes";
+    });
+    await secondSale.getByText("New customer").click();
+    await expect(instances).toHaveCount(3);
+    const child = instances.last();
+    const childFrameId = await child.locator("turbo-frame").getAttribute("id");
+    await child.locator('input[name="name"]').fill("Ada");
+    await child.getByText("Save customer").click();
+
+    await expect(instances).toHaveCount(2);
+    await expect(firstForm.locator('input[name="notes"]')).toHaveValue("First draft");
+    await expect(firstForm.locator('select[name="customer_id"]')).toHaveValue("1");
+    await expect(secondForm.locator('input[name="notes"]')).toHaveValue("Second draft");
+    await expect(secondForm.locator('select[name="customer_id"]')).toHaveValue("2");
+    await expect(secondForm).toHaveAttribute("data-preserved-node", "yes");
+    await expect(secondForm.locator(".server-errors")).toHaveText("Unrelated error");
+    await expect(secondForm.getByRole("link", { name: "New customer" })).toBeFocused();
+
+    await page.evaluate(
+        (oldId) =>
+            window.Turbo.renderStreamMessage(
+                `<turbo-stream action="hotwire-overlay-return" target="${oldId}"><template><option value="stale" selected>Stale</option></template></turbo-stream>`,
+            ),
+        childFrameId,
+    );
+    await expect(secondForm.locator('select[name="customer_id"]')).toHaveValue("2");
+
+    await secondForm.getByRole("link", { name: "New customer" }).click();
+    await expect(instances).toHaveCount(3);
+    const retryChild = instances.last();
+    await secondForm.locator('select[name="customer_id"]').evaluate((region) => {
+        region.outerHTML =
+            '<select name="customer_id" aria-label="Customer" data-overlay-return-region="customer"><option value="1" selected>Existing</option></select>';
+    });
+    await retryChild.getByText("Save customer").click();
+    await expect(retryChild.locator('[role="alert"]')).toContainText("return destination changed");
+    await expect(retryChild.getByText("Save customer")).toBeDisabled();
+    await expect(instances).toHaveCount(3);
+    await expect(secondForm.locator('select[name="customer_id"]')).toHaveValue("1");
+    await expect(firstForm.locator('select[name="customer_id"]')).toHaveValue("1");
+});
+
+test("a consumer renderer receives only declared context and close waits for its result", async ({ page }) => {
+    let release;
+    let fetched;
+    const gate = new Promise((resolve) => {
+        release = resolve;
+    });
+    const started = new Promise((resolve) => {
+        fetched = resolve;
+    });
+    let rendererUrl;
+    const scenario = await setupRenderedReturn(page, async (route) => {
+        rendererUrl = new URL(route.request().url());
+        fetched();
+        await gate;
+        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">New rendered customer</p>' });
+    });
+
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await started;
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+    expect(rendererUrl.searchParams.get("result")).toBe("42");
+    expect(rendererUrl.searchParams.get("context[company_id]")).toBe("north");
+    expect(rendererUrl.searchParams.has("notes")).toBe(false);
+    release();
+
+    await expect(page.locator(".rich-result")).toHaveText("New rendered customer");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "New customer", exact: true })).toBeFocused();
+    expect(scenario.creations()).toBe(1);
+});
+
+test("retrying a failed consumer renderer does not repeat customer creation", async ({ page }) => {
+    let attempts = 0;
+    const scenario = await setupRenderedReturn(page, async (route) => {
+        attempts++;
+        await route.fulfill(
+            attempts === 1
+                ? { status: 503, contentType: "text/html", body: "Unavailable" }
+                : { contentType: "text/html", body: '<p class="rich-result">Recovered selection</p>' },
+        );
+    });
+
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.getByRole("alert")).toContainText("Saved, but the field could not be updated");
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
+    await page.getByRole("button", { name: "Retry return", exact: true }).click();
+
+    await expect(page.locator(".rich-result")).toHaveText("Recovered selection");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    expect(scenario.creations()).toBe(1);
+    expect(attempts).toBe(2);
+});
+
+async function setupRenderedReturn(page, render, { feedback = true, result = "42" } = {}) {
+    let creations = 0;
+    await page.route("http://overlays.test/**", async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+        if (path === "/field") return render(route);
+        if (path === "/customers") {
+            creations++;
+            const origin = request.headers()["x-hotwire-overlay-origin"];
+            return route.fulfill({
+                contentType: "text/vnd.turbo-stream.html",
+                body: `<turbo-stream action="hotwire-overlay-return" target="${origin}" ${result === null ? "" : `data-overlay-result="${result}"`}><template><option>Native fallback must not be used</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>`,
+            });
+        }
+        const body =
+            path === "/customer"
+                ? `<turbo-frame id="${request.headers()["turbo-frame"]}"><form method="post" action="/customers"><button type="submit">Save customer</button></form></turbo-frame>`
+                : "<html><body></body></html>";
+        return route.fulfill({ contentType: "text/html", body });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <form id="parent"><select name="company_id"><option value="north">North</option><option value="south">South</option></select>
+            <input name="notes" value="Private draft">
+            <div data-overlay-return-region="customer" data-overlay-return-src="/field" data-overlay-return-fields="company_id"><p>Old selection</p></div>
+            <a href="/customer" data-turbo-frame="modal" data-overlay-return-to="customer">New customer</a>
+        </form>
+        <div data-controller="modal" data-hotwire-overlay-host="modal">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+            ${feedback ? '<template data-hotwire-overlay-return-feedback><div data-hotwire-overlay-return-error role="alert" tabindex="-1"><p data-hotwire-overlay-return-message></p><button type="button" data-hotwire-overlay-return-retry hidden>Retry return</button></div></template>' : ""}
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    return { creations: () => creations };
+}
+
+test("a rich return without its feedback template fails before opening the creation form", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    await setupRenderedReturn(page, (route) => route.fulfill({ contentType: "text/html", body: "Unused" }), {
+        feedback: false,
+    });
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+
+    await expect.poll(() => errors.some((message) => message.includes("feedback template"))).toBe(true);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
+
+test("a successful creation missing result identity cannot be submitted again", async ({ page }) => {
+    const scenario = await setupRenderedReturn(
+        page,
+        (route) => route.fulfill({ contentType: "text/html", body: "Unused" }),
+        { result: null },
+    );
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+
+    await expect(page.getByRole("alert")).toContainText("Saved");
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
+    expect(scenario.creations()).toBe(1);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+});
+
+test("a changed unsaved context expires an in-flight renderer without replacing the field", async ({ page }) => {
+    let release;
+    let fetched;
+    const gate = new Promise((resolve) => {
+        release = resolve;
+    });
+    const started = new Promise((resolve) => {
+        fetched = resolve;
+    });
+    await setupRenderedReturn(page, async (route) => {
+        fetched();
+        await gate;
+        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Wrong company</p>' });
+    });
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await started;
+    await page.locator('[name="company_id"]').evaluate((control) => {
+        control.value = "south";
+    });
+    release();
+
+    await expect(page.getByRole("alert")).toContainText("return context changed");
+    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
+    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeHidden();
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+});
+
+test("a renderer conflict is terminal rather than a retryable creation failure", async ({ page }) => {
+    await setupRenderedReturn(page, (route) =>
+        route.fulfill({ status: 409, contentType: "text/html", body: "Different company" }),
+    );
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+
+    await expect(page.getByRole("alert")).toContainText("incompatible with the return context");
+    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeHidden();
+    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+});
+
+test("retiring an opening aborts its renderer and cannot update a reopened customer", async ({ page }) => {
+    let fetched;
+    let release;
+    const started = new Promise((resolve) => {
+        fetched = resolve;
+    });
+    const gate = new Promise((resolve) => {
+        release = resolve;
+    });
+    await setupRenderedReturn(page, async (route) => {
+        fetched();
+        await gate;
+        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Stale customer</p>' });
+    });
+    const aborted = page.waitForEvent("requestfailed", (request) => new URL(request.url()).pathname === "/field");
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await started;
+    await page.keyboard.press("Escape");
+    await aborted;
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    release();
+
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
+    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+});
+
+test("renderer retry checks context again before issuing another GET", async ({ page }) => {
+    let attempts = 0;
+    await setupRenderedReturn(page, (route) => {
+        attempts++;
+        return route.fulfill({ status: 503, contentType: "text/html", body: "Unavailable" });
+    });
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeVisible();
+    await page.locator('[name="company_id"]').evaluate((control) => {
+        control.value = "south";
+    });
+    await page.getByRole("button", { name: "Retry return", exact: true }).click();
+
+    await expect(page.getByRole("alert")).toContainText("return context changed");
+    expect(attempts).toBe(1);
+});
+
+for (const source of [
+    "https://other.test/field",
+    "//overlays.test/field",
+    "/field#fragment",
+    "https://name:secret@overlays.test/field",
+    " ",
+    "/field\\other",
+]) {
+    test(`a return renderer rejects unsafe source ${source}`, async ({ page }) => {
+        const errors = [];
+        page.on("console", (message) => {
+            if (message.type() === "error") errors.push(message.text());
+        });
+        await setupRenderedReturn(page, (route) => route.fulfill({ contentType: "text/html", body: "Unused" }));
+        await page
+            .locator("[data-overlay-return-src]")
+            .evaluate((region, value) => region.setAttribute("data-overlay-return-src", value), source);
+        await page.getByRole("link", { name: "New customer", exact: true }).click();
+
+        await expect.poll(() => errors.some((message) => message.includes("safe same-origin URL"))).toBe(true);
+        await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    });
+}
+
+test("an ambiguous return region blocks opening instead of selecting a global field", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    await page.setContent(`
+        <form>
+            <select data-overlay-return-region="customer"></select>
+            <select data-overlay-return-region="customer"></select>
+            <a id="ambiguous-return" href="/customer" data-turbo-frame="modal" data-overlay-return-to="customer">New</a>
+        </form>
+        <div data-controller="modal" data-hotwire-overlay-host="modal">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#ambiguous-return").click();
+    await expect.poll(() => errors.filter((error) => error.includes("exactly one named region")).length).toBe(1);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
+
+test("a delayed return and close cannot affect a later opening for another form", async ({ page }) => {
+    const pending = [];
+    await page.route("http://overlays.test/**", async (route) => {
+        const path = new URL(route.request().url()).pathname;
+        if (path === "/") {
+            await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+        } else if (path === "/save") {
+            pending.push({ route, id: route.request().headers()["turbo-frame"] });
+        } else {
+            const id = route.request().headers()["turbo-frame"];
+            await route.fulfill({
+                status: 200,
+                contentType: "text/html",
+                body: `<turbo-frame id="${id}"><form action="/save" method="post"><button type="submit">Save</button></form></turbo-frame>`,
+            });
+        }
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <form id="first"><select data-overlay-return-region="customer"><option value="1" selected>Old</option></select><a href="/create" data-turbo-frame="modal" data-overlay-return-to="customer">Open first</a></form>
+        <form id="second"><select data-overlay-return-region="customer"><option value="1" selected>Old</option></select><a href="/create" data-turbo-frame="modal" data-overlay-return-to="customer">Open second</a></form>
+        <div data-controller="modal" data-hotwire-overlay-host="modal">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    const instances = page.locator("[data-hotwire-overlay-instance]");
+    await page.locator("#first a").click();
+    await instances.first().locator("button").click();
+    await expect.poll(() => pending.length).toBe(1);
+    await page.evaluate(() => {
+        const root = document.querySelector("[data-hotwire-overlay-instance]");
+        window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal").close();
+    });
+    await expect(instances).toHaveCount(0);
+
+    await page.locator("#second a").click();
+    await instances.first().locator("button").click();
+    await expect.poll(() => pending.length).toBe(2);
+    const response = (target, selected) =>
+        `<turbo-stream action="hotwire-overlay-return" target="${target}"><template><option value="${selected}" selected>New</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${target}"></turbo-stream>`;
+    await pending[0].route
+        .fulfill({ status: 200, contentType: "text/vnd.turbo-stream.html", body: response(pending[0].id, "stale") })
+        .catch(() => {});
+    await expect(instances).toHaveCount(1);
+    await expect(page.locator("#first select")).toHaveValue("1");
+    await expect(page.locator("#second select")).toHaveValue("1");
+
+    await pending[1].route.fulfill({
+        status: 200,
+        contentType: "text/vnd.turbo-stream.html",
+        body: response(pending[1].id, "current"),
+    });
+    await expect(instances).toHaveCount(0);
+    await expect(page.locator("#second select")).toHaveValue("current");
+    await expect(page.locator("#first select")).toHaveValue("1");
+});
+
+test("closing a drawer ancestor retires a child modal without losing the parent draft", async ({ page }) => {
+    await page.route("http://overlays.test/**", async (route) => {
+        const request = route.request();
+        const pathname = new URL(request.url()).pathname;
+        if (pathname === "/") {
+            await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+            return;
+        }
+        const id = request.headers()["turbo-frame"];
+        const body =
+            pathname === "/sale"
+                ? `<input aria-label="Sale draft"><a href="/customer" data-turbo-frame="modal">New customer</a><button type="button" data-action="drawer#close">Close sale</button>`
+                : `<h2 data-slot="modal-title">Customer</h2><button type="button" data-action="modal#close">Close customer</button>`;
+        await route.fulfill({
+            status: 200,
+            contentType: "text/html",
+            body: `<turbo-frame id="${id}">${body}</turbo-frame>`,
+        });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a href="/sale" data-turbo-frame="drawer" id="open-sale">New sale</a>
+        <div id="drawer-shell" data-controller="drawer" data-hotwire-overlay-host="drawer" data-drawer-lock-scroll-class="overflow-hidden">
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-drawer-target="backdrop"></div>
+                <div data-drawer-target="dialog"><turbo-frame id="drawer" data-drawer-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+        <div id="modal-shell" data-controller="modal" data-hotwire-overlay-host="modal" data-modal-lock-scroll-class="overflow-hidden">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        window.StimulusApplication.register("drawer", window.DrawerController);
+    });
+
+    await page.locator("#open-sale").click();
+    const sale = page.locator('[data-controller="drawer"][data-hotwire-overlay-instance]');
+    await expect(sale).toHaveCount(1);
+    await sale.locator("input").fill("Unsaved sale");
+    await sale.locator("a", { hasText: "New customer" }).click();
+    const customer = page.locator('[data-controller="modal"][data-hotwire-overlay-instance]');
+    await expect(customer).toHaveCount(1);
+    await expect(customer).toContainText("Customer");
+    await page.keyboard.press("Escape");
+    await expect(customer).toHaveCount(0);
+    await expect(sale.locator("input")).toHaveValue("Unsaved sale");
+
+    await sale.locator("a", { hasText: "New customer" }).click();
+    await expect(customer).toHaveCount(1);
+    await page.evaluate(() => {
+        const root = document.querySelector('[data-controller="drawer"][data-hotwire-overlay-instance]');
+        window.StimulusApplication.getControllerForElementAndIdentifier(root, "drawer").close();
+    });
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+
+    await page.locator("#open-sale").click();
+    await sale.locator("a", { hasText: "New customer" }).click();
+    await expect(customer).toHaveCount(1);
+    await sale.evaluate((element) => element.remove());
+    await expect(customer).toHaveCount(0);
+    await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+
+    await page.locator("#open-sale").click();
+    await sale.locator("a", { hasText: "New customer" }).click();
+    await expect(customer).toHaveCount(1);
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("turbo:before-cache")));
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+});
+
+test("a cancelled frame load cannot populate a later opening of the same host", async ({ page }) => {
+    const pending = [];
+    await page.route("http://overlays.test/**", async (route) => {
+        if (new URL(route.request().url()).pathname === "/slow") {
+            pending.push(route);
+            return;
+        }
+        await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a id="open-slow" href="/slow" data-turbo-frame="modal">Open</a>
+        <div id="modal-shell" data-controller="modal" data-hotwire-overlay-host="modal">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+
+    await page.locator("#open-slow").click();
+    await expect.poll(() => pending.length).toBe(1);
+    const instances = page.locator("[data-hotwire-overlay-instance]");
+    const originalId = await instances.first().locator("turbo-frame").getAttribute("id");
+    await page.evaluate(() => {
+        const root = document.querySelector("[data-hotwire-overlay-instance]");
+        window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal").close();
+    });
+    await expect(instances).toHaveCount(0);
+
+    await page.locator("#open-slow").click();
+    await expect.poll(() => pending.length).toBe(2);
+    const nextId = await instances.first().locator("turbo-frame").getAttribute("id");
+    expect(nextId).not.toBe(originalId);
+
+    await pending[0]
+        .fulfill({
+            status: 200,
+            contentType: "text/html",
+            body: `<turbo-frame id="${originalId}">Stale content</turbo-frame>`,
+        })
+        .catch(() => {});
+    await pending[1].fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: `<turbo-frame id="${nextId}">Current content</turbo-frame>`,
+    });
+    await expect(instances).toHaveCount(1);
+    await expect(instances.first()).toContainText("Current content");
+    await expect(instances.first()).not.toContainText("Stale content");
+});
+
+test("a generated Sheet instance uses the same hint and response presentation contract", async ({ page }) => {
+    let pending;
+    await page.route("http://overlays.test/**", async (route) => {
+        if (new URL(route.request().url()).pathname === "/settings") {
+            pending = route;
+            return;
+        }
+        await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a id="open-settings" href="/settings" data-turbo-frame="sheet" data-overlay-family="sheet" data-overlay-side="left" data-overlay-size="28rem">Settings</a>
+        <div id="sheet-shell" data-controller="sheet" data-hotwire-overlay-host="sheet" style="--sheet-width: 75%">
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog" data-side="right">
+                    <turbo-frame id="sheet" data-sheet-target="dynamicContent"></turbo-frame>
+                </div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("sheet", window.SheetController);
+    });
+
+    await page.locator("#open-settings").click();
+    const instance = page.locator('[data-controller="sheet"][data-hotwire-overlay-instance]');
+    const dialog = instance.locator('[data-sheet-target="dialog"]');
+    await expect(dialog).toHaveAttribute("data-side", "left");
+    await expect.poll(() => instance.evaluate((el) => el.style.getPropertyValue("--sheet-width"))).toBe("28rem");
+    await expect.poll(() => Boolean(pending)).toBe(true);
+    const id = await instance.locator("turbo-frame").getAttribute("id");
+    await pending.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: `<turbo-frame id="${id}" data-overlay-family="sheet" data-overlay-side="top" data-overlay-size="40vh"><button type="button" data-action="sheet#close">Close</button></turbo-frame>`,
+    });
+    await expect(dialog).toHaveAttribute("data-side", "top");
+    await expect.poll(() => instance.evaluate((el) => el.style.getPropertyValue("--sheet-height"))).toBe("40vh");
+    await page.evaluate(
+        (frameId) =>
+            window.Turbo.renderStreamMessage(
+                `<turbo-stream action="hotwire-overlay-close" target="${frameId}"></turbo-stream>`,
+            ),
+        id,
+    );
+    await expect(instance).toHaveCount(0);
+    await expect(page.locator("#sheet-shell [data-sheet-target='dialog']")).toHaveAttribute("data-side", "right");
+    await expect
+        .poll(() => page.locator("#sheet-shell").evaluate((el) => el.style.getPropertyValue("--sheet-width")))
+        .toBe("75%");
+});
+
+test("two families claiming the same Frame do not arbitrarily select a host", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    await page.setContent(`
+        <a id="ambiguous" href="/new" data-turbo-frame="shared">Open</a>
+        <div data-controller="modal" data-hotwire-overlay-host="shared">
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog"><turbo-frame id="shared" data-modal-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+        <div data-controller="sheet" data-hotwire-overlay-host="shared">
+            <div data-sheet-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-sheet-target="backdrop"></div>
+                <div data-sheet-target="dialog"><turbo-frame id="shared" data-sheet-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        window.StimulusApplication.register("sheet", window.SheetController);
+    });
+
+    const cancelled = await page.locator("#ambiguous").evaluate((link) => {
+        const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+        link.dispatchEvent(event);
+        return event.defaultPrevented;
+    });
+    expect(cancelled).toBe(true);
+    await expect.poll(() => errors.filter((error) => error.includes("exactly one host")).length).toBeGreaterThan(0);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
 
 for (const family of ["modal", "sheet", "drawer"]) {
     test(`${family} applies each initial focus strategy`, async ({ page }) => {
@@ -941,11 +2119,15 @@ test("nested modal overlay enters the browser top layer", async ({ page }) => {
     await expect(innerOverlay).toHaveAttribute("popover", "manual");
     await expect(innerOverlay).not.toHaveAttribute("hidden", "");
     await expect.poll(async () => innerOverlay.evaluate((element) => element.matches(":popover-open"))).toBe(true);
-    await expect.poll(async () => innerOverlay.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
+    await expect
+        .poll(async () =>
+            innerOverlay.evaluate((element) => {
+                const rect = element.getBoundingClientRect();
 
-        return { width: Math.round(rect.width), height: Math.round(rect.height) };
-    })).toEqual({ width: 1280, height: 720 });
+                return { width: Math.round(rect.width), height: Math.round(rect.height) };
+            }),
+        )
+        .toEqual({ width: 1280, height: 720 });
 });
 
 test("nested modal and alert dialog close one layer at a time with Escape", async ({ page }) => {
@@ -1048,11 +2230,15 @@ test("nested modal and alert dialog close one layer at a time with Escape", asyn
     });
     await page.waitForTimeout(0);
 
-    await expect.poll(async () => page.evaluate(() => {
-        const target = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    await expect
+        .poll(async () =>
+            page.evaluate(() => {
+                const target = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
 
-        return target?.closest('[data-slot="alert-dialog-overlay"]') !== null;
-    })).toBe(true);
+                return target?.closest('[data-slot="alert-dialog-overlay"]') !== null;
+            }),
+        )
+        .toBe(true);
 
     await page.keyboard.press("Escape");
     await expect(alertOverlay).toHaveAttribute("hidden", "");
@@ -1108,7 +2294,10 @@ for (const identifier of ["drawer", "sheet"]) {
         await page.addScriptTag({ content: await browserOverlayControllerScript() });
         await page.evaluate((controllerIdentifier) => {
             window.StimulusApplication = window.Stimulus.Application.start();
-            window.StimulusApplication.register(controllerIdentifier, controllerIdentifier === "drawer" ? window.DrawerController : window.SheetController);
+            window.StimulusApplication.register(
+                controllerIdentifier,
+                controllerIdentifier === "drawer" ? window.DrawerController : window.SheetController,
+            );
             window.StimulusApplication.register("alert-dialog", window.AlertDialogController);
         }, identifier);
 
@@ -1201,7 +2390,9 @@ test("Escape during nested overlay entry closes the entering overlay", async ({ 
     await expect(alertOverlay).not.toHaveAttribute("data-presence", "entering");
 
     const exitTabPrevented = await page.evaluate(() => {
-        document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+        document.activeElement.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
         const trigger = document.querySelector("#delete");
         const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
         trigger.dispatchEvent(tab);
@@ -1258,8 +2449,16 @@ test("a modal nested in another modal animates after entering the top layer", as
     const innerDialog = page.locator("#inner > [data-modal-target='modal'] > [data-modal-target='dialog']");
 
     await expect(innerOverlay).toHaveAttribute("data-state", "open");
-    await expect.poll(async () => innerDialog.evaluate((element) => element.getAnimations().some((animation) => animation.playState === "running"))).toBe(true);
-    await expect.poll(async () => innerDialog.evaluate((element) => parseFloat(getComputedStyle(element).opacity))).toBeLessThan(1);
+    await expect
+        .poll(async () =>
+            innerDialog.evaluate((element) =>
+                element.getAnimations().some((animation) => animation.playState === "running"),
+            ),
+        )
+        .toBe(true);
+    await expect
+        .poll(async () => innerDialog.evaluate((element) => parseFloat(getComputedStyle(element).opacity)))
+        .toBeLessThan(1);
 });
 
 test("rapid reopen cancels stale modal exit teardown", async ({ page }) => {
@@ -1346,7 +2545,13 @@ test("Turbo cache synchronously closes a modal during motion", async ({ page }) 
     const modal = page.locator('[data-modal-target="modal"]');
     const dialog = page.locator('[data-modal-target="dialog"]');
     await expect(modal).toHaveAttribute("data-state", "open");
-    await expect.poll(async () => dialog.evaluate((element) => element.getAnimations().some((animation) => (animation.currentTime ?? 0) > 100))).toBe(true);
+    await expect
+        .poll(async () =>
+            dialog.evaluate((element) =>
+                element.getAnimations().some((animation) => (animation.currentTime ?? 0) > 100),
+            ),
+        )
+        .toBe(true);
 
     const cachedState = await page.evaluate(() => {
         window.dispatchEvent(new CustomEvent("turbo:before-cache"));
@@ -1404,14 +2609,20 @@ test("reduced motion closes a modal without waiting for CSS motion", async ({ pa
     const modal = page.locator('[data-modal-target="modal"]');
     await expect(modal).toHaveAttribute("data-state", "closed");
     await expect(modal).toHaveAttribute("hidden", "");
-    await expect.poll(async () => page.locator('[data-modal-target="dialog"]').evaluate((element) => element.getAnimations().length)).toBe(0);
+    await expect
+        .poll(async () =>
+            page.locator('[data-modal-target="dialog"]').evaluate((element) => element.getAnimations().length),
+        )
+        .toBe(0);
 });
 
 async function browserControllerScript(path) {
     // Inline helper modules alongside the controller — ES `import` is not valid
     // inside a regular <script>, so the harness concatenates the source instead.
-    const composition = (await readFile("resources/js/controllers/_composition.js", "utf8"))
-        .replace("export function isComposing", "function isComposing");
+    const composition = (await readFile("resources/js/controllers/_composition.js", "utf8")).replace(
+        "export function isComposing",
+        "function isComposing",
+    );
 
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
@@ -1424,11 +2635,15 @@ async function browserControllerScript(path) {
         .replace("export function isTopOverlay", "function isTopOverlay")
         .replace("export function overlayPosition", "function overlayPosition");
 
-    const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8"))
-        .replace("export function createTopLayer", "function createTopLayer");
+    const topLayer = (await readFile("resources/js/controllers/_top_layer.js", "utf8")).replace(
+        "export function createTopLayer",
+        "function createTopLayer",
+    );
 
-    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8"))
-        .replace("export function createPresence", "function createPresence");
+    const presence = (await readFile("resources/js/controllers/_presence.js", "utf8")).replace(
+        "export function createPresence",
+        "function createPresence",
+    );
 
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
@@ -1438,14 +2653,31 @@ async function browserControllerScript(path) {
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
-    const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
-        .replace("export function createFrameOverlay", "function createFrameOverlay");
+    const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8")).replace(
+        "export function createFrameOverlay",
+        "function createFrameOverlay",
+    );
+    const presentation = (await readFile("resources/js/controllers/_overlay_presentation.js", "utf8")).replace(
+        "export function createOverlayPresentation",
+        "function createOverlayPresentation",
+    );
+    const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
+        .replace('import("@hotwired/turbo")', "Promise.resolve({ StreamActions: window.Turbo?.StreamActions })")
+        .replace("export function createOverlayHost", "function createOverlayHost")
+        .replace("export function dismissOverlayInstance", "function dismissOverlayInstance");
+    const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8")).replace(
+        /export function /g,
+        "function ",
+    );
 
     const source = (await readFile(path, "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_focus_trap\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
         .replace("export default class ModalController extends Controller", "class ModalController extends Controller");
 
     return `
@@ -1457,6 +2689,9 @@ async function browserControllerScript(path) {
         ${presence}
         ${overlay}
         ${frameOverlay}
+        ${presentation}
+        ${overlayReturn}
+        ${host}
         ${source}
         window.ModalController = ModalController;
     `;
@@ -1464,21 +2699,34 @@ async function browserControllerScript(path) {
 
 async function browserOverlayControllerScript() {
     const base = await browserControllerScript("resources/js/controllers/modal_controller.js");
-    const actionReplay = (await readFile("resources/js/controllers/_action_replay.js", "utf8"))
-        .replace(/^export /gm, "");
+    const actionReplay = (await readFile("resources/js/controllers/_action_replay.js", "utf8")).replace(
+        /^export /gm,
+        "",
+    );
     const alertDialog = (await readFile("resources/js/controllers/alert_dialog_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_action_replay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
-        .replace("export default class AlertDialogController extends Controller", "class AlertDialogController extends Controller");
+        .replace(
+            "export default class AlertDialogController extends Controller",
+            "class AlertDialogController extends Controller",
+        );
     const drawer = (await readFile("resources/js/controllers/drawer_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
-        .replace("export default class DrawerController extends Controller", "class DrawerController extends Controller");
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
+        .replace(
+            "export default class DrawerController extends Controller",
+            "class DrawerController extends Controller",
+        );
     const sheet = (await readFile("resources/js/controllers/sheet_controller.js", "utf8"))
         .replace('import DrawerController from "./drawer_controller.js";', "")
-        .replace("export default class SheetController extends DrawerController", "class SheetController extends DrawerController");
+        .replace(
+            "export default class SheetController extends DrawerController",
+            "class SheetController extends DrawerController",
+        );
 
     return `
         ${base.replace("window.ModalController = ModalController;", "")}
@@ -1493,11 +2741,11 @@ async function browserOverlayControllerScript() {
     `;
 }
 
-async function mountFrameOverlay(page, family, {
-    beforeOverlay = "",
-    loadingTemplate = "",
-    overlayAttributes = "",
-} = {}) {
+async function mountFrameOverlay(
+    page,
+    family,
+    { beforeOverlay = "", loadingTemplate = "", overlayAttributes = "" } = {},
+) {
     await page.setContent(`
         <div
             id="${family}-shell"

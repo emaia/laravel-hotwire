@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayPresentation;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -12,6 +13,9 @@ class Button extends Component
     public const array SLOTS = [
         'root' => ['name' => 'button', 'kind' => 'visual'],
     ];
+
+    /** @var array{family: ?string, side: ?string, size: ?string} */
+    public array $presentation;
 
     public function __construct(
         public string $variant = 'default',
@@ -27,10 +31,18 @@ class Button extends Component
         public ?string $tooltipMotion = null,
         public ?string $tooltipEnabledWhen = null,
         public ?Htmlable $stimulus = null,
+        public ?string $overlay = null,
+        public ?string $overlaySide = null,
+        public ?string $overlaySize = null,
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
         $this->as = PolymorphicTag::normalize($this->as, ['button', 'a'], 'button');
         $this->type = PolymorphicTag::buttonType($this->type);
+        $this->presentation = OverlayPresentation::resolve($overlay, $overlaySide, $overlaySize);
+
+        if ($overlay !== null && $this->as !== 'a') {
+            throw new \InvalidArgumentException('Overlay presentation requires a framed anchor button.');
+        }
     }
 
     public function render()

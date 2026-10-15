@@ -16,6 +16,17 @@ Controls `<hw:sheet>` open and close behavior. It is the sheet-flavoured variant
 behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait for actual exit
 motion before rendering. The overlay contract is `data-state="closed" data-motion="default" hidden inert`.
 
+Frame-backed `<hw:sheet>` marks its root with `data-hotwire-overlay-host` and assigns a concrete Frame id to each new
+opening. The canonical root remains the sole owner of new-opening interception; generated shells reuse this controller,
+focus handling and stack. Hand-written markup can opt in with the marker and a matching `dynamicContent` Frame.
+See [frame-backed overlay instances](../components/frame-or-page.md#frame-backed-overlay-instances).
+
+For a frame-backed sheet, a link can set `data-overlay-family="sheet" data-overlay-side="left"`
+`data-overlay-size="28rem"` as a loading hint. The response `<turbo-frame>` may override either value before rendering;
+side accepts `left`, `right`, `top`, `bottom`. A size alone uses the current side's width/height variable. Closing or
+abandoning the request restores the authored side and size. See the
+[Blade contract](../components/frame-or-page.md#presentation-per-frame-opening).
+
 Escape dismissal and focus trapping are suspended during IME composition.
 
 ## Basic Usage

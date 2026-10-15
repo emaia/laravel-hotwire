@@ -8,6 +8,7 @@ export function createFrameOverlay(controller) {
     let pendingStreamRender = null;
     let dynamicContentId = null;
     let managedReferences = null;
+    const presentation = controller.framePresentation;
 
     resetManagedReferences();
 
@@ -94,6 +95,7 @@ export function createFrameOverlay(controller) {
     }
 
     function trackClickedLink(event) {
+        if (event.defaultPrevented) return;
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         if (event.button !== undefined && event.button !== 0) return;
         if (!hasDynamicContent()) return;
@@ -106,11 +108,32 @@ export function createFrameOverlay(controller) {
             lastClickedLink = null;
             return;
         }
+        if (controller.element.hasAttribute("data-hotwire-overlay-host")) return;
 
         if (!controller.isOpen && !controller.overlay?.isOpening) {
+            if (presentation.active) presentation.reset();
             controller.triggerElement = link;
         }
+        presentation.apply(link);
         lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
+    }
+
+    function beforeFrameRender(event) {
+        if (isDynamicFrame(event.target)) presentation.apply(event.detail?.newFrame);
+    }
+
+    function abandonPresentation(event) {
+        if (!isDynamicFrame(event.target)) return;
+        if (!controller.isOpen && !controller.overlay?.isOpening && !controller.overlay?.isClosing)
+            presentation.reset();
+    }
+
+    function preservePresentation(event) {
+        if (presentation.preserves(event)) event.preventDefault();
+    }
+
+    function beforeMorph(event) {
+        presentation.beforeMorph(event);
     }
 
     function handleBeforeFetchRequest(event) {
@@ -170,6 +193,7 @@ export function createFrameOverlay(controller) {
     }
 
     function handleMorphElement(event) {
+        presentation.afterMorph(event);
         if (!controller.hasModalTarget || event.target !== controller.modalTarget) return;
 
         resetManagedReferences();
@@ -272,13 +296,17 @@ export function createFrameOverlay(controller) {
 
         const selector = `[data-slot="${controller.identifier}-${kind}"]`;
 
-        return [...dynamicContent().querySelectorAll(selector)].find((element) => {
-            if (element.closest("template")) return false;
+        return (
+            [...dynamicContent().querySelectorAll(selector)].find((element) => {
+                if (element.closest("template")) return false;
 
-            const boundary = element.closest('[role="dialog"], [role="alertdialog"], [data-hotwire-overlay-labels]');
+                const boundary = element.closest(
+                    '[role="dialog"], [role="alertdialog"], [data-hotwire-overlay-labels]',
+                );
 
-            return boundary === controller.modalTarget;
-        }) ?? null;
+                return boundary === controller.modalTarget;
+            }) ?? null
+        );
     }
 
     function resolveLabelId(label, kind) {
@@ -338,32 +366,51 @@ export function createFrameOverlay(controller) {
     initializeContentObserver();
     document.addEventListener("click", trackClickedLink, true);
     document.addEventListener("turbo:before-fetch-request", handleBeforeFetchRequest);
+    document.addEventListener("turbo:before-frame-render", beforeFrameRender);
+    document.addEventListener("turbo:fetch-request-error", abandonPresentation);
+    document.addEventListener("turbo:frame-missing", abandonPresentation);
     document.addEventListener("turbo:frame-render", handleFrameRender);
     document.addEventListener("turbo:frame-load", handleFrameLoad);
     document.addEventListener("turbo:before-stream-render", handleBeforeStreamRender);
     controller.element.addEventListener("turbo:morph-element", handleMorphElement);
+    controller.element.addEventListener("turbo:before-morph-element", beforeMorph);
+    controller.element.addEventListener("turbo:before-morph-attribute", preservePresentation);
 
     return {
         markDismissedWhileLoading() {
             dismissedWhileLoading = true;
+            if (!controller.isOpen && !controller.overlay?.isOpening && !controller.overlay?.isClosing)
+                presentation.reset();
         },
         handleOverlayClosed() {
+            presentation.reset();
             const pending = pendingStreamRender;
             pendingStreamRender = null;
             pending?.();
             clearContent();
         },
         clearContent,
+        prepareOpening(link) {
+            lastClickedLink = link.hasAttribute("data-loading-template") ? link : null;
+            presentation.apply(link);
+        },
+        resetPresentation: presentation.reset,
         refresh: refreshContentObserver,
         cleanup() {
+            presentation.reset();
             observer?.disconnect();
             observer = null;
             document.removeEventListener("click", trackClickedLink, true);
             document.removeEventListener("turbo:before-fetch-request", handleBeforeFetchRequest);
+            document.removeEventListener("turbo:before-frame-render", beforeFrameRender);
+            document.removeEventListener("turbo:fetch-request-error", abandonPresentation);
+            document.removeEventListener("turbo:frame-missing", abandonPresentation);
             document.removeEventListener("turbo:frame-render", handleFrameRender);
             document.removeEventListener("turbo:frame-load", handleFrameLoad);
             document.removeEventListener("turbo:before-stream-render", handleBeforeStreamRender);
             controller.element.removeEventListener("turbo:morph-element", handleMorphElement);
+            controller.element.removeEventListener("turbo:before-morph-element", beforeMorph);
+            controller.element.removeEventListener("turbo:before-morph-attribute", preservePresentation);
         },
     };
 }

@@ -52,6 +52,17 @@ after close. It injects `loadingTemplate` during `turbo:before-fetch-request`, s
 and delays empty `update`/`replace` streams for the drawer root or frame, plus `refresh` streams, until the close animation
 finishes.
 
+Frame-backed `<hw:drawer>` marks its root with `data-hotwire-overlay-host` and assigns a concrete Frame id to each new
+opening. The canonical root owns interception; generated shells reuse the normal Drawer lifecycle and top-layer stack.
+Hand-written markup can opt in with that marker and a matching `dynamicContent` Frame. See
+[frame-backed overlay instances](../components/frame-or-page.md#frame-backed-overlay-instances).
+
+For a frame-backed drawer, links can set `data-overlay-family="drawer" data-overlay-side="left"`
+`data-overlay-size="30rem"` before loading. The response `<turbo-frame>` can override the direction or dimension before
+rendering. Directions are `up`, `right`, `down`, `left` (`top`/`bottom` aliases); the width and height variables follow
+the selected axis and return to the host defaults on close/abandon. See the
+[Blade contract](../components/frame-or-page.md#presentation-per-frame-opening).
+
 ## Targets
 
 | Target | Description |

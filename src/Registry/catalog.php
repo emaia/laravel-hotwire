@@ -375,7 +375,7 @@ return [
             'view' => 'hotwire::component-views.drawer',
             'docs' => 'docs/components/drawer.md',
             'category' => 'overlay',
-            'description' => 'Accessible directional drawer with focus management and optional Turbo Frame content',
+            'description' => 'Directional drawer with focus management and optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['drawer', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -755,7 +755,7 @@ return [
             'view' => 'hotwire::component-views.modal',
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal dialog with focus management and optional Turbo Frame content',
+            'description' => 'Accessible modal dialog with focus management and optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['modal', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -977,7 +977,7 @@ return [
             'view' => 'hotwire::component-views.sheet',
             'docs' => 'docs/components/sheet.md',
             'category' => 'overlay',
-            'description' => 'Accessible off-canvas dialog on any edge with optional Turbo Frame content',
+            'description' => 'Accessible off-canvas dialog on any edge with optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['sheet', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -1660,7 +1660,7 @@ return [
             'source' => 'resources/js/controllers/turbo/view_transition_controller.js',
             'docs' => 'docs/controllers/turbo/view-transition.md',
             'category' => 'turbo',
-            'description' => 'Wraps Turbo Frame renders in View Transitions when supported',
+            'description' => 'Animates Turbo Frame updates with View Transitions when supported, using normal renders while modal dialogs are stacked',
         ],
         'unsaved-changes' => [
             'source' => 'resources/js/controllers/unsaved_changes_controller.js',

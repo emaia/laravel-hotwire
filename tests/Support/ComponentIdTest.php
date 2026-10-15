@@ -56,6 +56,20 @@ it('restarts the sequence in a fresh request scope', function () {
     expect(app(ComponentId::class)->next('modal'))->toBe('modal-page-1');
 });
 
+it('restores the identity scope after nested or failed fragment renders', function () {
+    $ids = app(ComponentId::class);
+    expect($ids->next('form'))->toBe('form-page-1');
+
+    $ids->withinScope('opening-a', function () use ($ids) {
+        expect($ids->next('form'))->toBe('form-opening-a-1');
+        expect(fn () => $ids->withinScope('opening-b', fn () => throw new RuntimeException('render failed')))
+            ->toThrow(RuntimeException::class, 'render failed');
+        expect($ids->next('form'))->toBe('form-opening-a-2');
+    });
+
+    expect($ids->next('form'))->toBe('form-page-2');
+});
+
 it('claims preferred ids per scope with numeric suffixes', function () {
     $ids = app(ComponentId::class);
 

@@ -342,7 +342,17 @@ async function bundle() {
         .replace("export function createTopLayer", "function createTopLayer");
 
     const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
         .replace("export function createFrameOverlay", "function createFrameOverlay");
+
+    const presentation = (await readFile("resources/js/controllers/_overlay_presentation.js", "utf8"))
+        .replace(/^export /gm, "");
+    const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8"))
+        .replace(/^export /gm, "");
+    const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
+        .replace(/^export /gm, "")
+        .replace('import("@hotwired/turbo")', "Promise.resolve(window.Turbo)");
 
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
@@ -361,6 +371,8 @@ async function bundle() {
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
         .replace("export default class DrawerController extends Controller", "class DrawerController extends Controller");
 
     return `
@@ -373,6 +385,9 @@ async function bundle() {
         ${presence}
         ${overlay}
         ${frameOverlay}
+        const { createOverlayPresentation } = (() => { ${presentation}; return { createOverlayPresentation }; })();
+        ${overlayReturn}
+        ${host}
         ${floating}
         ${controller}
         ${drawer}

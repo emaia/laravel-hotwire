@@ -148,6 +148,20 @@ element carrying `role="dialog"` when writing controller markup manually.
 
 The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically. Return an empty `update` or `replace` stream for the modal root or frame id, or a `refresh` stream, to close it after a successful action.
 
+With a shared Blade frame host, the root declares `data-hotwire-overlay-host="modal"` and owns one empty
+`<turbo-frame id="modal" data-modal-target="dynamicContent">`. Links targeting that id open concrete instances with
+their own generated ids; the canonical root handles interception and each clone uses the regular Modal lifecycle.
+To opt in with hand-written markup, provide the same root marker and matching Frame target. Without the marker, the
+controller retains ordinary single-frame behavior. A link inside an instance without an explicit target reuses its
+Frame; `data-turbo-frame="modal"` starts another instance. See
+[frame-backed overlay instances](../components/frame-or-page.md#frame-backed-overlay-instances).
+
+For a frame-backed host, set `data-overlay-family="modal" data-overlay-size="lg"` on a frame link to size the loading
+state. The response `<turbo-frame>` can declare `data-overlay-family="modal" data-overlay-size="xl"` to override the
+size before rendering. Preset sizes are `sm`, `md`, `lg`, `xl`, `full`, `auto`; a CSS width sets the positioner's max-width.
+The host's `data-size` and `data-modal-size` hooks return to their authored values on close. See the
+[Blade contract](../components/frame-or-page.md#presentation-per-frame-opening) for validation and response examples.
+
 ```html
 <div data-controller="modal" ...>
     <div class="fixed inset-0 bg-black/50" data-modal-target="backdrop"></div>
