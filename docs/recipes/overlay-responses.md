@@ -81,6 +81,49 @@ Leaving out `closeOverlay()` keeps an overlay open for "Save and continue". A gl
 drafts; use it only when that is intentional. Stream order determines when actions start, not when CSS exit animations
 finish. Enable `view-transition` on the layout host when needed; response metadata cannot toggle it per opening.
 
+## Refresh is not a close action
+
+Prefer targeted `replace`/`update` operations plus `closeOverlay($origin)` when other overlays hold drafts. A native
+`refresh` remains a **page-level** operation: Turbo decides whether to ignore it (for example, because its `request-id`
+belongs to a recent local request) or visit the current page. Overlays neither cancel nor replay that action. An ignored
+refresh leaves their drafts open; an accepted page replacement or morph discards generated instances with the old page.
+Do not use `refresh` as a promise that the parent form will survive.
+
+Likewise, `closeOverlay($origin)->refresh()` does not wait for exit motion before visiting. A family's `open(...)`
+builder can compose other Stream actions, but there is no animation transaction, delayed-close macro or implicit
+"close on any HTTP success".
+If the server needs a new step in the same instance, return the matching Frame rather than closing and reopening it.
+An `open(...)` correlated to that origin creates its child, not a replacement sibling: closing the ancestor retires
+that child too. Opening from an already closed origin is rejected rather than attached to another active overlay.
+
+## Loading and validation sources
+
+A Frame link to a canonical host is an **explicit opening**. Its generated primary Frame loads eagerly even if the
+hand-written host uses `loading="lazy"`, since a hidden overlay cannot intersect the viewport to begin its own request.
+This does not change the canonical host or any nested Frames: a `loading="lazy"` Frame inside the form still waits for
+visibility normally. Closing a generated instance retires its opening; a late response cannot populate a new instance.
+
+`open(view(...), source: ...)` instead inserts its already-rendered fragment without fetching `source` first. The URL
+is the validation/re-render source, **not** a second lazy content request. Use a Frame link when content itself should
+be fetched on demand. Nested lazy Frames can be used in either transport, but their ids must be unique per instance;
+pass explicit scoped ids for application-authored Frames.
+
+## Public entries and compatibility
+
+- `response()->modal()`, `sheet()` and `drawer()` return a family-specific `OverlayResponse` entry.
+- `open(string|Htmlable $content, ?string $side = null, ?string $size = null, ?string $source = null,
+  ?string $host = null, ?string $origin = null)` returns the existing `TurboStreamBuilder`; use named optional arguments.
+- `request()->overlayOrigin(): string` resolves validated request context or throws; it is not an authorization check.
+- `turbo_stream()->closeOverlay(string $origin)` returns the builder and requires an explicit concrete Frame or static
+  root id. There is no default host, stack-top fallback or family-specific close alias.
+- Existing application macros and Stream actions are not overwritten by the package.
+
+The older `modal-auto-close` marker remains available for existing Modal-only integrations. New server responses should
+use `closeOverlay()` for all three families, including static roots, instead of depending on a marker's ancestry. There
+is no need to register a `closeModal`/`autoCloseOverlay` macro or rename the marker to use the common lifecycle.
+Empty `update`/`replace` Streams targeting a concrete primary Frame remain supported for content-driven closing, but
+must not target the canonical host to close a generated child.
+
 ## Let a rich consumer render its own field
 
 A reusable customer form need not know whether its caller uses a native select or a searchable Multi Select. A native

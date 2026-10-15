@@ -387,15 +387,10 @@ Three options, in order of how much they cost you:
 1. **Use presentation metadata** for size and side on a shared host. Other structural differences can use separate
    hosts, such as `<hw:modal frame="modal-edit" :fixed-top="true">` and
    `<hw:sheet frame="settings-panel" side="right">`, chosen by `data-turbo-frame`.
-2. **Return a Turbo Stream with `morph`** when you detect the frame request:
-   ```php
-   if ($request->wasFromTurboFrame('modal')) {
-       return turbo_stream()->morph('modal', view('messages._edit-modal', compact('message')));
-   }
-   ```
-   `morph` diffs the DOM and only patches changed attributes/classes, so the modal stays mounted and
-   open — no flicker. Avoid `->replace('modal', ...)`: it destroys the open modal and the new one
-   won't auto-open, since the modal's content-mutation observer never fires on a fresh mount.
+2. **Return targeted Streams for application-owned surrounding content** when a response needs to change more than its
+   Frame. Target known unique elements, not the canonical `modal` host: an active generated instance has a different
+   identity, and morphing the host does not configure that instance. Use the supported presentation metadata or an
+   additional explicitly configured host for different overlay chrome; do not replace the active root to restyle it.
 3. **Render `<hw:modal frame="modal">` or another frame host inside the view itself** instead of relying on a shared
    host. More flexible per-view, but you lose the convenience of one host serving every link.
 

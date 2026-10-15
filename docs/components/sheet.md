@@ -112,18 +112,17 @@ not copy attributes from the response frame.
 When the frame receives content, the sheet opens automatically. A trigger can override the loading state with
 `data-loading-template="#template-id"`; otherwise the `loading_template` slot is used.
 
-On successful submit, close the instance by returning an empty update or replace for its requesting Frame id. Stream
-rendering waits for the actual exit motion to finish:
+On successful submit, close only the submitting instance with the common overlay response macro:
 
 ```php
 return turbo_stream()
-    ->update($request->turboFrameId())
+    ->closeOverlay($request->overlayOrigin())
     ->toast('success', 'Saved');
 ```
 
 One Sheet host can open multiple concrete Frame instances. A link targeting the host's canonical frame creates a new
 instance, while unqualified navigation inside its content stays in the current instance. An empty update for the
-request's concrete Frame closes only that instance; a global `refresh` can discard other open drafts. See
+request's concrete primary Frame is also supported and waits for exit motion; a global `refresh` can discard other open drafts. See
 [frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
 
 ## Requirements

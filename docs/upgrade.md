@@ -29,6 +29,21 @@ inside a package root and a package root created by a Blade wrapper can now rece
 the resolver runs after slot rendering. Reveal's public props also remain isolated from generic Blade component data, so
 intermediate components cannot shadow its configuration.
 
+### Frame-backed overlays now create concrete instances
+
+Modal, Sheet and Drawer hosts are reusable: a link targeting their canonical Frame opens a generated instance, while
+unqualified links/forms inside it reuse that instance. Keep `frame="modal"` (or the other canonical host) in
+`frame-or-page` views; the package emits the matching concrete Frame from validated request context.
+
+Do not compare every overlay request to the literal `modal` id or close it with `update('modal')`. For a route whose
+Frame presentation is an overlay, use `closeOverlay($request->overlayOrigin())`; for reusable static markup, pass its
+root id explicitly. Empty updates/replacements still work when targeting the requesting primary Frame rather than the
+canonical host. See [overlay responses](./recipes/overlay-responses.md) for conditional opening and contextual returns.
+
+Native `refresh` is no longer intercepted as an implicit close. An ignored refresh preserves the stack; an accepted page
+refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts. The older
+`modal-auto-close` controller remains available, but new integrations do not need a marker or custom close macro.
+
 ### Selective preset command renamed
 
 `hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output

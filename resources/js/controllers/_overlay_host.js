@@ -96,6 +96,8 @@ export function createOverlayHost(controller) {
         const cloneFrame = instanceRoot.querySelector(`turbo-frame#${CSS.escape(hostId)}`);
         cloneFrame.replaceChildren();
         cloneFrame.removeAttribute("src");
+        // An explicit opening cannot wait for a hidden host to intersect the viewport.
+        cloneFrame.loading = "eager";
 
         const ids = new Map();
         for (const element of [instanceRoot, ...instanceRoot.querySelectorAll("[id]")]) {

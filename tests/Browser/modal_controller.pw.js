@@ -451,6 +451,125 @@ test("a single modal host opens nested frame instances without replacing the par
     await expect(parent.locator("a", { hasText: "Open child" })).toBeFocused();
 });
 
+async function mountRefreshOverlayStack(
+    page,
+    { method = "replace", ignored = true, hostLoading = "eager", nestedLazy = false } = {},
+) {
+    const requests = [];
+    let pageRequests = 0;
+    const shell = `<div data-controller="modal" data-hotwire-overlay-host="modal" data-modal-lock-scroll-class="overflow-hidden">
+        <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+            <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="modal" loading="${hostLoading}" data-modal-target="dynamicContent"></turbo-frame></div>
+        </div>
+    </div>`;
+    await page.route("http://overlays.test/**", async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+        if (path === "/") {
+            pageRequests++;
+            return route.fulfill({
+                contentType: "text/html",
+                body: `<html><body><p id="page-version">Page ${pageRequests}</p>${shell}</body></html>`,
+            });
+        }
+        if (path === "/save") {
+            return route.fulfill({
+                contentType: "text/vnd.turbo-stream.html",
+                body: `<turbo-stream action="refresh" method="${method}" ${ignored ? `request-id="${request.headers()["x-turbo-request-id"]}"` : ""}></turbo-stream>`,
+            });
+        }
+        requests.push(path);
+        const frameId = request.headers()["turbo-frame"];
+        const content =
+            path === "/details"
+                ? "<p>Details loaded</p>"
+                : `<input aria-label="Draft"><a href="/editor" data-turbo-frame="modal">Child editor</a><form method="post" action="/save"><button>Save without navigation</button></form>${nestedLazy ? `<turbo-frame id="${frameId}-details" loading="lazy" src="/details" hidden></turbo-frame>` : ""}`;
+        return route.fulfill({
+            contentType: "text/html",
+            body: `<turbo-frame id="${frameId}">${content}</turbo-frame>`,
+        });
+    });
+    await page.goto("http://overlays.test/");
+    await page.setContent(`
+        <a href="/editor" data-turbo-frame="modal">Open editor</a>
+        ${shell}
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        const original = window.Turbo.StreamActions.refresh;
+        window.refreshCalls = 0;
+        window.Turbo.StreamActions.refresh = function () {
+            window.refreshCalls++;
+            return original.call(this);
+        };
+    });
+    await page.getByRole("link", { name: "Open editor", exact: true }).click();
+    const openings = page.locator("[data-hotwire-overlay-instance]");
+    const parent = openings.first();
+    await parent.getByLabel("Draft").fill("Unsaved parent");
+    await parent.getByRole("link", { name: "Child editor", exact: true }).click();
+    const child = openings.last();
+    await child.getByLabel("Draft").fill("Unsaved child");
+
+    return { openings, parent, child, requests, pageRequests: () => pageRequests };
+}
+
+test("a refresh ignored by Turbo does not close stacked overlay drafts", async ({ page }) => {
+    const { openings, parent, child, requests, pageRequests } = await mountRefreshOverlayStack(page);
+    await child.getByRole("button", { name: "Save without navigation", exact: true }).click();
+
+    await expect.poll(() => page.evaluate(() => window.refreshCalls)).toBe(1);
+    await expect(page.locator("turbo-stream")).toHaveCount(0);
+    await expect(openings).toHaveCount(2);
+    await expect(parent.getByLabel("Draft")).toHaveValue("Unsaved parent");
+    await expect(child.getByLabel("Draft")).toHaveValue("Unsaved child");
+    expect(requests).toEqual(["/editor", "/editor"]);
+    expect(pageRequests()).toBe(1);
+});
+
+for (const method of ["replace", "morph"]) {
+    test(`an accepted ${method} refresh runs once and discards the overlay stack`, async ({ page }) => {
+        const { openings, child, pageRequests } = await mountRefreshOverlayStack(page, { method, ignored: false });
+        await child.getByRole("button", { name: "Save without navigation", exact: true }).click();
+
+        await expect(page.locator("#page-version")).toHaveText("Page 2");
+        await expect(openings).toHaveCount(0);
+        await expect(page.locator('[data-hotwire-overlay-host="modal"]')).toHaveCount(1);
+        expect(await page.evaluate(() => window.refreshCalls)).toBe(1);
+        expect(pageRequests()).toBe(2);
+        await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
+    });
+}
+
+test("an explicit opening eagerly loads its hidden host without eagerly loading nested lazy frames", async ({
+    page,
+}) => {
+    const { openings, parent, child, requests } = await mountRefreshOverlayStack(page, {
+        hostLoading: "lazy",
+        nestedLazy: true,
+    });
+    await expect(openings).toHaveCount(2);
+    await expect(parent.locator('turbo-frame[data-modal-target="dynamicContent"]')).toHaveAttribute("loading", "eager");
+    await expect(child.locator('turbo-frame[data-modal-target="dynamicContent"]')).toHaveAttribute("loading", "eager");
+    await expect(page.locator('[data-hotwire-overlay-host="modal"] turbo-frame')).toHaveAttribute("loading", "lazy");
+    expect(requests).toEqual(["/editor", "/editor"]);
+
+    const details = child.locator('turbo-frame[loading="lazy"]');
+    await expect(details).toBeHidden();
+    await details.evaluate((frame) => {
+        frame.hidden = false;
+    });
+    await expect(details).toContainText("Details loaded");
+    expect(requests).toEqual(["/editor", "/editor", "/details"]);
+    await page.keyboard.press("Escape");
+    await expect(openings).toHaveCount(1);
+    await expect(parent.getByLabel("Draft")).toHaveValue("Unsaved parent");
+});
+
 test("a validation redirect preserves an instance's Frame context through the POST and redirected GET", async ({
     page,
 }) => {

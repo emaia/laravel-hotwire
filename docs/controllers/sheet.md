@@ -13,8 +13,10 @@ Controls `<hw:sheet>` open and close behavior. It is the sheet-flavoured variant
 - Turbo is optional and only needed when using dynamic frame content.
 
 `sheet` extends the drawer controller, so it supports the same Presence lifecycle, dynamic frame targets and stream-close
-behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams and `refresh` streams wait for actual exit
-motion before rendering. The overlay contract is `data-state="closed" data-motion="default" hidden inert`.
+behavior with the `data-sheet-*` target names. Empty `update`/`replace` streams for its root or primary Frame wait for
+actual exit motion before rendering; `closeOverlay($request->overlayOrigin())` is the common instance-specific close.
+Native `refresh` stays under Turbo's control and is not an implicit close signal. The overlay contract is
+`data-state="closed" data-motion="default" hidden inert`. See [overlay responses](../recipes/overlay-responses.md).
 
 Frame-backed `<hw:sheet>` marks its root with `data-hotwire-overlay-host` and assigns a concrete Frame id to each new
 opening. The canonical root remains the sole owner of new-opening interception; generated shells reuse this controller,

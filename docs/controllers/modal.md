@@ -146,7 +146,10 @@ element carrying `role="dialog"` when writing controller markup manually.
 
 ## With dynamic content via Turbo Frame
 
-The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically. Return an empty `update` or `replace` stream for the modal root or frame id, or a `refresh` stream, to close it after a successful action.
+The `dynamicContent` target is observed via `MutationObserver`. When content is inserted, the modal opens automatically.
+Use `closeOverlay($request->overlayOrigin())` to close the requesting instance. Empty `update`/`replace` Streams for its
+root or primary Frame remain supported. Native `refresh` is not intercepted as a close signal: an ignored refresh leaves
+the modal open, while an accepted page refresh can discard the whole stack. See [overlay responses](../recipes/overlay-responses.md).
 
 With a shared Blade frame host, the root declares `data-hotwire-overlay-host="modal"` and owns one empty
 `<turbo-frame id="modal" data-modal-target="dynamicContent">`. Links targeting that id open concrete instances with

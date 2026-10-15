@@ -154,18 +154,18 @@ ids and updates the persistent dialog references before opening:
 </hw:frame-or-page>
 ```
 
-When the frame receives content, the modal opens automatically. A successful action may close the modal by returning an
-empty `update` or `replace` stream for **the requesting Frame id**:
+When the frame receives content, the modal opens automatically. Close only the submitting instance through the common
+overlay response macro:
 
 ```php
-return turbo_stream()->update($request->turboFrameId());
+return turbo_stream()->closeOverlay($request->overlayOrigin());
 ```
 
 The host can generate multiple instances from one declaration. Links targeting `modal` open a new instance (including
 links in an existing modal); links and forms without an explicit Frame target inside the opened content stay in that
 instance. The server view keeps `<hw:frame-or-page frame="modal">`, which emits the generated Frame id when responding
 to that instance. The package handles shell ids, accessible references, stacking and cleanup. Use the concrete id from
-the request for an empty close stream: updating the canonical `modal` host does not close a child instance. A global
+the request if using an empty `update`/`replace` close stream instead: updating the canonical `modal` host does not close a child instance. A global
 `refresh` may discard a parent draft, so it is not a substitute for closing only the child. See
 [frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
 
@@ -378,10 +378,10 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
 
-For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
+For a frame-backed instance, use its validated request origin rather than the canonical host id:
 
 ```php
-return turbo_stream()->update('modal');
+return turbo_stream()->closeOverlay($request->overlayOrigin());
 ```
 
 ## Requirements

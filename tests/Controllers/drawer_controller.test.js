@@ -285,7 +285,7 @@ test.serial("empty streams for the drawer root wait for the close animation", as
     expect(root.innerHTML).toBe("");
 });
 
-test.serial("refresh streams wait for the drawer close animation", async () => {
+test.serial("refresh streams stay native and do not implicitly close a drawer", async () => {
     await mount(frameHtml());
     const frame = document.getElementById("drawer-frame");
 
@@ -298,22 +298,14 @@ test.serial("refresh streams wait for the drawer close animation", async () => {
     const stream = document.createElement("turbo-stream");
     stream.setAttribute("action", "refresh");
 
-    let rendered = false;
-    stream.performAction = () => {
-        rendered = true;
-    };
-
     document.body.appendChild(stream);
-    stream.dispatchEvent(new CustomEvent("turbo:before-stream-render", { bubbles: true }));
+    const event = new CustomEvent("turbo:before-stream-render", { bubbles: true, cancelable: true });
+    stream.dispatchEvent(event);
 
-    expect(rendered).toBe(false);
-    expect(mounted.controller.isOpen).toBe(false);
-    expect(modal().hidden).toBe(true);
-
-    await wait(10);
-
-    expect(rendered).toBe(true);
-    expect(modal().hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(modal().hidden).toBe(false);
+    expect(frame.innerHTML).toContain("Loaded drawer form");
 });
 
 test.serial("frame fetches use default and per-link loading templates", async () => {

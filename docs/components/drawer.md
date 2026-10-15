@@ -107,8 +107,8 @@ on the drawer host rather than only on the response's `<hw:frame-or-page>` becau
 does not copy attributes from the response frame.
 
 The drawer opens when the frame receives content. Per-link `data-loading-template="#template-id"` overrides the drawer's
-`loading_template` slot. Return an empty `update` or `replace` stream for the requesting Frame id to close it after a
-successful action. Stream rendering waits for the actual exit motion to finish.
+`loading_template` slot. Use `turbo_stream()->closeOverlay($request->overlayOrigin())` after a successful action to close
+only that instance. Empty `update`/`replace` streams for its primary Frame remain supported and wait for exit motion.
 
 One Drawer host can open several concrete instances. A link targeting its canonical Frame starts a new task; navigation
 inside an open instance without an explicit Frame target reuses it. To close only the submitting instance with an empty

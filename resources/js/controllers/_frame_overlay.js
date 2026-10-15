@@ -167,7 +167,7 @@ export function createFrameOverlay(controller) {
     function handleBeforeStreamRender(event) {
         const stream = event.target;
 
-        if (!isCloseStream(stream) || (!controller.isOpen && !controller.overlay?.isClosing)) {
+        if (!isEmptyStreamForCloseTarget(stream) || (!controller.isOpen && !controller.overlay?.isClosing)) {
             return;
         }
 
@@ -338,14 +338,6 @@ export function createFrameOverlay(controller) {
         if (!template) return true;
 
         return template.innerHTML.trim() === "";
-    }
-
-    function isCloseStream(stream) {
-        if (!stream) return false;
-
-        if (stream.getAttribute("action") === "refresh") return true;
-
-        return isEmptyStreamForCloseTarget(stream);
     }
 
     function isCloseTarget(target) {

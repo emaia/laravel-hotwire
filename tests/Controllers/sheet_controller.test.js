@@ -135,7 +135,7 @@ test("frame content opens the sheet and loading templates are injected", async (
     expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(false);
 });
 
-test("refresh streams wait for the sheet close animation", async () => {
+test("refresh streams stay native and do not implicitly close a sheet", async () => {
     await mountFrame();
     const frame = document.getElementById("settings-panel");
 
@@ -146,22 +146,14 @@ test("refresh streams wait for the sheet close animation", async () => {
     const refresh = document.createElement("turbo-stream");
     refresh.setAttribute("action", "refresh");
 
-    let refreshed = false;
-    refresh.performAction = () => {
-        refreshed = true;
-    };
-
     document.body.appendChild(refresh);
-    refresh.dispatchEvent(new CustomEvent("turbo:before-stream-render", { bubbles: true }));
+    const event = new CustomEvent("turbo:before-stream-render", { bubbles: true, cancelable: true });
+    refresh.dispatchEvent(event);
 
-    expect(refreshed).toBe(false);
-    expect(mounted.controller.isOpen).toBe(false);
-    expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(true);
-
-    await wait(10);
-
-    expect(refreshed).toBe(true);
-    expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(document.querySelector('[data-sheet-target="modal"]').hidden).toBe(false);
+    expect(frame.innerHTML).toContain("Settings form");
 });
 
 test("empty root streams wait for the sheet close animation", async () => {

@@ -78,17 +78,17 @@ Both links reach the same route and render the same view. Only the request conte
 
 ## Close on success
 
-After a successful frame submission, refresh the underlying page, clear the modal frame and show feedback:
+After a successful overlay submission, close its concrete instance and show feedback. Use targeted Streams for any
+background content that needs updating rather than discarding other drafts with a page refresh:
 
 ```php
 public function update(UpdateUserRequest $request, User $user)
 {
     $user->update($request->validated());
 
-    if ($request->turboFrameId() === 'modal' && $request->wantsTurboStream()) {
+    if ($request->wasFromTurboFrame() && $request->wantsTurboStream()) {
         return turbo_stream()
-            ->refresh(method: 'morph')
-            ->update('modal')
+            ->closeOverlay($request->overlayOrigin())
             ->toast('success', 'Password updated');
     }
 
@@ -106,26 +106,11 @@ The [`toast()` stream macro](../components/toast.md#the-toast-stream-macro) is r
 
 ## How it works
 
-`<hw:frame-or-page>` packages a small request-header branch. The equivalent lower-level layout looks like this:
-
-```blade
-{{-- resources/views/components/layouts/modal-base.blade.php --}}
-@if (request()->turboFrameId() === 'modal')
-    <hw:frame id="modal">
-        {{ $slot }}
-    </hw:frame>
-@else
-    <x-layouts.dashboard>
-        {{ $slot }}
-    </x-layouts.dashboard>
-@endif
-```
-
-`turboFrameId()` returns the normalized `Turbo-Frame` request header or `null`. Keeping this branch at the layout
-boundary lets the view and controller remain independent of their presentation.
-
-Use the manual form when you need complete control over the layout branch itself. Prefer `<hw:frame-or-page>` for normal
-application views so frame matching, layout resolution and contextual content stay on the package's tested path.
+`turboFrameId()` returns the normalized `Turbo-Frame` request header or `null`, but a generated overlay instance uses
+its own concrete id, not the canonical `modal`. `<hw:frame-or-page>` validates the correlated host/instance context and
+emits the matching concrete Frame; a direct page request renders the layout instead. Keeping this branch at the view
+boundary lets the controller remain independent of the presentation. Do not replace it with a comparison to the literal
+`modal` id, which would send a standalone layout to a generated instance.
 
 ## Why this works well
 
