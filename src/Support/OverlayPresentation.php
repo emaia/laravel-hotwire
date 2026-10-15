@@ -13,7 +13,11 @@ final class OverlayPresentation
         'drawer' => ['up', 'right', 'down', 'left'],
     ];
 
-    /** @return array{family: ?string, side: ?string, size: ?string} */
+    /**
+     * Validate and normalize presentation options for the selected overlay family.
+     *
+     * @return array{family: ?string, side: ?string, size: ?string}
+     */
     public static function resolve(?string $family, ?string $side, ?string $size): array
     {
         if ($family === null && ($side !== null || $size !== null)) {

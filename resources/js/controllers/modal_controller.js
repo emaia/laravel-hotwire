@@ -142,7 +142,13 @@ export default class ModalController extends Controller {
         }
         if (!trigger?.matches?.("a[href]")) event?.preventDefault?.();
 
-        this.frameOverlay?.markDismissedWhileLoading();
+        if (
+            this.overlay?.isOpen ||
+            this.overlay?.isOpening ||
+            (this.hasDynamicContentTarget && this.dynamicContentTarget.hasAttribute("busy"))
+        ) {
+            this.frameOverlay?.markDismissedWhileLoading();
+        }
         dismissOverlayInstance(this);
         if (!this.overlay?.isOpen) return;
 

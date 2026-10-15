@@ -4,9 +4,18 @@ import { captureOverlayReturn, cleanupOverlayReturn, registerOverlayStreamAction
 
 const instances = new Map();
 const hosts = new Map();
+const staticOrigins = new Map();
 
 function instanceForFrame(frameId) {
     return [...instances.values()].find((record) => record.frame.id === frameId) ?? null;
+}
+
+function setRequestHeaders(headers, values) {
+    if (typeof headers.set === "function") {
+        for (const [name, value] of Object.entries(values)) headers.set(name, value);
+    } else {
+        Object.assign(headers, values);
+    }
 }
 
 function openOverlay(stream) {
@@ -18,7 +27,9 @@ function openOverlay(stream) {
     }
 
     const origin = stream.getAttribute("data-overlay-origin");
-    const parent = origin === null ? null : instanceForFrame(origin);
+    const staticParents = [...staticOrigins.values()].filter((record) => record.root.id === origin);
+    const parent =
+        origin === null ? null : (instanceForFrame(origin) ?? (staticParents.length === 1 ? staticParents[0] : null));
     if (origin !== null && (!parent || parent.retired || !parent.root.isConnected || !parent.controller()?.isOpen)) {
         console.error(`Overlay open origin [${origin}] is no longer active.`);
         return;
@@ -32,8 +43,9 @@ function retire(record) {
     record.retired = true;
     cleanupOverlayReturn(record);
     instances.delete(record.root);
-    record.owner.delete(record);
-    if (record.owner.size === 0) record.observer.disconnect();
+    if (staticOrigins.get(record.root) === record) staticOrigins.delete(record.root);
+    record.owner?.delete(record);
+    if (record.owner?.size === 0) record.observer.disconnect();
 
     for (const child of [...instances.values()]) {
         if (child.parent !== record) continue;
@@ -41,6 +53,34 @@ function retire(record) {
         child.controller()?.overlay?.closeNow({ restoreFocus: false });
         child.root.remove();
     }
+}
+
+function registerStaticOrigin(controller) {
+    const root = controller.element;
+    if (root.hasAttribute("data-hotwire-overlay-instance")) return null;
+    let record = null;
+    const opened = (event) => {
+        if (event && event.target !== root) return;
+        if (!root.id || record) return;
+        record = { root, retired: false, controller: () => controller };
+        staticOrigins.set(root, record);
+    };
+    const closed = (event) => {
+        if (event && event.target !== root) return;
+        if (record) retire(record);
+        record = null;
+    };
+    root.addEventListener(`${controller.identifier}:opened`, opened);
+    root.addEventListener(`${controller.identifier}:closed`, closed);
+    if (controller.isOpen) opened();
+
+    return {
+        cleanup() {
+            root.removeEventListener(`${controller.identifier}:opened`, opened);
+            root.removeEventListener(`${controller.identifier}:closed`, closed);
+            closed();
+        },
+    };
 }
 
 export function dismissOverlayInstance(controller) {
@@ -55,12 +95,14 @@ export function createOverlayHost(controller) {
     const root = controller.element;
     const family = controller.identifier;
     const hostId = root.getAttribute("data-hotwire-overlay-host");
+    let turboModule;
     if (hostId || root.ownerDocument.defaultView?.customElements?.get("turbo-stream")) {
-        void import("@hotwired/turbo").then(({ StreamActions }) =>
+        turboModule = import("@hotwired/turbo");
+        void turboModule.then(({ StreamActions }) =>
             registerOverlayStreamActions(instanceForFrame, StreamActions, openOverlay),
         );
     }
-    if (!hostId) return null;
+    if (!hostId) return registerStaticOrigin(controller);
 
     const template = root.cloneNode(true);
     const owned = new Set();
@@ -84,8 +126,11 @@ export function createOverlayHost(controller) {
     }
 
     function openingFor(element) {
-        const ancestor = element?.closest("[data-hotwire-overlay-instance]");
-        return ancestor ? (instances.get(ancestor) ?? null) : null;
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            const record = instances.get(ancestor) ?? staticOrigins.get(ancestor);
+            if (record) return record;
+        }
+        return null;
     }
 
     function cloneShell(token) {
@@ -168,6 +213,16 @@ export function createOverlayHost(controller) {
     }
 
     async function open(link) {
+        const message = link.getAttribute("data-turbo-confirm");
+        if (message) {
+            const { config } = await turboModule;
+            const confirmed =
+                typeof config?.forms?.confirm === "function"
+                    ? await config.forms.confirm(message, link)
+                    : window.confirm(message);
+            if (!confirmed || !link.isConnected || link.closest("[data-turbo]")?.getAttribute("data-turbo") === "false")
+                return;
+        }
         const returnContext = captureOverlayReturn(link);
         if (returnContext?.renderer) {
             const feedback = template.querySelector("template[data-hotwire-overlay-return-feedback]")?.content;
@@ -241,6 +296,13 @@ export function createOverlayHost(controller) {
             return;
         const link = event.target.closest?.("a[href][data-turbo-frame]");
         if (!owns(link) || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+        if (
+            link.closest("[data-turbo]")?.getAttribute("data-turbo") === "false" ||
+            link.hasAttribute("data-turbo-method") ||
+            link.hasAttribute("data-turbo-stream") ||
+            new URL(link.href).origin !== location.origin
+        )
+            return;
         if (document.querySelectorAll(`[data-hotwire-overlay-host="${CSS.escape(hostId)}"]`).length !== 1) {
             event.preventDefault();
             console.error(`The overlay frame [${hostId}] must have exactly one host.`);
@@ -256,28 +318,28 @@ export function createOverlayHost(controller) {
     }
 
     function beforeRequest(event) {
-        const record = openingFor(event.target);
-        if (!record || !owned.has(record) || record.retired) return;
         const headers = event.detail.fetchOptions.headers;
-        const requestFrame = typeof headers.get === "function" ? headers.get("Turbo-Frame") : headers["Turbo-Frame"];
-        const nearestFrame = event.target.closest?.("turbo-frame");
-        if (
-            (!record.frame.contains(event.target) && event.target !== record.frame) ||
-            (requestFrame && requestFrame !== nearestFrame?.id) ||
-            (nearestFrame !== record.frame && !requestFrame)
-        )
-            return;
-        if (typeof headers.set === "function") headers.set("X-Hotwire-Overlay-Origin", record.frame.id);
-        else headers["X-Hotwire-Overlay-Origin"] = record.frame.id;
-        if (nearestFrame !== record.frame) return;
-        if (event.target === record.frame) delete event.detail.fetchRequest;
-        if (typeof headers.set === "function") {
-            headers.set("X-Hotwire-Overlay-Host", hostId);
-            headers.set("X-Hotwire-Overlay-Instance", record.token);
-        } else {
-            headers["X-Hotwire-Overlay-Host"] = hostId;
-            headers["X-Hotwire-Overlay-Instance"] = record.token;
+        const requestFrame = new Headers(headers).get("Turbo-Frame");
+        if (!requestFrame) return;
+        const destination = document.getElementById(requestFrame);
+        const record = openingFor(destination);
+        if (!record || !owned.has(record) || record.retired) return;
+        if (destination !== record.frame && !record.frame.contains(destination)) return;
+        if (event.target instanceof HTMLFormElement) {
+            record.submittedForm = event.target;
+            if (record.returnApplied) {
+                record.returnApplied = false;
+                delete record.returnResult;
+                record.closeRequested = false;
+            }
         }
+
+        const context = { "X-Hotwire-Overlay-Origin": record.frame.id };
+        if (destination === record.frame) {
+            context["X-Hotwire-Overlay-Host"] = hostId;
+            context["X-Hotwire-Overlay-Instance"] = record.token;
+        }
+        setRequestHeaders(headers, context);
     }
 
     function closed(event) {

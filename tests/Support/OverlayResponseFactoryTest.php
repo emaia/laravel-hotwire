@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
+use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ViewErrorBag;
@@ -108,6 +109,20 @@ it('rejects cross-origin, protocol-relative and fragmented source URLs', functio
     expect(fn () => response()->modal()->open('<form></form>', source: $source))
         ->toThrow(InvalidArgumentException::class, 'same-origin URL');
 })->with(['https://other.test/create', '//other.test/create', '/create#fragment', 'http://[']);
+
+it('compares absolute source URLs using their effective protocol port', function () {
+    $request = Request::create('http://localhost:8000/');
+    app()->instance('request', $request);
+
+    expect(fn () => response()->modal()->open('Form', source: 'http://localhost/create'))
+        ->toThrow(InvalidArgumentException::class, 'same-origin URL');
+    expect(response()->modal()->open('Form', source: 'http://localhost:8000/create')->toHtml())
+        ->toContain('data-overlay-source="http://localhost:8000/create"');
+
+    app()->instance('request', Request::create('https://localhost/'));
+    expect(response()->modal()->open('Form', source: 'https://localhost:443/create')->toHtml())
+        ->toContain('data-overlay-source="https://localhost:443/create"');
+});
 
 it('rejects incompatible presentation and invalid targets instead of silently choosing a default', function () {
     expect(fn () => response()->modal()->open('Review', side: 'left'))

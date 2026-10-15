@@ -116,6 +116,7 @@ function rendererFeedback(record, message, retryable = false) {
         });
         record.frame.append(status);
     }
+    record.returnFeedback = status;
     status.querySelector("[data-hotwire-overlay-return-message]").textContent = message;
     const retry = status.querySelector("[data-hotwire-overlay-return-retry]");
     retry.hidden = !retryable;
@@ -134,7 +135,26 @@ function ensureReturnContext(record) {
 
 export function cleanupOverlayReturn(record) {
     record.returnRequest?.abort();
-    if (record.preventReturnResubmit) record.root.removeEventListener("submit", record.preventReturnResubmit, true);
+    releaseReturnForm(record);
+}
+
+function releaseReturnForm(record) {
+    record.returnForm?.removeEventListener("submit", record.preventReturnResubmit, true);
+    for (const button of record.returnDisabledButtons ?? []) button.disabled = false;
+    record.returnForm = null;
+    record.returnDisabledButtons = [];
+}
+
+function lockReturnForm(record) {
+    const form = record.submittedForm ?? record.frame.querySelector("form");
+    if (!form || !record.frame.contains(form)) return;
+    record.returnForm = form;
+    record.preventReturnResubmit = (event) => event.preventDefault();
+    form.addEventListener("submit", record.preventReturnResubmit, true);
+    record.returnDisabledButtons = [...form.elements].filter(
+        (element) => ["submit", "image"].includes(element.type) && !element.disabled,
+    );
+    for (const button of record.returnDisabledButtons) button.disabled = true;
 }
 
 async function renderResult(record) {
@@ -194,6 +214,11 @@ function applyReturn(record, fragment) {
     const { region } = record.returnContext;
     region.replaceChildren(fragment.cloneNode(true));
     record.returnApplied = true;
+    const feedbackFocused = record.returnFeedback?.contains(document.activeElement);
+    record.returnFeedback?.remove();
+    record.returnFeedback = null;
+    releaseReturnForm(record);
+    if (feedbackFocused && !record.closeRequested) record.controller()?.modalTarget.focus({ preventScroll: true });
     region.dispatchEvent(new Event("input", { bubbles: true }));
     region.dispatchEvent(new Event("change", { bubbles: true }));
 }
@@ -236,12 +261,7 @@ export function registerOverlayStreamActions(findInstance, StreamActions, openOv
     StreamActions["hotwire-overlay-return"] = function () {
         const record = findInstance(this.getAttribute("target"));
         if (!record || record.returnApplied || record.returnFailed || record.returnResult !== undefined) return;
-        record.preventReturnResubmit = (event) => event.preventDefault();
-        record.root.addEventListener("submit", record.preventReturnResubmit, true);
-        for (const button of record.frame.querySelectorAll(
-            'button:not([type]), button[type="submit"], input[type="submit"], input[type="image"]',
-        ))
-            button.disabled = true;
+        lockReturnForm(record);
         if (!record.returnContext || !returnIsLive(record)) {
             reportReturnFailure(record);
             return;

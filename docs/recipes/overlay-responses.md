@@ -40,7 +40,9 @@ form should submit inside the overlay's Frame; validation redirects then reuse t
 
 When the opening response belongs to an existing overlay request, its validated origin is included automatically and
 the new instance is its child. To open as a child in another context, pass `origin:` explicitly. An invalid or retired
-origin does not fall back to the topmost overlay. With no origin, opening is top-level. For normal multi-step navigation
+origin does not fall back to the topmost overlay. An explicit `origin:` may also name a uniquely identified, currently
+open static Modal, Sheet or Drawer root; closing that root retires its generated children without erasing the static
+markup. With no origin, opening is top-level. For normal multi-step navigation
 inside an already open overlay, use an unqualified link inside its Frame instead of opening another instance.
 
 ## Return to a parent and close
@@ -97,6 +99,12 @@ An `open(...)` correlated to that origin creates its child, not a replacement si
 that child too. Opening from an already closed origin is rejected rather than attached to another active overlay.
 
 ## Loading and validation sources
+
+A host opening respects direct or inherited `data-turbo="false"` and the configured Turbo confirmation callback.
+Links with `data-turbo-method` or `data-turbo-stream` keep Turbo's native transport and target, rather than being
+converted into a GET opening. Use a family response to open a new instance from such an action. Requests targeting `_top`
+receive no overlay headers. A nested Frame targeting the primary Frame gets the primary instance context; requests
+remaining in an internal Frame carry only their enclosing origin.
 
 A Frame link to a canonical host is an **explicit opening**. Its generated primary Frame loads eagerly even if the
 hand-written host uses `loading="lazy"`, since a hidden overlay cannot intersect the viewport to begin its own request.
@@ -174,6 +182,10 @@ it closes only after the field is successfully updated. A temporary renderer fai
 the saved identity without repeating the creation POST. The successful child form cannot be resubmitted during this
 process. Closing/discarding its opening aborts the GET, and late/duplicate results cannot update another form.
 Without a close action, a successful return does not implicitly close the child.
+
+Only the submitted form is locked while its return is pending or needs retry. On successful return, the lock and pending
+alert are removed, so the user can save again or submit the next form in the same instance. Other forms in the instance
+are not disabled by that return.
 
 Frame-backed Blade hosts include the feedback template. Raw HTML hosts using this mode must include a
 `template[data-hotwire-overlay-return-feedback]` with a focusable `[data-hotwire-overlay-return-error]` alert containing

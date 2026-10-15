@@ -75,7 +75,7 @@ final readonly class OverlayResponse
             || ! in_array(strtolower($parts['scheme']), ['http', 'https'], true)
             || strtolower($parts['scheme']) !== request()->getScheme()
             || strcasecmp($parts['host'], request()->getHost()) !== 0
-            || ($parts['port'] ?? request()->getPort()) !== request()->getPort()) {
+            || ($parts['port'] ?? (strtolower($parts['scheme']) === 'https' ? 443 : 80)) !== request()->getPort()) {
             throw new InvalidArgumentException('Overlay source must be a safe same-origin URL.');
         }
     }

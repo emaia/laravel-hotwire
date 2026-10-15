@@ -518,6 +518,287 @@ async function mountRefreshOverlayStack(
     return { openings, parent, child, requests, pageRequests: () => pageRequests };
 }
 
+for (const target of ["form", "submitter"]) {
+    test(`a ${target} targeting _top does not send overlay headers on its POST or redirect`, async ({ page }) => {
+        const seen = [];
+        const server = createServer((request, response) => {
+            if (request.url === "/editor") {
+                response.writeHead(200, { "content-type": "text/html" });
+                response.end(
+                    `<turbo-frame id="${request.headers["turbo-frame"]}"><form action="/leave" method="post" ${target === "form" ? 'data-turbo-frame="_top"' : ""}><button ${target === "submitter" ? 'data-turbo-frame="_top"' : ""}>Leave page</button></form></turbo-frame>`,
+                );
+                return;
+            }
+            if (request.url === "/leave") {
+                seen.push(request.headers);
+                response.writeHead(303, { location: "/finished" });
+                response.end();
+                return;
+            }
+            if (request.url === "/finished") seen.push(request.headers);
+            response.writeHead(200, { "content-type": "text/html" });
+            response.end("<html><head></head><body><h1>Left overlay</h1></body></html>");
+        });
+        await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+        try {
+            await mountHostLinks(
+                page,
+                '<a href="/editor" data-turbo-frame="modal">Open editor</a>',
+                `http://127.0.0.1:${server.address().port}`,
+            );
+            await page.getByRole("link", { name: "Open editor" }).click();
+            await page.getByRole("button", { name: "Leave page", exact: true }).click();
+            await expect(page.getByRole("heading", { name: "Left overlay" })).toBeVisible();
+            expect(seen).toHaveLength(2);
+            for (const headers of seen) {
+                expect(headers["turbo-frame"]).toBeUndefined();
+                expect(headers["x-hotwire-overlay-origin"]).toBeUndefined();
+                expect(headers["x-hotwire-overlay-host"]).toBeUndefined();
+                expect(headers["x-hotwire-overlay-instance"]).toBeUndefined();
+            }
+        } finally {
+            await new Promise((resolve) => server.close(resolve));
+        }
+    });
+}
+
+test("a nested Frame form targeting its primary overlay Frame carries full correlation", async ({ page }) => {
+    const { child } = await mountRefreshOverlayStack(page);
+    const id = await child.locator("turbo-frame").getAttribute("id");
+    let headers;
+    await page.route("http://overlays.test/target", async (route) => {
+        headers = route.request().headers();
+        const responseId = headers["x-hotwire-overlay-host"] ? headers["turbo-frame"] : "modal";
+        await route.fulfill({
+            contentType: "text/html",
+            body: `<turbo-frame id="${responseId}"><p>Primary Frame updated</p></turbo-frame>`,
+        });
+    });
+    await child.locator("turbo-frame").evaluate((frame, id) => {
+        frame.insertAdjacentHTML(
+            "beforeend",
+            `<turbo-frame id="nested-editor"><form data-turbo-frame="${id}" action="/target" method="post"><button>Update primary</button></form></turbo-frame>`,
+        );
+    }, id);
+    await child.getByRole("button", { name: "Update primary" }).click();
+    await expect(child).toContainText("Primary Frame updated");
+    expect(headers["x-hotwire-overlay-origin"]).toBe(id);
+    expect(headers["x-hotwire-overlay-host"]).toBe("modal");
+    expect(headers["x-hotwire-overlay-instance"]).toBe(id.slice("modal--".length));
+});
+
+test("closing an idle static Modal does not suppress its next streamed content opening", async ({ page }) => {
+    await page.setContent(`<div id="static-frame-modal" data-controller="modal">
+        <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+            <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="static-content" data-modal-target="dynamicContent"></turbo-frame></div>
+        </div>
+    </div>`);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+    await expect
+        .poll(() => page.evaluate(() => typeof window.Turbo.StreamActions["hotwire-overlay-close"]))
+        .toBe("function");
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(
+            '<turbo-stream action="hotwire-overlay-close" target="static-frame-modal"></turbo-stream>',
+        ),
+    );
+    await expect(page.locator("turbo-stream")).toHaveCount(0);
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(
+            '<turbo-stream action="update" target="static-content"><template><button>New content</button></template></turbo-stream>',
+        ),
+    );
+    await expect(page.locator('[data-modal-target="modal"]')).toHaveAttribute("data-state", "open");
+});
+
+test("a static root can own a streamed child and closing it retires that child", async ({ page }) => {
+    const { openings } = await mountRefreshOverlayStack(page);
+    await page.keyboard.press("Escape");
+    await expect(openings).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(openings).toHaveCount(0);
+    await page.evaluate(() =>
+        document.body.insertAdjacentHTML(
+            "beforeend",
+            `<div id="static-origin" data-controller="modal">
+        <button data-action="modal#open">Open static origin</button>
+        <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+            <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><p>Static draft</p></div>
+        </div>
+    </div>`,
+        ),
+    );
+    await page.getByRole("button", { name: "Open static origin" }).click();
+    await expect(page.locator('#static-origin [data-modal-target="modal"]')).toHaveAttribute("data-state", "open");
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(
+            '<turbo-stream action="hotwire-overlay-open" target="modal" data-overlay-family="modal" data-overlay-origin="static-origin"><template><p>Static complementary form</p></template></turbo-stream>',
+        ),
+    );
+    await expect(openings).toHaveCount(1);
+    await expect(openings).toContainText("Static complementary form");
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(
+            '<turbo-stream action="hotwire-overlay-close" target="static-origin"></turbo-stream>',
+        ),
+    );
+    await expect(openings).toHaveCount(0);
+    await expect(page.locator('#static-origin [data-modal-target="modal"]')).toHaveAttribute("data-state", "closed");
+    await expect(page.locator("#static-origin")).toContainText("Static draft");
+});
+
+async function mountHostLinks(page, links, origin = "http://overlays.test") {
+    await page.route("http://overlays.test/", (route) =>
+        route.fulfill({ contentType: "text/html", body: "<html><body></body></html>" }),
+    );
+    await page.goto(`${origin}/`);
+    await page.setContent(`${links}<p id="link-result"></p><div data-controller="modal" data-hotwire-overlay-host="modal">
+        <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+            <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+        </div>
+    </div>`);
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+    });
+}
+
+for (const inherited of [false, true]) {
+    test(`host links respect ${inherited ? "inherited" : "direct"} Turbo opt-out`, async ({ page }) => {
+        await mountHostLinks(
+            page,
+            inherited
+                ? '<div data-turbo="false"><a href="/native" data-turbo-frame="modal">Native link</a></div>'
+                : '<a href="/native" data-turbo-frame="modal" data-turbo="false">Native link</a>',
+        );
+        let seen;
+        await page.route("http://overlays.test/native", (route) => {
+            seen = {
+                navigation: route.request().isNavigationRequest(),
+                frame: route.request().headers()["turbo-frame"],
+            };
+            return route.fulfill({
+                contentType: "text/html",
+                body: "<html><body><h1>Native destination</h1></body></html>",
+            });
+        });
+        await page.getByRole("link", { name: "Native link" }).click();
+        await expect.poll(() => seen).toEqual({ navigation: true, frame: undefined });
+    });
+}
+
+test("method host links remain native Turbo submissions and keep their confirmation", async ({ page }) => {
+    await mountHostLinks(
+        page,
+        '<a href="/destroy" data-turbo-frame="modal" data-turbo-method="delete" data-turbo-confirm="Delete?">Delete record</a>',
+    );
+    let method;
+    let headers;
+    await page.route("http://overlays.test/destroy", (route) => {
+        method = route.request().method();
+        headers = route.request().headers();
+        return route.fulfill({
+            contentType: "text/vnd.turbo-stream.html",
+            body: '<turbo-stream action="update" target="link-result"><template>Deleted</template></turbo-stream>',
+        });
+    });
+    await page.evaluate(() => {
+        window.confirmCalls = 0;
+        window.Turbo.config.forms.confirm = async () => {
+            window.confirmCalls++;
+            return true;
+        };
+    });
+    await page.getByRole("link", { name: "Delete record" }).click();
+    await expect.poll(() => method).toBe("DELETE");
+    await expect(page.locator("#link-result")).toHaveText("Deleted");
+    expect(await page.evaluate(() => window.confirmCalls)).toBe(1);
+    expect(headers["x-hotwire-overlay-host"]).toBeUndefined();
+    expect(headers["turbo-frame"]).toBe("modal");
+    expect(headers["x-hotwire-overlay-origin"]).toBeUndefined();
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
+
+for (const status of [200, 422]) {
+    test(`a method host link keeps its native target for a ${status} Frame response`, async ({ page }) => {
+        await mountHostLinks(
+            page,
+            '<a href="/method-opening" data-turbo-frame="modal" data-turbo-method="post">Open with POST</a>',
+        );
+        await page.route("http://overlays.test/method-opening", (route) =>
+            route.fulfill({
+                status,
+                contentType: "text/html",
+                body: `<turbo-frame id="${route.request().headers()["turbo-frame"]}"><p>Method response</p></turbo-frame>`,
+            }),
+        );
+        await page.getByRole("link", { name: "Open with POST" }).click();
+        await expect(page.locator("turbo-frame#modal")).toContainText("Method response");
+        await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    });
+}
+
+for (const accepted of [false, true]) {
+    test(`GET host opening honors a confirmation result of ${accepted}`, async ({ page }) => {
+        await mountHostLinks(
+            page,
+            '<a href="/confirmed" data-turbo-frame="modal" data-turbo-confirm="Open?">Confirmed opening</a>',
+        );
+        let requests = 0;
+        await page.route("http://overlays.test/confirmed", (route) => {
+            requests++;
+            return route.fulfill({
+                contentType: "text/html",
+                body: `<turbo-frame id="${route.request().headers()["turbo-frame"]}"><p>Confirmed content</p></turbo-frame>`,
+            });
+        });
+        await page.evaluate((accepted) => {
+            window.confirmCalls = 0;
+            window.Turbo.config.forms.confirm = async () => {
+                window.confirmCalls++;
+                return accepted;
+            };
+        }, accepted);
+        await page.getByRole("link", { name: "Confirmed opening" }).click();
+        await expect.poll(() => page.evaluate(() => window.confirmCalls)).toBe(1);
+        await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(accepted ? 1 : 0);
+        if (accepted) await expect(page.locator("[data-hotwire-overlay-instance]")).toContainText("Confirmed content");
+        expect(requests).toBe(accepted ? 1 : 0);
+    });
+}
+
+test("declining a method link confirmation sends no request and creates no opening", async ({ page }) => {
+    await mountHostLinks(
+        page,
+        '<a href="/destroy" data-turbo-frame="modal" data-turbo-method="delete" data-turbo-confirm="Delete?">Delete record</a>',
+    );
+    let requests = 0;
+    await page.route("http://overlays.test/destroy", (route) => {
+        requests++;
+        return route.fulfill({ status: 204 });
+    });
+    await page.evaluate(() => {
+        window.confirmCalls = 0;
+        window.Turbo.config.forms.confirm = async () => {
+            window.confirmCalls++;
+            return false;
+        };
+    });
+    await page.getByRole("link", { name: "Delete record" }).click();
+    await expect.poll(() => page.evaluate(() => window.confirmCalls)).toBe(1);
+    expect(requests).toBe(0);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
+
 test("a refresh ignored by Turbo does not close stacked overlay drafts", async ({ page }) => {
     const { openings, parent, child, requests, pageRequests } = await mountRefreshOverlayStack(page);
     await child.getByRole("button", { name: "Save without navigation", exact: true }).click();
@@ -855,7 +1136,7 @@ test("retrying a failed consumer renderer does not repeat customer creation", as
     expect(attempts).toBe(2);
 });
 
-async function setupRenderedReturn(page, render, { feedback = true, result = "42" } = {}) {
+async function setupRenderedReturn(page, render, { feedback = true, result = "42", close = true } = {}) {
     let creations = 0;
     await page.route("http://overlays.test/**", async (route) => {
         const request = route.request();
@@ -866,7 +1147,7 @@ async function setupRenderedReturn(page, render, { feedback = true, result = "42
             const origin = request.headers()["x-hotwire-overlay-origin"];
             return route.fulfill({
                 contentType: "text/vnd.turbo-stream.html",
-                body: `<turbo-stream action="hotwire-overlay-return" target="${origin}" ${result === null ? "" : `data-overlay-result="${result}"`}><template><option>Native fallback must not be used</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>`,
+                body: `<turbo-stream action="hotwire-overlay-return" target="${origin}" ${result === null ? "" : `data-overlay-result="${result}"`}><template><option>Native fallback must not be used</option></template></turbo-stream>${close ? `<turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>` : ""}`,
             });
         }
         const body =
@@ -899,6 +1180,115 @@ async function setupRenderedReturn(page, render, { feedback = true, result = "42
 
     return { creations: () => creations };
 }
+
+test("a successful rich return without close removes its pending alert", async ({ page }) => {
+    await setupRenderedReturn(
+        page,
+        (route) => route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Selected customer</p>' }),
+        { close: false },
+    );
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).evaluate((button) => {
+        button.form.insertAdjacentHTML("afterbegin", '<input type="hidden" name="_token" value="csrf-token">');
+    });
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.locator(".rich-result")).toHaveText("Selected customer");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect
+        .poll(() =>
+            page.locator("[data-hotwire-overlay-instance]").evaluate((root) => root.contains(document.activeElement)),
+        )
+        .toBe(true);
+});
+
+test("save and continue can submit the next form after returning a saved customer", async ({ page }) => {
+    await setupRenderedReturn(
+        page,
+        (route) => route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Selected customer</p>' }),
+        { close: false },
+    );
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.locator(".rich-result")).toHaveText("Selected customer");
+    const id = await page.locator("[data-hotwire-overlay-instance] turbo-frame").getAttribute("id");
+    let continued = 0;
+    await page.route("http://overlays.test/continue", (route) => {
+        continued++;
+        return route.fulfill({
+            contentType: "text/html",
+            body: `<turbo-frame id="${id}"><p>Continuation saved</p></turbo-frame>`,
+        });
+    });
+    await page.evaluate(
+        (id) =>
+            window.Turbo.renderStreamMessage(
+                `<turbo-stream action="update" target="${id}"><template><form method="post" action="/continue"><button>Save next step</button></form></template></turbo-stream>`,
+            ),
+        id,
+    );
+    await page.getByRole("button", { name: "Save next step" }).click();
+    await expect.poll(() => continued).toBe(1);
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toContainText("Continuation saved");
+});
+
+test("a completed return allows a later save on the same form to return again", async ({ page }) => {
+    let renders = 0;
+    const scenario = await setupRenderedReturn(
+        page,
+        (route) => {
+            renders++;
+            return route.fulfill({ contentType: "text/html", body: `<p class="rich-result">Selection ${renders}</p>` });
+        },
+        { close: false },
+    );
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.locator(".rich-result")).toHaveText("Selection 1");
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.locator(".rich-result")).toHaveText("Selection 2");
+    expect(scenario.creations()).toBe(2);
+});
+
+test("a pending renderer locks only the saved form rather than other forms in the instance", async ({ page }) => {
+    let release;
+    const gate = new Promise((resolve) => {
+        release = resolve;
+    });
+    await setupRenderedReturn(
+        page,
+        async (route) => {
+            await gate;
+            await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Returned</p>' });
+        },
+        { close: false },
+    );
+    let unrelated = 0;
+    await page.route("http://overlays.test/unrelated", (route) => {
+        unrelated++;
+        return route.fulfill({
+            contentType: "text/vnd.turbo-stream.html",
+            body: '<turbo-stream action="update" target="other-result"><template>Other form saved</template></turbo-stream>',
+        });
+    });
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeVisible();
+    await page.locator("[data-hotwire-overlay-instance] turbo-frame").evaluate((frame) => {
+        frame.insertAdjacentHTML(
+            "beforeend",
+            '<form method="post" action="/unrelated"><button>Save other form</button></form><p id="other-result"></p>',
+        );
+    });
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await expect(page.getByRole("alert")).toContainText("Updating the parent field");
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
+    await page.getByRole("button", { name: "Save other form" }).click();
+    await expect(page.locator("#other-result")).toHaveText("Other form saved");
+    expect(unrelated).toBe(1);
+    release();
+    await expect(page.locator(".rich-result")).toHaveText("Returned");
+});
 
 test("a rich return without its feedback template fails before opening the creation form", async ({ page }) => {
     const errors = [];
@@ -1042,6 +1432,10 @@ for (const source of [
 }
 
 test("an ambiguous return region blocks opening instead of selecting a global field", async ({ page }) => {
+    await page.route("http://overlays.test/", (route) =>
+        route.fulfill({ contentType: "text/html", body: "<html><body></body></html>" }),
+    );
+    await page.goto("http://overlays.test/");
     const errors = [];
     page.on("console", (message) => {
         if (message.type() === "error") errors.push(message.text());
@@ -1337,6 +1731,10 @@ test("a generated Sheet instance uses the same hint and response presentation co
 });
 
 test("two families claiming the same Frame do not arbitrarily select a host", async ({ page }) => {
+    await page.route("http://overlays.test/", (route) =>
+        route.fulfill({ contentType: "text/html", body: "<html><body></body></html>" }),
+    );
+    await page.goto("http://overlays.test/");
     const errors = [];
     page.on("console", (message) => {
         if (message.type() === "error") errors.push(message.text());
@@ -2782,7 +3180,7 @@ async function browserControllerScript(path) {
     );
     const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
-        .replace('import("@hotwired/turbo")', "Promise.resolve({ StreamActions: window.Turbo?.StreamActions })")
+        .replace('import("@hotwired/turbo")', "Promise.resolve(window.Turbo ?? {})")
         .replace("export function createOverlayHost", "function createOverlayHost")
         .replace("export function dismissOverlayInstance", "function dismissOverlayInstance");
     const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8")).replace(
