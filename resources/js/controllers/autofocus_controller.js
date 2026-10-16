@@ -42,11 +42,25 @@ export default class extends Controller {
     shouldFocus() {
         const active = document.activeElement;
         if (!active || active === document.body) return true;
+        if (this.strategyValue === "first-invalid") {
+            // Validation may recover focus lost by a Frame swap, not take it from another form or overlay.
+            return active === this.element.closest('[role="dialog"], [role="alertdialog"]');
+        }
         return !this.element.contains(active);
     }
 
     resolveTarget() {
         switch (this.strategyValue) {
+            case "first-invalid":
+                return (
+                    [...this.element.querySelectorAll('[aria-invalid="true"]')].find(
+                        (element) =>
+                            (this.element.tagName !== "FORM" ||
+                                !("form" in element) ||
+                                element.form === this.element) &&
+                            isInvalidFocusCandidate(element),
+                    ) ?? null
+                );
             case "target":
                 return this.hasFieldTarget && isFocusable(this.fieldTarget) ? this.fieldTarget : null;
             case "first-focusable":
@@ -73,4 +87,25 @@ function isFocusable(element) {
     if (element.closest("[hidden]")) return false;
     if (element.closest('[aria-hidden="true"]')) return false;
     return true;
+}
+
+function isInvalidFocusCandidate(element) {
+    if (!isFocusable(element) || element.matches(":disabled") || element.closest('[inert], [aria-disabled="true"]'))
+        return false;
+    if (
+        !element.matches(
+            'input, select, textarea, button, a[href], [tabindex], [contenteditable="true"], [contenteditable=""]',
+        )
+    )
+        return false;
+    if (element.tabIndex < 0 && !element.isContentEditable) return false;
+
+    return (
+        typeof element.checkVisibility !== "function" ||
+        element.checkVisibility({
+            checkOpacity: false,
+            checkVisibilityCSS: true,
+            visibilityProperty: true,
+        })
+    );
 }

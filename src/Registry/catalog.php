@@ -496,8 +496,8 @@ return [
             'view' => 'hotwire::component-views.form',
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
-            'description' => 'Laravel form with CSRF, method spoofing, Turbo Frames, auto-submit and unsaved-change protection',
-            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'conditional-fields'],
+            'description' => 'Laravel form with CSRF, method spoofing, Turbo Frames, auto-submit, validation error focus and unsaved-change protection',
+            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'autofocus', 'clean-query-params', 'conditional-fields'],
             'styling' => [
                 'slots' => [
                     ['class' => Form::class],
@@ -1288,7 +1288,7 @@ return [
             'source' => 'resources/js/controllers/autofocus_controller.js',
             'docs' => 'docs/controllers/autofocus.md',
             'category' => 'forms',
-            'description' => 'Focuses a configured field initially and after relevant Turbo Frame loads',
+            'description' => 'Focuses a configured field or the first validation error initially and after relevant Turbo Frame loads',
         ],
         'back-to-top' => [
             'source' => 'resources/js/controllers/back_to_top_controller.js',

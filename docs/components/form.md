@@ -22,6 +22,7 @@ Form wrapper that composes optional Stimulus behaviors via boolean props. Render
 | `auto-submit-delay`  | `int\|string\|null` | `null`  | Global debounce delay for `auto-submit#debouncedSubmit`; the controller default is `300` ms when omitted                                                         |
 | `unsaved-changes`    | `bool`              | `false` | Warns before navigating away with unsaved changes                                                                                                                |
 | `error-scroll`       | `bool`              | `false` | Scrolls to the first validation error after form submission                                                                                                      |
+| `error-focus`        | `bool`              | `false` | Recovers lost focus on the first eligible invalid control after a validation render                                                                              |
 | `clean-query-params` | `bool`              | `false` | Strips empty fields from GET query strings before submission                                                                                                     |
 | `conditional-fields` | `bool`              | `false` | Adds the `conditional-fields` controller for nested `<hw:conditional-field>` dependents                                                                          |
 | `track-frame-src`    | `bool`              | `false` | Includes a hidden `_turbo_frame_src` input for correct redirect resolution inside Turbo Frames                                                                   |
@@ -163,6 +164,36 @@ array, or object readable by `data_get()`. On validation retries, Laravel's `old
 
 See [conditional-field](./conditional-field.md) and [conditional-fields controller](../controllers/conditional-fields.md).
 
+### error-focus
+
+Opt into keyboard focus recovery when a validation response replaces the form, especially inside a Turbo Frame or
+overlay. The response's first visible, enabled, focusable `[aria-invalid="true"]` control receives focus so the user can
+correct it immediately:
+
+```blade
+<hw:form :action="route('customers.store')" method="post" track-frame-src error-focus>
+    <hw:field name="name" label="Name" required>
+        <hw:input />
+    </hw:field>
+    <hw:field name="email" label="Email" required>
+        <hw:input type="email" />
+    </hw:field>
+    <hw:button type="submit">Save</hw:button>
+</hw:form>
+```
+
+This mounts [`autofocus`](../controllers/autofocus.md) with its `first-invalid` strategy. With no eligible errors it
+does nothing. It only recovers focus from the document body or the form's own dialog container; a focused field, button
+or another form/overlay keeps its focus. This does not change an overlay's `initial-focus` policy.
+
+Hidden, inert, disabled and negative-tabindex controls are skipped. Composite controls such as Multi Select expose
+`aria-invalid="true"` on their interactive trigger, not on the hidden submission control. Custom widgets must likewise
+mark an eligible interactive element. Controls explicitly associated with another form are ignored.
+
+Focus uses `preventScroll`; add `error-scroll` separately when the error should also be scrolled into view. While
+`error-focus` is enabled, `data-autofocus-*` attributes on the form are protected. For other autofocus strategies, leave
+the prop off and compose the standalone controller instead.
+
 ### error-scroll
 
 Scrolls to the first validation error after a form submission fails. Listens to `turbo:frame-render` (inside a Turbo
@@ -230,9 +261,9 @@ to descendant form requests, and never overwrites an explicit header. See
 
 ## Controller integrations
 
-`hotwire:check` detects the enabled `auto-submit`, `unsaved-changes`, `error-scroll`, `clean-query-params`, and
-`conditional-fields` integrations. These controllers auto-load from the package; publish one only when you want to
-customize its source.
+`hotwire:check` detects the enabled `auto-submit`, `unsaved-changes`, `error-scroll`, `autofocus` (via `error-focus`),
+`clean-query-params`, and `conditional-fields` integrations. These controllers auto-load from the package; publish one
+only when you want to customize its source.
 
 ## Styling hooks
 

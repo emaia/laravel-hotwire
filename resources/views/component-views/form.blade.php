@@ -8,6 +8,7 @@
         'id' => $form->id,
         'data-controller' => $controller ?: null,
         'data-auto-submit-delay-value' => $form->autoSubmit ? $form->autoSubmitDelay : null,
+        'data-autofocus-strategy-value' => $form->errorFocus ? 'first-invalid' : null,
         'data-turbo-frame' => $resolvedFrame,
         'method' => $isSpoofMethod ? 'post' : $method,
         'enctype' => $form->enctype,
@@ -17,6 +18,7 @@
         'auto-submit',
         'unsaved-changes',
         'error-scroll',
+        'error-focus',
         'clean-query-params',
         'conditional-fields',
         'track-frame-src',
@@ -28,6 +30,7 @@
         $form->autoSubmit ? 'data-auto-submit-' : null,
         $form->unsavedChanges ? 'data-unsaved-changes-' : null,
         $form->errorScroll ? 'data-error-scroll-' : null,
+        $form->errorFocus ? 'data-autofocus-' : null,
         $form->cleanQueryParams ? 'data-clean-query-params-' : null,
         $form->conditionalFields ? 'data-conditional-fields-' : null,
     ])));

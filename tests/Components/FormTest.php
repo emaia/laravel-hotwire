@@ -87,6 +87,30 @@ it('adds error-scroll controller when error-scroll is true', function () {
     $view->assertSee('data-controller="error-scroll"', false);
 });
 
+it('opts into focusing validation errors without changing default forms', function () {
+    $this->blade('<x-hw::form error-focus data-controller="analytics"><span>x</span></x-hw::form>')
+        ->assertSee('data-controller="autofocus analytics"', false)
+        ->assertSee('data-autofocus-strategy-value="first-invalid"', false)
+        ->assertDontSee(' error-focus', false);
+
+    $this->blade('<x-hw::form :error-focus="false"><span>x</span></x-hw::form>')
+        ->assertDontSee('data-controller', false)
+        ->assertDontSee('data-autofocus-', false)
+        ->assertDontSee(' error-focus', false);
+});
+
+it('protects autofocus configuration only when error-focus activates it', function () {
+    $this->blade('<x-hw::form error-focus data-autofocus-strategy-value="first-focusable" data-autofocus-scroll-into-view-value="true" data-autofocus-target="field"><span>x</span></x-hw::form>')
+        ->assertSee('data-autofocus-strategy-value="first-invalid"', false)
+        ->assertDontSee('first-focusable', false)
+        ->assertDontSee('data-autofocus-scroll-into-view-value', false)
+        ->assertDontSee('data-autofocus-target', false);
+
+    $this->blade('<x-hw::form data-controller="autofocus" data-autofocus-strategy-value="target"><span>x</span></x-hw::form>')
+        ->assertSee('data-controller="autofocus"', false)
+        ->assertSee('data-autofocus-strategy-value="target"', false);
+});
+
 it('adds conditional-fields controller when conditional-fields is true', function () {
     $view = $this->blade('<x-hw::form conditional-fields><span>x</span></x-hw::form>');
 
@@ -166,6 +190,7 @@ it('does not expose form root props as generic component data', function () {
         autoSubmit: true,
         unsavedChanges: true,
         errorScroll: true,
+        errorFocus: true,
         cleanQueryParams: true,
         conditionalFields: true,
         trackFrameSrc: true,
