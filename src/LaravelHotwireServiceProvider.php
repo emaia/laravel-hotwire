@@ -23,6 +23,7 @@ use Emaia\LaravelHotwire\Support\SessionToast;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
 use Emaia\LaravelHotwire\Support\ViteManifestCache;
 use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Foundation\Vite;
 use Illuminate\Foundation\ViteException;
 use Illuminate\Http\RedirectResponse;
@@ -93,6 +94,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         $this->registerTagCompiler($prefix);
         $this->registerToastMacro();
         $this->registerOverlayStreamMacros();
+        $this->registerOverlayReturnMacro();
         $this->registerOverlayResponseMacros();
         $this->registerOverlayOriginMacro();
         $this->registerRedirectToastMacro();
@@ -189,6 +191,31 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         });
     }
 
+    private function registerOverlayReturnMacro(): void
+    {
+        if (TurboStreamBuilder::hasMacro('returnFromOverlay')) {
+            return;
+        }
+
+        TurboStreamBuilder::macro('returnFromOverlay', function (string $origin, string|Htmlable $content, int|string|null $result = null) {
+            if (trim($origin) === '' || preg_match('/\s/', $origin)) {
+                throw new InvalidArgumentException('Overlay origin must identify an explicit instance or static root.');
+            }
+            $html = $content instanceof Htmlable ? $content->toHtml() : $content;
+            if (trim($html) === '') {
+                throw new InvalidArgumentException('An overlay return needs a non-empty fallback fragment for native consumers.');
+            }
+            if ($result !== null && trim((string) $result) === '') {
+                throw new InvalidArgumentException('An overlay return result must identify the saved record.');
+            }
+
+            /** @var TurboStreamBuilder $this */
+            return $this->action('hotwire-overlay-return', $origin, $html, $result === null ? [] : [
+                'data-overlay-result' => (string) $result,
+            ]);
+        });
+    }
+
     private function registerOverlayResponseMacros(): void
     {
         foreach (['modal', 'sheet', 'drawer'] as $family) {
@@ -206,7 +233,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
             return;
         }
 
-        Request::macro('overlayOrigin', function (): string {
+        Request::macro('overlayOrigin', function (): ?string {
             /** @var Request $this */
             return OverlayFrameContext::origin($this);
         });

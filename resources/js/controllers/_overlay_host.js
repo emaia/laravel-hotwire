@@ -19,10 +19,11 @@ function setRequestHeaders(headers, values) {
 }
 
 function openOverlay(stream) {
-    const hostId = stream.getAttribute("target");
-    const owners = [...(hosts.get(hostId) ?? [])];
-    if (owners.length !== 1 || owners[0].family !== stream.getAttribute("data-overlay-family")) {
-        console.error(`Overlay open requires exactly one matching host [${hostId}].`);
+    // Streams name a family, so the layout may give its single host any Frame id.
+    const family = stream.getAttribute("data-overlay-family");
+    const owners = [...hosts.values()].flatMap((entries) => [...entries]).filter((entry) => entry.family === family);
+    if (owners.length !== 1) {
+        console.error(`Overlay open requires exactly one registered host for the family [${family}].`);
         return;
     }
 

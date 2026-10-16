@@ -94,6 +94,79 @@ for (const family of ["modal", "sheet", "drawer"]) {
     });
 }
 
+async function mountFamilyHosts(page, hosts) {
+    const errors = [];
+    page.on("console", (message) => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    await page.setContent(
+        hosts
+            .map(
+                ({ family, id }) => `
+        <div data-controller="${family}" data-hotwire-overlay-host="${id}">
+            <div data-${family}-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                <div data-${family}-target="backdrop"></div>
+                <div data-${family}-target="dialog"><turbo-frame id="${id}" data-${family}-target="dynamicContent"></turbo-frame></div>
+            </div>
+        </div>`,
+            )
+            .join(""),
+    );
+    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ content: await browserOverlayControllerScript() });
+    await page.evaluate(() => {
+        window.StimulusApplication = window.Stimulus.Application.start();
+        window.StimulusApplication.register("modal", window.ModalController);
+        window.StimulusApplication.register("sheet", window.SheetController);
+        window.StimulusApplication.register("drawer", window.DrawerController);
+    });
+    await expect
+        .poll(() => page.evaluate(() => typeof window.Turbo.StreamActions["hotwire-overlay-open"]))
+        .toBe("function");
+
+    return errors;
+}
+
+test("a family Stream opens on the family's only host whatever its Frame id", async ({ page }) => {
+    const errors = await mountFamilyHosts(page, [
+        { family: "drawer", id: "cart-panel" },
+        { family: "modal", id: "modal" },
+    ]);
+
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(
+            '<turbo-stream action="hotwire-overlay-open" target="drawer" data-overlay-family="drawer"><template><p id="cart">Cart</p></template></turbo-stream>',
+        ),
+    );
+
+    const instance = page.locator('[data-controller="drawer"][data-hotwire-overlay-instance]');
+    await expect(instance).toHaveCount(1);
+    await expect(instance.locator("#cart")).toHaveText("Cart");
+    await expect(instance.locator("turbo-frame")).toHaveAttribute("id", /^cart-panel--[a-f0-9]{32}$/);
+    await expect(page.locator('[data-controller="modal"][data-hotwire-overlay-instance]')).toHaveCount(0);
+    expect(errors).toEqual([]);
+});
+
+test("a family Stream reports a missing or ambiguous host instead of choosing one", async ({ page }) => {
+    const errors = await mountFamilyHosts(page, [
+        { family: "modal", id: "modal" },
+        { family: "modal", id: "settings-modal" },
+    ]);
+
+    await page.evaluate(() =>
+        window.Turbo.renderStreamMessage(`
+        <turbo-stream action="hotwire-overlay-open" target="modal" data-overlay-family="modal"><template><p>Ambiguous</p></template></turbo-stream>
+        <turbo-stream action="hotwire-overlay-open" target="sheet" data-overlay-family="sheet"><template><p>Missing</p></template></turbo-stream>
+    `),
+    );
+
+    await expect.poll(() => errors.length).toBe(2);
+    expect(errors[0]).toContain("[modal]");
+    expect(errors[1]).toContain("[sheet]");
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+});
+
 test("a server Stream opens a Sheet from one host with presentation and a safe validation source", async ({ page }) => {
     const errors = [];
     page.on("console", (message) => {

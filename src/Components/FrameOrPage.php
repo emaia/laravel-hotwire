@@ -35,7 +35,6 @@ class FrameOrPage extends Component
         public ?string $overlaySide = null,
         public ?string $overlaySize = null,
     ) {
-        $this->presentation = OverlayPresentation::resolve($overlay, $overlaySide, $overlaySize);
         if (($frame === null) === ($frames === null)) {
             throw new InvalidArgumentException('Exactly one of the frame or frames props must be provided.');
         }
@@ -79,6 +78,11 @@ class FrameOrPage extends Component
         $this->activeFrameId = $this->activeFrameHost === null
             ? null
             : ($overlayContext === null ? $this->activeFrameHost : $overlayContext->frameId);
+        $this->presentation = OverlayPresentation::resolve(
+            OverlayPresentation::inferFamily($overlay, $this->activeFrameHost ?? $this->frameId, $overlaySide, $overlaySize),
+            $overlaySide,
+            $overlaySize,
+        );
     }
 
     public function render()

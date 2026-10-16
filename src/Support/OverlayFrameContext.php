@@ -34,8 +34,8 @@ final readonly class OverlayFrameContext
         return new self($host, $frameId);
     }
 
-    /** Resolve the current overlay's concrete Frame without falling back to a page or unrelated Frame. */
-    public static function origin(Request $request): string
+    /** Resolve the current overlay's concrete Frame, or null when the request carries no overlay context. */
+    public static function origin(Request $request): ?string
     {
         $origin = $request->header('X-Hotwire-Overlay-Origin');
         $context = self::fromHeaders(
@@ -45,13 +45,6 @@ final readonly class OverlayFrameContext
             $origin,
         );
 
-        if ($origin !== null) {
-            return $origin;
-        }
-        if ($context !== null) {
-            return $context->frameId;
-        }
-
-        throw new InvalidArgumentException('Overlay origin is missing from this request. Provide an explicit origin.');
+        return $origin ?? $context?->frameId;
     }
 }

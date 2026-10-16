@@ -33,10 +33,71 @@ it('resolves an explicit origin from a primary or nested overlay request', funct
     expect(request()->overlayOrigin())->toBe($id);
 });
 
-it('never guesses an origin from a normal Frame or page request', function () {
-    request()->headers->set('Turbo-Frame', 'modal');
+it('returns null for a page or normal Frame request instead of guessing an origin', function () {
+    expect(request()->overlayOrigin())->toBeNull();
 
-    expect(fn () => request()->overlayOrigin())->toThrow(InvalidArgumentException::class, 'Overlay origin');
+    request()->headers->set('Turbo-Frame', 'modal');
+    expect(request()->overlayOrigin())->toBeNull();
+
+    request()->headers->set('Turbo-Frame', 'customer-tabs');
+    expect(request()->overlayOrigin())->toBeNull();
+});
+
+it('rejects inconsistent overlay headers instead of treating them as absent', function () {
+    $token = str_repeat('a', 32);
+    request()->headers->set('Turbo-Frame', 'modal--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', 'modal');
+
+    expect(fn () => request()->overlayOrigin())->toThrow(InvalidArgumentException::class, 'Invalid overlay instance context');
+
+    request()->headers->remove('X-Hotwire-Overlay-Host');
+    request()->headers->set('X-Hotwire-Overlay-Origin', 'not an origin');
+    expect(fn () => request()->overlayOrigin())->toThrow(InvalidArgumentException::class, 'Invalid overlay origin context');
+});
+
+// --- Return to the opener ---
+
+it('returns a fragment to the captured parent region of an explicit origin', function () {
+    $origin = 'modal--'.str_repeat('a', 32);
+    $html = turbo_stream()
+        ->returnFromOverlay($origin, '<option value="7" selected>Acme</option>')
+        ->closeOverlay($origin)
+        ->toHtml();
+
+    expect($html)
+        ->toContain('action="hotwire-overlay-return" target="'.$origin.'"')
+        ->toContain('<option value="7" selected>Acme</option>')
+        ->not->toContain('data-overlay-result');
+});
+
+it('includes the saved record identity for a parent region with its own renderer', function (int|string $result, string $expected) {
+    $origin = 'modal--'.str_repeat('a', 32);
+    $view = view()->file(__DIR__.'/../Fixtures/views/overlay-content.blade.php', ['title' => 'Acme <Ltd>']);
+
+    expect(turbo_stream()->returnFromOverlay($origin, $view, result: $result)->toHtml())
+        ->toContain('data-overlay-result="'.$expected.'"')
+        ->toContain('Acme &lt;Ltd&gt;');
+})->with([
+    'integer key' => [42, '42'],
+    'uuid key' => ['0b6f4c1e-7d2a-4a7b-9b1e-1f2d3c4b5a69', '0b6f4c1e-7d2a-4a7b-9b1e-1f2d3c4b5a69'],
+]);
+
+it('requires an explicit origin and a non-empty fallback fragment to return', function () {
+    expect(fn () => turbo_stream()->returnFromOverlay('  ', '<option>Acme</option>'))
+        ->toThrow(InvalidArgumentException::class, 'Overlay origin');
+    expect(fn () => turbo_stream()->returnFromOverlay('modal--'.str_repeat('a', 32), ' '))
+        ->toThrow(InvalidArgumentException::class, 'fragment');
+    expect(fn () => turbo_stream()->returnFromOverlay('modal--'.str_repeat('a', 32), '<option>Acme</option>', result: ''))
+        ->toThrow(InvalidArgumentException::class, 'result');
+});
+
+it('does not replace an application returnFromOverlay macro', function () {
+    TurboStreamBuilder::flushMacros();
+    TurboStreamBuilder::macro('returnFromOverlay', fn () => 'application macro');
+
+    (new LaravelHotwireServiceProvider($this->app))->bootBladeIntegration();
+
+    expect(turbo_stream()->returnFromOverlay())->toBe('application macro');
 });
 
 it('closes only the explicitly named overlay while retaining other stream operations', function () {

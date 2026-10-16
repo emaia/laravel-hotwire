@@ -24,8 +24,9 @@ return response()->modal()->open(
 ```
 
 `open()` accepts a **content fragment**, not a full page layout or a `frame-or-page` view that chooses its page branch
-for the current request. It creates a new instance on the family's default host. Optional `host:` selects a different
-declared host of the same family; a missing or ambiguous host is reported rather than silently choosing another.
+for the current request. It creates a new instance on the family's host, whatever its Frame id: the layout declares
+one host per family. A missing host, or two hosts of the same family, is reported in the console rather than silently
+choosing one. Open an extra host of the same family through a Frame link to its id instead.
 Pass a **View instance** rather than an already rendered string when the fragment contains package components:
 `open(view('customers._form'), ...)` renders their generated ids in an isolated opening scope. Explicit application ids
 and ids already embedded in strings remain application-owned; keep them unique across simultaneous instances.
@@ -38,24 +39,37 @@ validation failure. The package sets the form's `_turbo_frame_src` to that URL a
 navigation. `source:` accepts a root-relative or same-origin absolute URL. A form without it is rejected. A streamed
 form should submit inside the overlay's Frame; validation redirects then reuse that concrete instance.
 
-When the opening response belongs to an existing overlay request, its validated origin is included automatically and
-the new instance is its child. To open as a child in another context, pass `origin:` explicitly. An invalid or retired
-origin does not fall back to the topmost overlay. An explicit `origin:` may also name a uniquely identified, currently
-open static Modal, Sheet or Drawer root; closing that root retires its generated children without erasing the static
-markup. With no origin, opening is top-level. For normal multi-step navigation
-inside an already open overlay, use an unqualified link inside its Frame instead of opening another instance.
+Without `origin:`, the opening is **top-level**, even when the response belongs to an overlay request. Pass the
+requesting overlay to open a **child** that is retired together with it:
+
+```php
+// Ambiguities found while importing: review them on top of the import form.
+return response()->modal()->open(view('imports._review', $data), source: route('imports.review'), origin: $request->overlayOrigin());
+
+// The sale is confirmed: close its Drawer and ask about the receipt in a separate Modal.
+return response()->modal()->open(view('sales._receipt-prompt'))
+    ->closeOverlay($request->overlayOrigin())
+    ->toast('success', 'Sale confirmed');
+```
+
+Opening the receipt prompt as a child of the Drawer would retire it as soon as `closeOverlay()` closes the Drawer. An
+invalid or retired origin does not fall back to the topmost overlay. `origin:` may also name a uniquely identified,
+currently open static Modal, Sheet or Drawer root; closing that root retires its generated children without erasing the
+static markup. For normal multi-step navigation inside an already open overlay, use an unqualified link inside its
+Frame instead of opening another instance.
 
 ## Return to a parent and close
 
-The destination region in the parent and the child instance to close are different identities. With
-`data-overlay-return-to` and `data-overlay-return-region` on the parent form, the client captures the **specific**
-region at opening. Return HTML can then update only that region, even if other forms use the same local name:
+The destination region in the parent and the child instance to close are different identities. Mark the region with
+[`<hw:overlay-return>`](../components/overlay-return.md) and select it with `overlay-return` on the opening link; the
+client captures that **specific** region at opening. The child's response then updates only that region, even if other
+forms use the same local name:
 
 ```php
 $origin = $request->overlayOrigin();
 
 return turbo_stream()
-    ->action('hotwire-overlay-return', $origin, view('customers._options', [
+    ->returnFromOverlay($origin, view('sales._customer-field', [
         'customers' => $customers,
         'selected' => $customer->id,
     ]))
@@ -63,9 +77,19 @@ return turbo_stream()
     ->toast('success', 'Customer created');
 ```
 
-`request()->overlayOrigin()` resolves a validated instance from a primary or nested Frame request. Without an
-unambiguous overlay context it throws; it never guesses the first Modal, the default host, or the top of the stack.
-For a static overlay without a Frame request, pass its root id explicitly:
+`request()->overlayOrigin()` resolves a validated instance from a primary or nested Frame request. It returns `null` for
+a page or an ordinary Frame request, so the same action can redirect when it was not opened in an overlay:
+
+```php
+$origin = $request->overlayOrigin();
+
+if ($origin === null) {
+    return to_route('customers.index')->with('success', 'Customer created');
+}
+```
+
+It never guesses the first Modal, the default host, or the top of the stack, and it throws when the overlay headers
+contradict each other. For a static overlay without a Frame request, pass its root id explicitly:
 
 ```php
 return turbo_stream()->closeOverlay('settings-dialog');
@@ -73,9 +97,9 @@ return turbo_stream()->closeOverlay('settings-dialog');
 
 The static dialog closes through its normal animation and keeps its markup for reopening. For an instance already
 closed or retired, the action is idempotent. `closeOverlay` is a Stream action, not an empty `update` that erases a
-reusable host. The return action leaves the child open if its captured destination was replaced, and a following close
-action in the same response respects that failure. See
-[frame-backed overlay instances](../components/frame-or-page.md#frame-backed-overlay-instances) for the region contract.
+reusable host. The return leaves the child open if its captured destination was replaced, and a following close action
+in the same response respects that failure. When the parent region renders its own field through a route, pass the
+saved record as `result:`; see [let the parent render its own field](../components/overlay-return.md#let-the-parent-render-its-own-field).
 
 If the destination already has a **known, unique DOM id**, a native `replace` or `update` Stream can be composed with
 `closeOverlay($origin)` instead. Do not assume that the child Frame id also identifies the field in its parent.
@@ -92,8 +116,8 @@ refresh leaves their drafts open; an accepted page replacement or morph discards
 Do not use `refresh` as a promise that the parent form will survive.
 
 Likewise, `closeOverlay($origin)->refresh()` does not wait for exit motion before visiting. A family's `open(...)`
-builder can compose other Stream actions, but there is no animation transaction, delayed-close macro or implicit
-"close on any HTTP success".
+starts the builder and can be followed by other Stream actions, but there is no animation transaction, delayed-close
+macro or implicit "close on any HTTP success".
 If the server needs a new step in the same instance, return the matching Frame rather than closing and reopening it.
 An `open(...)` correlated to that origin creates its child, not a replacement sibling: closing the ancestor retires
 that child too. Opening from an already closed origin is rejected rather than attached to another active overlay.
@@ -123,10 +147,16 @@ pass explicit scoped ids for application-authored Frames.
 
 - `response()->modal()`, `sheet()` and `drawer()` return a family-specific `OverlayResponse` entry.
 - `open(string|Htmlable $content, ?string $side = null, ?string $size = null, ?string $source = null,
-  ?string $host = null, ?string $origin = null)` returns the existing `TurboStreamBuilder`; use named optional arguments.
-- `request()->overlayOrigin(): string` resolves validated request context or throws; it is not an authorization check.
+  ?string $origin = null)` returns the existing `TurboStreamBuilder`; use named optional arguments. Without `origin` the
+  opening is top-level.
+- `request()->overlayOrigin(): ?string` resolves validated request context, returns `null` without overlay context and
+  throws on contradictory headers; it is not an authorization check.
 - `turbo_stream()->closeOverlay(string $origin)` returns the builder and requires an explicit concrete Frame or static
   root id. There is no default host, stack-top fallback or family-specific close alias.
+- `turbo_stream()->returnFromOverlay(string $origin, string|Htmlable $content, int|string|null $result = null)` returns
+  the builder; `result` is needed only by a region with its own renderer.
+- `<hw:button>` accepts `overlay-side`, `overlay-size` and `overlay-return`; `overlay` names the family only when `frame`
+  is not `modal`, `sheet` or `drawer`. [`<hw:overlay-return>`](../components/overlay-return.md) marks the parent region.
 - Existing application macros and Stream actions are not overwritten by the package.
 
 The older `modal-auto-close` marker remains available for existing Modal-only integrations. New server responses should
@@ -134,64 +164,3 @@ use `closeOverlay()` for all three families, including static roots, instead of 
 is no need to register a `closeModal`/`autoCloseOverlay` macro or rename the marker to use the common lifecycle.
 Empty `update`/`replace` Streams targeting a concrete primary Frame remain supported for content-driven closing, but
 must not target the canonical host to close a generated child.
-
-## Let a rich consumer render its own field
-
-A reusable customer form need not know whether its caller uses a native select or a searchable Multi Select. A native
-consumer uses the return fragment directly. A richer consumer can instead declare its own **same-origin GET renderer**
-on a stable wrapper around the field, including labels and errors that must be updated with it:
-
-```blade
-<hw:form action="/sales" method="post">
-    <hw:field name="company_id" label="Company">
-        <hw:select :options="$companies" />
-    </hw:field>
-    <div data-overlay-return-region="customer"
-         data-overlay-return-src="{{ route('sales.fields.customer') }}"
-         data-overlay-return-fields="company_id">
-        @include('sales._customer-field')
-    </div>
-    <hw:button as="a" href="/customers/create" frame="modal" data-overlay-return-to="customer">
-        New customer
-    </hw:button>
-</hw:form>
-```
-
-The successful creation response adds the saved record's identity, alongside the native fallback fragment:
-
-```php
-return turbo_stream()
-    ->action('hotwire-overlay-return', $request->overlayOrigin(), view('customers._options', $data), [
-        'data-overlay-result' => (string) $customer->getKey(),
-    ])
-    ->closeOverlay($request->overlayOrigin())
-    ->toast('success', 'Customer created');
-```
-
-For a region with a renderer, the package ignores the fallback fragment and requests its URL with `result=<id>` and
-`context[company_id]=<captured value>`. Only explicitly declared, enabled scalar controls belonging to the initiating
-form are captured; the draft is not serialized. The renderer receives a `Turbo-Frame` header scoped to the child opening
-for generated component identities, but returns a **non-empty HTML fragment**, not a matching Frame or a page layout.
-It owns field names, markup, filtering and selected values. Headers, result ids and captured context are not
-authorization: authenticate/authorize and revalidate the selection on the server.
-
-The context's control nodes and values are checked before and after the GET and again on retry. Replaced forms/regions,
-changed renderer declarations or changed context expire the return without rediscovering another destination. A `409`
-means the saved record cannot be selected for that context; the old field remains intact and the child stays open.
-Redirects, empty/page responses, non-HTML responses and failed requests are not applied.
-
-Creation and returning are separate operations. While rendering, a following `closeOverlay()` records close intent;
-it closes only after the field is successfully updated. A temporary renderer failure offers **Retry return**, reusing
-the saved identity without repeating the creation POST. The successful child form cannot be resubmitted during this
-process. Closing/discarding its opening aborts the GET, and late/duplicate results cannot update another form.
-Without a close action, a successful return does not implicitly close the child.
-
-While a return is pending or needs retry, the submitted form and newly rendered forms in that instance cannot submit.
-This also covers a response replacing the saved form before returning its result, and further replacements during the
-renderer request. Existing unrelated form nodes remain usable and are not disabled. Successful return removes the block
-and pending alert, so the user can save again or submit the next form in the same instance.
-
-Frame-backed Blade hosts include the feedback template. Raw HTML hosts using this mode must include a
-`template[data-hotwire-overlay-return-feedback]` with a focusable `[data-hotwire-overlay-return-error]` alert containing
-`[data-hotwire-overlay-return-message]` and a `button[data-hotwire-overlay-return-retry]`. The package clones this template
-instead of asking the application to manage pending/retry UI or overlay lifecycle in JavaScript.

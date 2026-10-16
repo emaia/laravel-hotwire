@@ -88,7 +88,9 @@ One host can serve different directions and dimensions. On a framed anchor butto
 `overlay="drawer" overlay-side="right" overlay-size="32rem"` as a loading hint; the destination
 `<hw:frame-or-page>` can declare its own direction/size, overriding each hint it supplies. `top` and `bottom` map to
 `up` and `down`; switching between horizontal and vertical also switches width/height CSS variables. Defaults return
-on close or abandoned loading. See [presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
+on close or abandoned loading. Both the button and the destination need `overlay="drawer"` for the custom
+`drawer-panel` Frame id above; the family is inferred when the Frame id is `drawer`. See
+[presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
 
 Include a semantic title in any loading template that opens the drawer. Frame-loaded labels are linked before opening,
 and explicit unique label ids are preserved.
@@ -124,24 +126,24 @@ other open drafts. See [frame-backed overlay instances](./frame-or-page.md#frame
 
 ## Props
 
-| Prop                  | Default                                                      | Description                                                                |
-|-----------------------|--------------------------------------------------------------|----------------------------------------------------------------------------|
+| Prop                  | Default                                                      | Description                                                                              |
+|-----------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------|
 | `id`                  | auto                                                         | String or model root id; see [stable component ids](../recipes/stable-component-ids.md). |
-| `direction`           | `down`                                                       | Physical `up`, `right`, `down`, or `left`; the direction does not mirror in RTL. |
-| `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`. |
-| `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                |
-| `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.      |
-| `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                              |
-| `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                          |
-| `initial-focus`       | `auto`                                                       | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`. |
-| `lockScroll`          | `true`                                                       | Lock body scroll while open.                                               |
-| `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                              |
-| `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                        |
-| `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                          |
-| `aria-label`          | `null`                                                       | Authored accessible name routed to the dialog overlay.                     |
-| `aria-labelledby`     | `null`                                                       | Authored accessible name reference routed to the dialog overlay.           |
-| `aria-description`    | `null`                                                       | Authored accessible description routed to the dialog overlay.              |
-| `aria-describedby`    | `null`                                                       | Authored accessible description reference routed to the dialog overlay.    |
+| `direction`           | `down`                                                       | Physical `up`, `right`, `down`, or `left`; the direction does not mirror in RTL.         |
+| `side`                | `null`                                                       | Legacy alias for `direction`; `top` maps to `up`, `bottom` maps to `down`.               |
+| `size`                | `75vw`/`24rem` for side drawers, `auto` for vertical drawers | CSS length assigned to the drawer width or height variable.                              |
+| `frame`               | `null`                                                       | String/object Turbo Frame id for layout-shared, server-loaded content.                   |
+| `backdrop`            | `true`                                                       | Render the backdrop and click-outside target.                                            |
+| `motion`              | `default`                                                    | `default` follows CSS motion; `none` disables it.                                        |
+| `initial-focus`       | `auto`                                                       | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`.               |
+| `lockScroll`          | `true`                                                       | Lock body scroll while open.                                                             |
+| `closeOnEscape`       | `true`                                                       | Close when Escape is pressed.                                                            |
+| `closeOnClickOutside` | `true`                                                       | Close when the backdrop is clicked.                                                      |
+| `viewTransition`      | `false`                                                      | Animate successive renders inside the frame host.                                        |
+| `aria-label`          | `null`                                                       | Authored accessible name routed to the dialog overlay.                                   |
+| `aria-labelledby`     | `null`                                                       | Authored accessible name reference routed to the dialog overlay.                         |
+| `aria-description`    | `null`                                                       | Authored accessible description routed to the dialog overlay.                            |
+| `aria-describedby`    | `null`                                                       | Authored accessible description reference routed to the dialog overlay.                  |
 
 ## Components
 

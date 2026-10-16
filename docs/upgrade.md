@@ -44,6 +44,28 @@ Native `refresh` is no longer intercepted as an implicit close. An ignored refre
 refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts. The older
 `modal-auto-close` controller remains available, but new integrations do not need a marker or custom close macro.
 
+### Use the public overlay response and return API
+
+`request()->overlayOrigin()` now returns `null` for page and ordinary Frame requests without overlay headers. Check for
+`null` before calling `closeOverlay()` or `returnFromOverlay()`; inconsistent overlay headers still throw. Neither
+method falls back to a default host or the top overlay.
+
+`response()->modal()/sheet()/drawer()->open(...)` no longer accepts `host:` or automatically captures the requesting
+overlay as its parent. Pass `origin: $request->overlayOrigin()` when opening a child; omit it for an independent
+top-level opening, including when closing the requesting overlay in the same response. Stream openings require exactly
+one declared host of that family, with any Frame id. Use a Frame link to its id to select among multiple hosts of the
+same family.
+
+Replace raw overlay return actions and attributes with `returnFromOverlay($origin, $content, result: $id)`,
+`<hw:button overlay-return="customer" ...>` and `<hw:overlay-return name="customer">...</hw:overlay-return>`.
+The return replaces the wrapper's **contents**, so migrate options-only fragments to the complete field, including its
+`<select>`, labels and errors as needed. Keep the wrapper out of the returned fragment. `result:` is only required when
+the region declares its own renderer through `src`; declare captured scalar context through `:fields="[...]"`.
+
+Button and FrameOrPage infer the presentation family from Frame ids `modal`, `sheet` and `drawer`. Keep an explicit
+`overlay` naming the receiving family when adding `overlay-side` or `overlay-size` to a custom Frame id. See
+[Overlay Return](./components/overlay-return.md) and [overlay responses](./recipes/overlay-responses.md) for examples.
+
 ### Selective preset command renamed
 
 `hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output

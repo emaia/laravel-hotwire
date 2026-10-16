@@ -27,14 +27,14 @@ it('exposes a family-specific entry that returns a composable Stream response', 
         ->not->toContain('data-overlay-origin=');
 })->with(['modal', 'sheet', 'drawer']);
 
-it('uses the shared presentation contract and explicit host/origin', function () {
+it('uses the shared presentation contract and an explicit origin', function () {
     $origin = 'drawer--'.str_repeat('f', 32);
     $html = response()->sheet()->open(
-        '<h2>Details</h2>', side: 'left', size: '28rem', host: 'settings-sheet', origin: $origin,
+        '<h2>Details</h2>', side: 'left', size: '28rem', origin: $origin,
     )->toHtml();
 
     expect($html)
-        ->toContain('target="settings-sheet"')
+        ->toContain('target="sheet"')
         ->toContain('data-overlay-family="sheet"')
         ->toContain('data-overlay-side="left"')
         ->toContain('data-overlay-size="28rem"')
@@ -44,7 +44,7 @@ it('uses the shared presentation contract and explicit host/origin', function ()
         ->toContain('data-overlay-side="up"');
 });
 
-it('uses the request origin only when it unambiguously matches its overlay instance', function () {
+it('opens top-level from an overlay request unless the origin is passed explicitly', function () {
     $token = str_repeat('c', 32);
     $origin = 'drawer--'.$token;
     request()->headers->set('Turbo-Frame', $origin);
@@ -52,16 +52,16 @@ it('uses the request origin only when it unambiguously matches its overlay insta
     request()->headers->set('X-Hotwire-Overlay-Instance', $token);
     request()->headers->set('X-Hotwire-Overlay-Origin', $origin);
 
-    expect(response()->modal()->open('<p>Resolve conflict</p>')->toHtml())
-        ->toContain('data-overlay-origin="'.$origin.'"');
+    expect(response()->modal()->open('<p>Print the receipt?</p>')->toHtml())
+        ->not->toContain('data-overlay-origin=');
 
-    request()->headers->remove('X-Hotwire-Overlay-Origin');
-    expect(response()->modal()->open('<p>Resolve conflict</p>')->toHtml())
+    expect(response()->modal()->open('<p>Resolve conflict</p>', origin: request()->overlayOrigin())->toHtml())
         ->toContain('data-overlay-origin="'.$origin.'"');
+});
 
-    request()->headers->set('X-Hotwire-Overlay-Origin', 'sheet--'.$token);
-    expect(fn () => response()->modal()->open('<p>Resolve conflict</p>'))
-        ->toThrow(InvalidArgumentException::class, 'Invalid overlay origin context');
+it('targets the family rather than a host id', function () {
+    expect(fn () => response()->drawer()->open('Review', host: 'drawer-panel'))
+        ->toThrow(Error::class, 'host');
 });
 
 it('requires a source URL for a streamed form and embeds it for validation redirects', function () {
@@ -129,8 +129,8 @@ it('rejects incompatible presentation and invalid targets instead of silently ch
         ->toThrow(InvalidArgumentException::class, 'Modal does not support overlay-side');
     expect(fn () => response()->sheet()->open('Review', side: 'rigth'))
         ->toThrow(InvalidArgumentException::class, 'Sheet overlay-side');
-    expect(fn () => response()->drawer()->open('Review', host: ''))
-        ->toThrow(InvalidArgumentException::class, 'host');
+    expect(fn () => response()->modal()->open('Review', origin: ' '))
+        ->toThrow(InvalidArgumentException::class, 'origin');
     expect(fn () => response()->modal()->open('  '))
         ->toThrow(InvalidArgumentException::class, 'content');
 });

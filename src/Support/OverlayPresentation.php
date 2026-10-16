@@ -6,12 +6,22 @@ use InvalidArgumentException;
 
 final class OverlayPresentation
 {
-    private const FAMILIES = ['modal', 'sheet', 'drawer'];
+    public const FAMILIES = ['modal', 'sheet', 'drawer'];
 
     private const SIDES = [
         'sheet' => ['left', 'right', 'top', 'bottom'],
         'drawer' => ['up', 'right', 'down', 'left'],
     ];
+
+    /** Take the family from a canonical host Frame id when presentation hints omit it. */
+    public static function inferFamily(?string $family, ?string $frame, ?string $side, ?string $size): ?string
+    {
+        if ($family !== null || ($side === null && $size === null)) {
+            return $family;
+        }
+
+        return in_array($frame, self::FAMILIES, true) ? $frame : null;
+    }
 
     /**
      * Validate and normalize presentation options for the selected overlay family.
@@ -21,7 +31,7 @@ final class OverlayPresentation
     public static function resolve(?string $family, ?string $side, ?string $size): array
     {
         if ($family === null && ($side !== null || $size !== null)) {
-            throw new InvalidArgumentException('Overlay presentation requires an overlay family.');
+            throw new InvalidArgumentException('Overlay presentation requires an overlay family: pass overlay when the frame is not modal, sheet or drawer.');
         }
 
         if ($family !== null && ! in_array($family, self::FAMILIES, true)) {

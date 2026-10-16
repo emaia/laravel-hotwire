@@ -90,7 +90,8 @@ and frame navigation renders only the panel payload:
 The same host can serve other panels at different sides/sizes: add
 `overlay="sheet" overlay-side="left" overlay-size="28rem"` to a framed `<hw:button as="a">` for the loading state,
 or to `<hw:frame-or-page>` for the response. The response takes precedence per declared value; size alone keeps the
-host's current side. Close/error/abandon restores authored defaults. See
+host's current side. Both need `overlay="sheet"` for the custom `settings-panel` Frame id above; the family is inferred
+when the Frame id is `sheet`. Close/error/abandon restores authored defaults. See
 [presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
 
 Include a semantic title in any loading template that opens the sheet. Frame-loaded labels are linked before opening,

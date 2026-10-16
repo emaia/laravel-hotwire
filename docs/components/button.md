@@ -90,15 +90,24 @@ This renders `data-turbo-frame="modal"`. `frame` accepts a string or object; obj
 `false`, empty strings, and whitespace-only strings omit the attribute. If you pass an explicit `data-turbo-frame`, it
 wins over `frame`; bind it to `false` to suppress the prop explicitly.
 
-For a frame-backed Modal, Sheet or Drawer, `overlay` declares the receiving family and `overlay-size` / `overlay-side`
-provide presentation hints before loading content. These props require an enabled anchor targeting a frame; a disabled
-anchor omits the hints. Modal accepts size only, Sheet accepts `left`, `right`, `top`, `bottom`, and Drawer accepts `up`,
-`right`, `down`, `left` (`top`/`bottom` aliases). Invalid combinations throw rather than silently doing nothing.
+For a frame-backed Modal, Sheet or Drawer, `overlay-size` / `overlay-side` provide presentation hints before loading
+content. When `frame` is `modal`, `sheet` or `drawer`, the receiving family comes from it; a host with another Frame id
+needs `overlay` to name the family. These props require an enabled anchor targeting a frame; a disabled anchor omits the
+hints. Modal accepts size only, Sheet accepts `left`, `right`, `top`, `bottom`, and Drawer accepts `up`, `right`,
+`down`, `left` (`top`/`bottom` aliases). Invalid combinations throw rather than silently doing nothing.
 The `size` prop above styles the **button**; `overlay-size` styles the destination overlay.
 
 ```blade
-<hw:button as="a" href="/customers/create" frame="modal" overlay="modal" overlay-size="sm">New customer</hw:button>
-<hw:button as="a" href="/sales/create" frame="drawer" overlay="drawer" overlay-side="right" overlay-size="32rem">New sale</hw:button>
+<hw:button as="a" href="/customers/create" frame="modal" overlay-size="sm">New customer</hw:button>
+<hw:button as="a" href="/sales/create" frame="drawer" overlay-side="right" overlay-size="32rem">New sale</hw:button>
+<hw:button as="a" href="/cart" frame="cart-panel" overlay="drawer" overlay-side="right">Cart</hw:button>
+```
+
+Inside a form, `overlay-return` names the [`<hw:overlay-return>`](./overlay-return.md) region that receives the record
+created in the opened overlay:
+
+```blade
+<hw:button as="a" href="/customers/create" frame="modal" overlay-return="customer">New customer</hw:button>
 ```
 
 See [frame-or-page presentation](./frame-or-page.md#presentation-per-frame-opening) for response precedence and reset.
@@ -223,21 +232,25 @@ button `type` is likewise restricted to `button`, `submit`, or `reset`.
 
 ## Props
 
-| Prop                   | Type             | Default     | Description                                                                                                                                                                   |
-|------------------------|------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `variant`              | `string`         | `'default'` | One of `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`                                                                                                      |
-| `size`                 | `string`         | `'default'` | One of `xs`, `sm`, `default`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg`                                                                                                   |
-| `type`                 | `string`         | `'button'`  | Native button type: `button`, `submit`, or `reset`. Ignored when `as="a"`.                                                                                                   |
-| `as`                   | `string`         | `'button'`  | Render `button` or `a`. Values are normalized and validated.                                                                                                                  |
-| `slotName`             | `string`         | `'button'`  | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this.                                      |
-| `frame`                | `string\|object\|false\|null` | `null` | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Objects use `dom_id()`; false/blank omit it; explicit `data-turbo-frame` wins.                        |
-| `hotkey`               | `string\|null`   | `null`      | Mount `hotkey` and click the button from one or more global keyboard shortcuts. `cmd` maps to `meta`.                                                                         |
-| `tooltip`              | `string\|null`   | `null`      | Mount `tooltip` and render its escaped text through the shared Tooltip source.                                                                                                |
-| `tooltip-side`         | `string\|null`   | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |
-| `tooltip-align`        | `string\|null`   | `null`      | Set `data-tooltip-align-value` when `tooltip` is active.                                                                                                                      |
-| `tooltip-motion`       | `string\|null`   | `null`      | Set `data-tooltip-motion-value` to `default` or `none` when `tooltip` is active.                                                                                              |
-| `tooltip-enabled-when` | `string\|null`   | `null`      | Set `data-tooltip-enabled-when-value` when `tooltip` is active.                                                                                                               |
-| `stimulus`             | `Htmlable\|null` | `null`      | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
+| Prop                   | Type                          | Default     | Description                                                                                                                                                                   |
+|------------------------|-------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `variant`              | `string`                      | `'default'` | One of `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`                                                                                                      |
+| `size`                 | `string`                      | `'default'` | One of `xs`, `sm`, `default`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg`                                                                                                   |
+| `type`                 | `string`                      | `'button'`  | Native button type: `button`, `submit`, or `reset`. Ignored when `as="a"`.                                                                                                    |
+| `as`                   | `string`                      | `'button'`  | Render `button` or `a`. Values are normalized and validated.                                                                                                                  |
+| `slotName`             | `string`                      | `'button'`  | Internal escape hatch for shipped components that need a button element with a more specific `data-slot`. Most apps should not set this.                                      |
+| `frame`                | `string\|object\|false\|null` | `null`      | Render `data-turbo-frame` for links/actions targeting a Turbo Frame. Objects use `dom_id()`; false/blank omit it; explicit `data-turbo-frame` wins.                           |
+| `overlay`              | `?string`                     | `null`      | Receiving family (`modal`, `sheet`, `drawer`) when `frame` is not one of those ids.                                                                                           |
+| `overlay-side`         | `?string`                     | `null`      | Sheet side or Drawer direction hint for the opened overlay.                                                                                                                   |
+| `overlay-size`         | `?string`                     | `null`      | Modal preset/CSS max-width or Sheet/Drawer dimension hint for the opened overlay.                                                                                             |
+| `overlay-return`       | `?string`                     | `null`      | Name of the parent [`<hw:overlay-return>`](./overlay-return.md) region that receives the created record.                                                                      |
+| `hotkey`               | `string\|null`                | `null`      | Mount `hotkey` and click the button from one or more global keyboard shortcuts. `cmd` maps to `meta`.                                                                         |
+| `tooltip`              | `string\|null`                | `null`      | Mount `tooltip` and render its escaped text through the shared Tooltip source.                                                                                                |
+| `tooltip-side`         | `string\|null`                | `null`      | Set `data-tooltip-side-value` when `tooltip` is active.                                                                                                                       |
+| `tooltip-align`        | `string\|null`                | `null`      | Set `data-tooltip-align-value` when `tooltip` is active.                                                                                                                      |
+| `tooltip-motion`       | `string\|null`                | `null`      | Set `data-tooltip-motion-value` to `default` or `none` when `tooltip` is active.                                                                                              |
+| `tooltip-enabled-when` | `string\|null`                | `null`      | Set `data-tooltip-enabled-when-value` when `tooltip` is active.                                                                                                               |
+| `stimulus`             | `Htmlable\|null`              | `null`      | Optional Stimulus binding from `stimulus()`, `stimulus_controller()`, `stimulus_action()` or `stimulus_target()`. Pass via `:stimulus="..."`; merged with regular attributes. |
 
 All other HTML attributes (`id`, `name`, `disabled`, `aria-*`, `data-*`, `href`, `target`, `class`) pass through to the rendered element. Package styling is not emitted as inline classes; presets target the data attributes below.
 

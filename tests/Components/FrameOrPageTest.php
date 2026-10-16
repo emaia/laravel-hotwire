@@ -388,14 +388,27 @@ it('rejects ambiguous or incompatible overlay presentation', function (string $p
     expect(fn () => $this->blade("<x-hw::frame-or-page frame=\"modal\" {$props}>Content</x-hw::frame-or-page>"))
         ->toThrow(ViewException::class, $message);
 })->with([
-    ['overlay-size="lg"', 'Overlay presentation requires an overlay family'],
     ['overlay="modal" overlay-side="left"', 'Modal does not support overlay-side'],
+    ['overlay-side="left"', 'Modal does not support overlay-side'],
     ['overlay="sheet" overlay-side="up"', 'Sheet overlay-side must be one of'],
     ['overlay="drawer" overlay-side="rigth"', 'Drawer overlay-side must be one of'],
     ['overlay="bogus" overlay-size="lg"', 'Overlay family must be one of'],
     ['overlay="modal" overlay-size=" "', 'Overlay size must be a non-empty'],
     ['overlay="sheet" overlay-size="28rem; color:red"', 'Overlay size must be a non-empty'],
 ]);
+
+it('infers the family from a canonical host frame and requires it for a custom host', function () {
+    $this->blade('<x-hw::frame-or-page frame="sheet" overlay-side="left">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-side="left"', false);
+
+    $this->blade('<x-hw::frame-or-page frame="cart-panel" overlay="drawer" overlay-side="bottom">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-family="drawer"', false)
+        ->assertSee('data-overlay-side="down"', false);
+
+    expect(fn () => $this->blade('<x-hw::frame-or-page frame="cart-panel" overlay-size="lg">Content</x-hw::frame-or-page>'))
+        ->toThrow(ViewException::class, 'Overlay presentation requires an overlay family');
+});
 
 it('supports frame component aliases when rendering as a frame', function () {
     $view = $this->blade('<x-hw::frame-or-page frame="modal" lazy advance>Content</x-hw::frame-or-page>');

@@ -57,6 +57,7 @@ use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Navbar\Item as NavbarItem;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\OverlayReturn;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
@@ -813,6 +814,19 @@ return [
             'styling' => [
                 'slots' => [
                     ['class' => Optimistic::class],
+                ],
+            ],
+        ],
+        'overlay-return' => [
+            'class' => OverlayReturn::class,
+            'view' => 'hotwire::component-views.overlay-return',
+            'docs' => 'docs/components/overlay-return.md',
+            'category' => 'overlay',
+            'description' => 'Parent form region that receives the record created in a Modal, Sheet or Drawer, as a returned fragment or re-rendered by its own route',
+            'controllers' => [],
+            'styling' => [
+                'slots' => [
+                    ['class' => OverlayReturn::class],
                 ],
             ],
         ],

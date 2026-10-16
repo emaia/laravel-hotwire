@@ -84,70 +84,71 @@ operation: it can retire every open instance.
 Frames nested **inside** an overlay retain their own `Turbo-Frame` id on requests and validation redirects. Those
 requests also carry `X-Hotwire-Overlay-Origin` with the owning overlay's concrete Frame id; the host/instance headers
 are reserved for requests targeting the overlay's own Frame, so a nested `frame-or-page` is not mistaken for the outer
-overlay response. A form using `track-frame-src` can redirect validation errors back to its nested Frame. For the
-lower-level return/close Stream actions below, use this explicit origin header as the target when the form submits from
-a nested Frame; targeting its own `Turbo-Frame` id would not identify the overlay instance. The origin header is a
-correlation hint, not authorization.
+overlay response. A form using `track-frame-src` can redirect validation errors back to its nested Frame.
+`request()->overlayOrigin()` resolves the owning instance from either kind of request, so a form submitting from a
+nested Frame still closes and returns to the right overlay; its own `Turbo-Frame` id would not identify the instance.
+The origin is a correlation hint, not authorization.
 
 #### Returning to the initiating form
 
-When a child creates a record for a parent form, give the destination a name **local to that form** and select it on
+When a child creates a record for a parent form, wrap the destination field in
+[`<hw:overlay-return>`](./overlay-return.md) with a name **local to that form**, and select it with `overlay-return` on
 the opening link. No document-wide field id or numbered Modal host is required:
 
 ```blade
 <form>
-    <select name="customer_id" data-overlay-return-region="customer">
-        @include('customers._options')
-    </select>
-    <hw:button as="a" href="{{ route('customers.create') }}" frame="modal"
-        data-overlay-return-to="customer">New customer</hw:button>
+    <hw:overlay-return name="customer">
+        @include('customers._field')
+    </hw:overlay-return>
+    <hw:button as="a" href="{{ route('customers.create') }}" frame="modal" overlay-return="customer">
+        New customer
+    </hw:button>
     <input name="notes" value="Draft in progress">
 </form>
 ```
 
-The return region may also be a stable container around a richer field. The link must belong to a form containing
-**exactly one** matching region; an absent or ambiguous region blocks the opening. The package retains references to
-that form and region for this opening, so two sale forms can reuse the name `customer` without cross-updating.
+The link must belong to a form containing **exactly one** matching region; an absent or ambiguous region blocks the
+opening. The package retains references to that form and region for this opening, so two sale forms can reuse the name
+`customer` without cross-updating.
 
-After creating the record, a Turbo Stream can update the region's **children** (the native select's options here) and
-close only the submitting overlay. Both actions target the concrete overlay Frame id from the request:
+After creating the record, return the field's new contents and close only the submitting overlay:
 
 ```php
+$origin = $request->overlayOrigin();
+
 return turbo_stream()
-    ->action('hotwire-overlay-return', $request->turboFrameId(), view('customers._options', [
+    ->returnFromOverlay($origin, view('customers._field', [
         'customers' => $customers,
         'selected' => $customer->id,
     ]))
-    ->action('hotwire-overlay-close', $request->turboFrameId())
+    ->closeOverlay($origin)
     ->toast('success', 'Customer created');
 ```
 
-`hotwire-overlay-return` replaces only the captured region's contents, emits native `input` and `change` events, and
-keeps the parent form, its other values and its errors in place. `hotwire-overlay-close` uses the same concrete id and
-normal animated lifecycle; it never falls back to the top overlay. A duplicate or late Stream for a retired opening
-does nothing. If the original form, opener or region was replaced while saving, the return does **not** rediscover a
+The return replaces only the captured region's **contents**, emits native `input` and `change` events, and keeps the
+parent form, its other values and its errors in place. `closeOverlay` uses the same concrete instance and normal
+animated lifecycle; it never falls back to the top overlay. A duplicate or late Stream for a retired opening does
+nothing. If the original form, opener or region was replaced while saving, the return does **not** rediscover a
 different region with the same name: the child stays open with an alert, and the close action in that response is
-suppressed. The record may already be saved; the user can close the child and select it in the current form. The
-region's own wrapper must remain stable for future returns. For a rich field, render the new field's complete inner
-HTML from the consumer instead of sending `<option>` elements to a non-select widget.
+suppressed. The record may already be saved; the user can close the child and select it in the current form.
 
-The two actions above are the lower-level Stream transport. They do not submit the parent form or automatically close
-on every successful HTTP response; leaving the child open for "Save and continue" remains an explicit server decision.
-Validation errors that re-render a Frame keep its concrete id and do not run either Stream action.
+Neither call submits the parent form or closes on every successful HTTP response; leaving the child open for "Save and
+continue" remains an explicit server decision. Validation errors that re-render a Frame keep its concrete id and do not
+run either Stream action.
 
 For the family-specific `response()->modal()/sheet()/drawer()->open(...)` entries and composed
 `closeOverlay($origin)`, see the [overlay responses recipe](../recipes/overlay-responses.md).
 
 ## Props
 
-| Prop     | Type                    | Default | Description                                                                                    |
-|----------|-------------------------|---------|------------------------------------------------------------------------------------------------|
-| `frame`  | `string\|object\|null` | `null`  | One frame id. Accepts a string or any object resolvable via `dom_id()`.                         |
-| `frames` | `?iterable`             | `null`  | A non-empty list of frame id strings or objects resolvable via `dom_id()`.                     |
-| `layout` | `?string`               | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper. |
-| `overlay` | `?string` | `null` | Receiving family (`modal`, `sheet`, or `drawer`) for frame presentation. |
-| `overlay-side` | `?string` | `null` | Sheet side or Drawer direction. Modal does not accept this prop. |
-| `overlay-size` | `?string` | `null` | Modal preset/CSS max-width or Sheet/Drawer CSS dimension. |
+| Prop           | Type                   | Default | Description                                                                                           |
+|----------------|------------------------|---------|-------------------------------------------------------------------------------------------------------|
+| `frame`        | `string\|object\|null` | `null`  | One frame id. Accepts a string or any object resolvable via `dom_id()`.                               |
+| `frames`       | `?iterable`            | `null`  | A non-empty list of frame id strings or objects resolvable via `dom_id()`.                            |
+| `layout`       | `?string`              | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper.        |
+| `overlay`      | `?string`              | `null`  | Receiving family (`modal`, `sheet`, or `drawer`). Inferred when the served frame is one of those ids. |
+| `overlay-side` | `?string`              | `null`  | Sheet side or Drawer direction. Modal does not accept this prop.                                      |
+| `overlay-size` | `?string`              | `null`  | Modal preset/CSS max-width or Sheet/Drawer CSS dimension.                                             |
 
 Provide exactly one of `frame` or `frames`. Empty ids and non-list `frames` values throw
 `InvalidArgumentException`. Configuring more than one frame requires `layout` because direct navigation
@@ -269,13 +270,13 @@ specify only the settings this response owns:
 <hw:modal frame="modal" />
 
 {{-- Customer create response (direct navigation still renders layouts.app). --}}
-<hw:frame-or-page frame="modal" layout="layouts.app" overlay="modal" overlay-size="sm">
+<hw:frame-or-page frame="modal" layout="layouts.app" overlay-size="sm">
     <hw:modal.title>New customer</hw:modal.title>
     ...
 </hw:frame-or-page>
 ```
 
-`<hw:button as="a" frame="modal" overlay="modal" overlay-size="lg">` may hint at the size during loading.
+`<hw:button as="a" frame="modal" overlay-size="lg">` may hint at the size during loading.
 The response wins for each property it declares; omitted properties keep the hint or the authored host default. Size
 alone keeps the current side/direction. Subsequent frame navigations can update the same open instance. Closing or
 abandoning a load restores host defaults, including defaults updated by a Turbo morph. Modal presets are `sm`, `md`,
