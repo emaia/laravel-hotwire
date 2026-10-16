@@ -20,17 +20,17 @@ selected-preset motion.
 
 ## Values
 
-| Value        | Type    | Default                 | Description |
-| ------------ | ------- | ----------------------- | ----------- |
-| `trigger`    | String  | `load`                  | `scroll` arms only items outside the current viewport. |
-| `threshold`  | Number  | `0.15`                  | Intersection ratio needed to release an armed item, capped at the ratio the viewport can show for tall items. |
-| `rootMargin` | String  | `0px 0px -10% 0px`     | Margin applied to the item observer. |
-| `once`       | Boolean | `true`                  | Stop observing an item after its first reveal. |
+| Value        | Type    | Default            | Description                                                                                                   |
+|--------------|---------|--------------------|---------------------------------------------------------------------------------------------------------------|
+| `trigger`    | String  | `load`             | `scroll` arms only items outside the current viewport.                                                        |
+| `threshold`  | Number  | `0.15`             | Intersection ratio needed to release an armed item, capped at the ratio the viewport can show for tall items. |
+| `rootMargin` | String  | `0px 0px -10% 0px` | Margin applied to the item observer.                                                                          |
+| `once`       | Boolean | `true`             | Stop observing an item after its first reveal.                                                                |
 
 ## Events
 
-| Event          | Detail | Description |
-| -------------- | ------ | ----------- |
+| Event          | Detail | Description                                                         |
+|----------------|--------|---------------------------------------------------------------------|
 | `reveal:shown` | none   | Fires for an initial visible batch and each coalesced scroll batch. |
 
 ## Markup contract
@@ -38,6 +38,7 @@ selected-preset motion.
 Use either direct-child mode:
 
 ```html
+
 <section data-controller="reveal" data-reveal-children>
     <article>First</article>
     <article>Second</article>
@@ -47,6 +48,7 @@ Use either direct-child mode:
 or explicit item mode for nested units:
 
 ```html
+
 <section data-controller="reveal">
     <header data-reveal-item style="--reveal-index: 0">Header</header>
     <form>
@@ -59,6 +61,10 @@ Raw `data-controller="reveal"` markup defaults to the layer-safe `hotwire-reveal
 it animates without component-only `data-slot` hooks. A preset may redefine that keyframe name in its own `components`
 layer. The structural foundation routes `flat` and `fade` from `data-slot="reveal" data-motion="flat|fade"`; for raw
 markup, either include those hooks or set `--reveal-animation: hotwire-reveal-flat|hotwire-reveal-fade` explicitly.
+
+Timing follows the same rule. Preset profiles target `data-slot="reveal"`, so a raw root without that hook uses the
+structural fallbacks (`520ms` duration, `70ms` stagger, `0ms` delay, `11` max steps) under every preset. Set
+`--reveal-duration`, `--reveal-stagger`, `--reveal-delay` or `--reveal-max-steps` on the root to change them.
 
 Explicit items belonging to a nested `data-controller~="reveal"` root are excluded from the outer controller. CSS
 supplies indexes for the first direct children before JavaScript loads; the controller fills missing indexes and keeps
@@ -101,7 +107,8 @@ from content inserted later. A generation token prevents asynchronous settlement
 ## Turbo lifecycle
 
 - The first `turbo:visit` marks `<html data-reveal-booted>` so `scope="document"` CSS does not replay persistent chrome.
-- While at least one Reveal controller is connected, Reveal checks the resolved live targets of each `replace`, `update`,
+- While at least one Reveal controller is connected, Reveal checks the resolved live targets of each `replace`,
+  `update`,
   or `morph` stream. If any target is a `[data-controller~="reveal"]` root or its descendant, every
   `[data-reveal-item]` in the shared template receives `data-reveal-skip`; replacing a direct-child item also stamps
   every top-level template child. Target matching uses live markup rather than controller connection state, and the
@@ -123,6 +130,7 @@ restart.
 Other controllers should listen to the event rather than be coupled into Reveal:
 
 ```html
+
 <section
     data-controller="reveal chart-coordinator"
     data-action="reveal:shown->chart-coordinator#refresh"
