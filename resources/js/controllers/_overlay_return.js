@@ -139,21 +139,23 @@ export function cleanupOverlayReturn(record) {
 }
 
 function releaseReturnForm(record) {
-    record.returnForm?.removeEventListener("submit", record.preventReturnResubmit, true);
+    if (record.preventReturnResubmit) record.root.removeEventListener("submit", record.preventReturnResubmit, true);
     for (const button of record.returnDisabledButtons ?? []) button.disabled = false;
-    record.returnForm = null;
+    record.preventReturnResubmit = null;
     record.returnDisabledButtons = [];
 }
 
 function lockReturnForm(record) {
-    const form = record.submittedForm ?? record.frame.querySelector("form");
-    if (!form || !record.frame.contains(form)) return;
-    record.returnForm = form;
-    record.preventReturnResubmit = (event) => event.preventDefault();
-    form.addEventListener("submit", record.preventReturnResubmit, true);
-    record.returnDisabledButtons = [...form.elements].filter(
-        (element) => ["submit", "image"].includes(element.type) && !element.disabled,
-    );
+    // Keep independent forms usable, but do not let replacing the saved form bypass its pending return.
+    const otherForms = record.otherFormsAtSubmission ?? new Set();
+    const forms = [...record.frame.querySelectorAll("form")].filter((form) => !otherForms.has(form));
+    record.preventReturnResubmit = (event) => {
+        if (record.frame.contains(event.target) && !otherForms.has(event.target)) event.preventDefault();
+    };
+    record.root.addEventListener("submit", record.preventReturnResubmit, true);
+    record.returnDisabledButtons = forms
+        .flatMap((form) => [...form.elements])
+        .filter((element) => ["submit", "image"].includes(element.type) && !element.disabled);
     for (const button of record.returnDisabledButtons) button.disabled = true;
 }
 

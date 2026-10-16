@@ -106,6 +106,9 @@ converted into a GET opening. Use a family response to open a new instance from 
 receive no overlay headers. A nested Frame targeting the primary Frame gets the primary instance context; requests
 remaining in an internal Frame carry only their enclosing origin.
 
+Origin resolution prefers the matching enclosing Frame on the request source, so repeated inner Frame IDs in stacked
+instances do not cross-correlate their requests.
+
 A Frame link to a canonical host is an **explicit opening**. Its generated primary Frame loads eagerly even if the
 hand-written host uses `loading="lazy"`, since a hidden overlay cannot intersect the viewport to begin its own request.
 This does not change the canonical host or any nested Frames: a `loading="lazy"` Frame inside the form still waits for
@@ -183,9 +186,10 @@ the saved identity without repeating the creation POST. The successful child for
 process. Closing/discarding its opening aborts the GET, and late/duplicate results cannot update another form.
 Without a close action, a successful return does not implicitly close the child.
 
-Only the submitted form is locked while its return is pending or needs retry. On successful return, the lock and pending
-alert are removed, so the user can save again or submit the next form in the same instance. Other forms in the instance
-are not disabled by that return.
+While a return is pending or needs retry, the submitted form and newly rendered forms in that instance cannot submit.
+This also covers a response replacing the saved form before returning its result, and further replacements during the
+renderer request. Existing unrelated form nodes remain usable and are not disabled. Successful return removes the block
+and pending alert, so the user can save again or submit the next form in the same instance.
 
 Frame-backed Blade hosts include the feedback template. Raw HTML hosts using this mode must include a
 `template[data-hotwire-overlay-return-feedback]` with a focusable `[data-hotwire-overlay-return-error]` alert containing

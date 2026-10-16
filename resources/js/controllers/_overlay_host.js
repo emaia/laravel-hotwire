@@ -321,12 +321,15 @@ export function createOverlayHost(controller) {
         const headers = event.detail.fetchOptions.headers;
         const requestFrame = new Headers(headers).get("Turbo-Frame");
         if (!requestFrame) return;
-        const destination = document.getElementById(requestFrame);
+        const destination =
+            event.target.closest?.(`turbo-frame#${CSS.escape(requestFrame)}`) ?? document.getElementById(requestFrame);
         const record = openingFor(destination);
         if (!record || !owned.has(record) || record.retired) return;
         if (destination !== record.frame && !record.frame.contains(destination)) return;
         if (event.target instanceof HTMLFormElement) {
-            record.submittedForm = event.target;
+            record.otherFormsAtSubmission = new Set(
+                [...record.frame.querySelectorAll("form")].filter((form) => form !== event.target),
+            );
             if (record.returnApplied) {
                 record.returnApplied = false;
                 delete record.returnResult;
