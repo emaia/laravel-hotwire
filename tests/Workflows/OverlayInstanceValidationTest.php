@@ -13,6 +13,8 @@ class OverlayInstanceCustomerRequest extends TurboFormRequest
 }
 
 it('redirects a failed Laravel validation to the same concrete overlay frame', function () {
+    config()->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
+
     Route::middleware('web')->get('/overlay-customer/create', fn () => Blade::render(
         '<x-hw::frame-or-page frame="modal"><x-hw::form method="post" action="/overlay-customer" track-frame-src><input name="name">Customer form</x-hw::form></x-hw::frame-or-page>',
     ));
