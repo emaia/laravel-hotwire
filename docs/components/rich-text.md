@@ -117,8 +117,10 @@ If validation rejects the form, the page re-renders with the user's draft instea
 
 When validation rejects the form, the component marks itself invalid the same way `<hw:input>`,
 `<hw:textarea>` and the other form components do — `aria-invalid="true" data-invalid` on the wrapper `<div>`, plus
-`aria-invalid="true"` on the synced textarea. Style the error visual on the wrapper so it covers the whole editor
-(toolbar + contenteditable + textarea) instead of just the hidden form payload:
+`aria-invalid="true"` on the synced textarea and the actual Tiptap editable surface. With
+[`<hw:form error-focus>`](./form.md#error-focus), an invalid editor receives focus in field order once it is ready,
+without skipping to a later error or taking focus the user chose while it loaded. Style the error visual on the wrapper
+so it covers the whole editor (toolbar + contenteditable + textarea) instead of just the hidden form payload:
 
 ```css
 [data-slot="rich-text"][data-invalid] {

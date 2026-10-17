@@ -1,6 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { dispatchEvent, mountController, mountMultipleControllers, wait } from "../../resources/js/helpers/test_stimulus.js";
+import {
+    dispatchEvent,
+    mountController,
+    mountMultipleControllers,
+    wait,
+} from "../../resources/js/helpers/test_stimulus.js";
 import AlertDialogController from "../../resources/js/controllers/alert_dialog_controller.js";
 import ModalController from "../../resources/js/controllers/modal_controller.js";
 
@@ -37,6 +42,52 @@ const LOADING_TEMPLATE_HTML = `
         </div>
     </div>
 `;
+
+test.serial("modal frame presentation changes all size hooks and resets after close", async () => {
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
+        <div data-controller="modal">
+            <a href="/edit" data-turbo-frame="modal-frame" data-overlay-family="modal" data-overlay-size="full">Edit</a>
+            <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-modal-target="backdrop"></div>
+                <div data-modal-target="dialog" data-size="md">
+                    <div data-slot="modal-panel" data-size="md">
+                        <div data-slot="modal-content" data-size="md">
+                            <turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame>
+                        </div>
+                        <button data-slot="modal-close-icon" data-modal-size="md">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    );
+    const frame = document.getElementById("modal-frame");
+    dispatchEvent(document.querySelector('a[href="/edit"]'), "click");
+
+    expect([...document.querySelectorAll('[data-size="full"]')].map((el) => el.dataset.slot)).toEqual([
+        undefined,
+        "modal-panel",
+        "modal-content",
+    ]);
+    expect(document.querySelector('[data-slot="modal-close-icon"]').dataset.modalSize).toBe("full");
+
+    const response = document.createElement("turbo-frame");
+    response.dataset.overlayFamily = "modal";
+    response.dataset.overlaySize = "42rem";
+    frame.dispatchEvent(
+        new CustomEvent("turbo:before-frame-render", { bubbles: true, detail: { newFrame: response } }),
+    );
+    expect(document.querySelector('[data-modal-target="dialog"]').style.maxWidth).toBe("42rem");
+
+    await mounted.controller.open();
+    await mounted.controller.close();
+    expect(document.querySelector('[data-modal-target="dialog"]').dataset.size).toBe("md");
+    expect(document.querySelector('[data-modal-target="dialog"]').style.maxWidth).toBe("");
+    expect(document.querySelector('[data-slot="modal-close-icon"]').dataset.modalSize).toBe("md");
+});
 
 test.serial("local anchor triggers prevent navigation while frame anchors keep Turbo navigation", async () => {
     mounted = await mountController(
@@ -197,7 +248,8 @@ test.serial("frame links inside an open modal preserve its original opener", asy
                 <div data-modal-target="dialog"><turbo-frame id="modal-frame" data-modal-target="dynamicContent"></turbo-frame></div>
             </div>
         </div>
-    `);
+    `,
+    );
 
     const opener = document.getElementById("opener");
     await mounted.controller.open({ currentTarget: opener });
@@ -207,7 +259,10 @@ test.serial("frame links inside an open modal preserve its original opener", asy
 });
 
 test.serial("frame navigation during exit cancels the close without clearing the response", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="opener">Open</button>
             <a id="next" href="/next" data-turbo-frame="modal-frame" data-action="click->modal#open">Next</a>
@@ -216,11 +271,13 @@ test.serial("frame navigation during exit cancels the close without clearing the
                 <div data-modal-target="dialog"><turbo-frame id="modal-frame" data-modal-target="dynamicContent"><p>Old</p></turbo-frame></div>
             </div>
         </div>
-    `);
+    `,
+    );
 
     await mounted.controller.open({ currentTarget: document.getElementById("opener") });
     const motion = fakeAnimation();
-    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
+    mounted.controller.dialogTarget.getAnimations = () =>
+        mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
     const closing = mounted.controller.close();
     await wait(0);
 
@@ -239,7 +296,7 @@ test.serial("injects the per-link template when the trigger declares data-loadin
     mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 
     const commentsLink = document.querySelector('a[href="/items/1/comments"]');
-    const frame = document.querySelector('#modal-frame');
+    const frame = document.querySelector("#modal-frame");
 
     dispatchEvent(commentsLink, "click");
     frame.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
@@ -251,7 +308,7 @@ test.serial("injects the per-link template when the trigger declares data-loadin
 test.serial("skips template injection when the fetch request targets a different frame", async () => {
     mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
 
-    const frame = document.querySelector('#modal-frame');
+    const frame = document.querySelector("#modal-frame");
     const otherFrame = document.createElement("turbo-frame");
     otherFrame.id = "other-frame";
     document.body.appendChild(otherFrame);
@@ -263,7 +320,7 @@ test.serial("skips template injection when the fetch request targets a different
 
 test.serial("skips template injection when the modal is already open", async () => {
     mounted = await mountController("modal", ModalController, LOADING_TEMPLATE_HTML);
-    const frame = document.querySelector('#modal-frame');
+    const frame = document.querySelector("#modal-frame");
 
     frame.innerHTML = "<p>existing content</p>";
     mounted.controller.open();
@@ -377,7 +434,9 @@ test.serial("defers an empty turbo stream update for dynamic content until after
 });
 
 test.serial("Escape closes only the top modal when modals are nested", async () => {
-    mounted = await mountMultipleControllers({ modal: ModalController }, `
+    mounted = await mountMultipleControllers(
+        { modal: ModalController },
+        `
         <div id="outer" data-controller="modal"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="outer-trigger" data-action="modal#open">Open outer</button>
@@ -399,7 +458,8 @@ test.serial("Escape closes only the top modal when modals are nested", async () 
                 </div>
             </div>
         </div>
-    `);
+    `,
+    );
 
     const outer = mounted.getController("modal", document.getElementById("outer"));
     const inner = mounted.getController("modal", document.getElementById("inner"));
@@ -424,7 +484,9 @@ test.serial("Escape closes only the top modal when modals are nested", async () 
 });
 
 test.serial("AlertDialog opened inside a modal handles Escape without closing the modal", async () => {
-    mounted = await mountMultipleControllers({ modal: ModalController, "alert-dialog": AlertDialogController }, `
+    mounted = await mountMultipleControllers(
+        { modal: ModalController, "alert-dialog": AlertDialogController },
+        `
         <div id="modal" data-controller="modal"
              data-modal-lock-scroll-class="overflow-hidden">
             <button id="modal-trigger" data-action="modal#open">Open modal</button>
@@ -447,7 +509,8 @@ test.serial("AlertDialog opened inside a modal handles Escape without closing th
                 </div>
             </div>
         </div>
-    `);
+    `,
+    );
 
     const modal = mounted.getController("modal", document.getElementById("modal"));
     const alertDialog = mounted.getController("alert-dialog", document.getElementById("confirm"));
@@ -495,7 +558,9 @@ test.serial("clicking the backdrop does not block the next trigger click", async
 
     expect(modal.isOpen).toBe(true);
 
-    backdrop.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, clientX: 10, clientY: 10 }));
+    backdrop.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, clientX: 10, clientY: 10 }),
+    );
     await wait(10);
 
     expect(modal.isOpen).toBe(false);
@@ -507,7 +572,10 @@ test.serial("clicking the backdrop does not block the next trigger click", async
 });
 
 test.serial("Turbo cache synchronously cancels a pending exit", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="trigger">Open</button>
             <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
@@ -515,12 +583,13 @@ test.serial("Turbo cache synchronously cancels a pending exit", async () => {
                 <div data-modal-target="dialog"><button>Close</button></div>
             </div>
         </div>
-    `);
+    `,
+    );
     const modal = mounted.controller.modalTarget;
     const motion = fakeAnimation();
 
     await mounted.controller.open({ currentTarget: document.getElementById("trigger") });
-    mounted.controller.dialogTarget.getAnimations = () => modal.dataset.state === "closed" ? [motion.animation] : [];
+    mounted.controller.dialogTarget.getAnimations = () => (modal.dataset.state === "closed" ? [motion.animation] : []);
     const closing = mounted.controller.close();
     await wait(0);
 
@@ -548,7 +617,8 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
                 <div data-modal-target="dialog"><button>Close</button></div>
             </div>
         </div>
-    `);
+    `,
+    );
 
     const trigger = document.getElementById("trigger");
     let openedEvents = 0;
@@ -591,7 +661,10 @@ test.serial("Turbo morph rebuilds an open overlay around replacement targets", a
 });
 
 test.serial("target morph during exit preserves a deferred Turbo Stream", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div id="modal-shell" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
                 <div data-modal-target="backdrop"></div>
@@ -600,10 +673,12 @@ test.serial("target morph during exit preserves a deferred Turbo Stream", async 
                 </div>
             </div>
         </div>
-    `);
+    `,
+    );
     await mounted.controller.open();
     const motion = fakeAnimation();
-    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
+    mounted.controller.dialogTarget.getAnimations = () =>
+        mounted.controller.modalTarget.dataset.state === "closed" ? [motion.animation] : [];
     const frame = document.getElementById("modal-frame");
     const stream = document.createElement("turbo-stream");
     stream.setAttribute("action", "update");
@@ -630,7 +705,10 @@ test.serial("target morph during exit preserves a deferred Turbo Stream", async 
 });
 
 test.serial("close during an opening target morph is not undone by stale reopen intent", async () => {
-    mounted = await mountController("modal", ModalController, `
+    mounted = await mountController(
+        "modal",
+        ModalController,
+        `
         <div data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="trigger">Open</button>
             <div data-modal-target="modal" data-state="closed" data-motion="default" hidden inert>
@@ -638,9 +716,11 @@ test.serial("close during an opening target morph is not undone by stale reopen 
                 <div data-modal-target="dialog"><button>Close</button></div>
             </div>
         </div>
-    `);
+    `,
+    );
     const motion = fakeAnimation();
-    mounted.controller.dialogTarget.getAnimations = () => mounted.controller.modalTarget.dataset.state === "open" ? [motion.animation] : [];
+    mounted.controller.dialogTarget.getAnimations = () =>
+        mounted.controller.modalTarget.dataset.state === "open" ? [motion.animation] : [];
 
     const opening = mounted.controller.open({ currentTarget: document.getElementById("trigger") });
     await wait(0);
@@ -659,7 +739,9 @@ test.serial("close during an opening target morph is not undone by stale reopen 
 });
 
 test.serial("morphing an outer modal preserves the nested modal as the top overlay", async () => {
-    mounted = await mountMultipleControllers({ modal: ModalController }, `
+    mounted = await mountMultipleControllers(
+        { modal: ModalController },
+        `
         <div id="outer" data-controller="modal" data-modal-lock-scroll-class="overflow-hidden">
             <button id="outer-trigger">Open outer</button>
             <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
@@ -675,7 +757,8 @@ test.serial("morphing an outer modal preserves the nested modal as the top overl
                 </div>
             </div>
         </div>
-    `);
+    `,
+    );
     const outerRoot = document.getElementById("outer");
     const innerRoot = document.getElementById("inner");
     const outer = mounted.getController("modal", outerRoot);

@@ -46,6 +46,7 @@ export default class extends Controller {
             editable: this.editableValue,
             placeholder,
             editorClass: this.editorClassValue,
+            invalid: this.element.getAttribute("aria-invalid") === "true",
             extensions: this.extensions({ placeholder }),
             onUpdate: ({ html, json }) => this.handleUpdate(html, json),
             onFocus: () => this.dispatch("focus", { prefix: "rich-text" }),

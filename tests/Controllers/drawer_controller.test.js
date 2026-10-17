@@ -148,6 +148,32 @@ test.serial("preserves directional styling hooks on the dialog", async () => {
     expect(modal().dataset.state).toBe("open");
 });
 
+test.serial("a drawer switches axis and dimensions per frame opening, then restores authored defaults", async () => {
+    await mount(frameHtml());
+    const root = document.getElementById("drawer-shell");
+    const dialog = panel();
+    dialog.dataset.direction = "down";
+    dialog.dataset.axis = "y";
+    root.style.setProperty("--drawer-height", "auto");
+    const link = root.querySelector('a[href="/items/1/edit"]');
+    link.dataset.overlayFamily = "drawer";
+    link.dataset.overlaySide = "left";
+    link.dataset.overlaySize = "30rem";
+    click(link);
+
+    expect(dialog.dataset.direction).toBe("left");
+    expect(dialog.dataset.axis).toBe("x");
+    expect(root.style.getPropertyValue("--drawer-width")).toBe("30rem");
+    expect(root.style.getPropertyValue("--drawer-max-width")).toBe("30rem");
+    expect(root.style.getPropertyValue("--drawer-height")).toBe("");
+
+    await mounted.controller.open();
+    await mounted.controller.close();
+    expect(dialog.dataset.direction).toBe("down");
+    expect(dialog.dataset.axis).toBe("y");
+    expect(root.style.getPropertyValue("--drawer-height")).toBe("auto");
+});
+
 test.serial("closeForCache closes immediately without waiting for transitions", async () => {
     await mount();
 
@@ -259,7 +285,7 @@ test.serial("empty streams for the drawer root wait for the close animation", as
     expect(root.innerHTML).toBe("");
 });
 
-test.serial("refresh streams wait for the drawer close animation", async () => {
+test.serial("refresh streams stay native and do not implicitly close a drawer", async () => {
     await mount(frameHtml());
     const frame = document.getElementById("drawer-frame");
 
@@ -272,22 +298,14 @@ test.serial("refresh streams wait for the drawer close animation", async () => {
     const stream = document.createElement("turbo-stream");
     stream.setAttribute("action", "refresh");
 
-    let rendered = false;
-    stream.performAction = () => {
-        rendered = true;
-    };
-
     document.body.appendChild(stream);
-    stream.dispatchEvent(new CustomEvent("turbo:before-stream-render", { bubbles: true }));
+    const event = new CustomEvent("turbo:before-stream-render", { bubbles: true, cancelable: true });
+    stream.dispatchEvent(event);
 
-    expect(rendered).toBe(false);
-    expect(mounted.controller.isOpen).toBe(false);
-    expect(modal().hidden).toBe(true);
-
-    await wait(10);
-
-    expect(rendered).toBe(true);
-    expect(modal().hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(mounted.controller.isOpen).toBe(true);
+    expect(modal().hidden).toBe(false);
+    expect(frame.innerHTML).toContain("Loaded drawer form");
 });
 
 test.serial("frame fetches use default and per-link loading templates", async () => {

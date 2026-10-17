@@ -3,6 +3,8 @@ import { Controller } from "@hotwired/stimulus";
 
 import { createOverlay } from "./_overlay.js";
 import { createFrameOverlay } from "./_frame_overlay.js";
+import { createOverlayPresentation } from "./_overlay_presentation.js";
+import { createOverlayHost, dismissOverlayInstance } from "./_overlay_host.js";
 
 export default class DrawerController extends Controller {
     static targets = ["trigger", "modal", "backdrop", "dialog", "dynamicContent", "loadingTemplate"];
@@ -18,10 +20,13 @@ export default class DrawerController extends Controller {
 
     overlay = null;
     frameOverlay = null;
+    frameHost = null;
     triggerElement = null;
     connected = false;
     hasConnected = false;
     overlayRefreshQueued = false;
+    framePresentation = createOverlayPresentation(this);
+    closeOverlayHandler = () => this.close();
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -30,12 +35,17 @@ export default class DrawerController extends Controller {
     connect() {
         this.connected = true;
         this.#setupOverlay(false, null, null, !this.hasConnected);
+        this.element.addEventListener("hotwire:overlay-close", this.closeOverlayHandler);
+        this.frameHost = createOverlayHost(this);
         this.hasConnected = true;
     }
 
     disconnect() {
         this.connected = false;
         this.overlayRefreshQueued = false;
+        this.frameHost?.cleanup();
+        this.frameHost = null;
+        this.element.removeEventListener("hotwire:overlay-close", this.closeOverlayHandler);
         this.frameOverlay?.cleanup();
         this.frameOverlay = null;
         this.overlay?.cleanup();
@@ -96,6 +106,7 @@ export default class DrawerController extends Controller {
     }
 
     open(event) {
+        if (event?.defaultPrevented && event.currentTarget?.matches?.("a[href][data-turbo-frame]")) return;
         if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
         if (event && event.button !== undefined && event.button !== 0) return;
         if (this.isOpen) return;
@@ -106,6 +117,7 @@ export default class DrawerController extends Controller {
 
     close() {
         this.frameOverlay?.markDismissedWhileLoading();
+        dismissOverlayInstance(this);
         return this.overlay?.close();
     }
 
@@ -122,6 +134,7 @@ export default class DrawerController extends Controller {
     }
 
     closeForCache() {
+        this.frameOverlay?.resetPresentation();
         this.frameOverlay?.clearContent();
         this.overlay?.closeNow({ restoreFocus: false });
     }

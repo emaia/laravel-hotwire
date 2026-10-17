@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayReturnRegion;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
 
@@ -27,10 +28,17 @@ class Button extends Component
         public ?string $tooltipMotion = null,
         public ?string $tooltipEnabledWhen = null,
         public ?Htmlable $stimulus = null,
+        public ?string $overlay = null,
+        public ?string $overlaySide = null,
+        public ?string $overlaySize = null,
+        public ?string $overlayReturn = null,
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
         $this->as = PolymorphicTag::normalize($this->as, ['button', 'a'], 'button');
         $this->type = PolymorphicTag::buttonType($this->type);
+        if ($overlayReturn !== null) {
+            OverlayReturnRegion::name($overlayReturn);
+        }
     }
 
     public function render()

@@ -7,14 +7,16 @@ Open and close `<hw:modal>` instances from controller responses, without writing
 | Scenario                                                | Recommended path                                      |
 |---------------------------------------------------------|-------------------------------------------------------|
 | User clicks a link → open modal with server content     | `<hw:modal frame="modal">` + Turbo Frame link     |
-| Form submission → close the open frame-driven modal     | `turbo_stream()->update('modal', '')`                 |
-| Form submission → close + refresh underlying page       | `turbo_stream()->refresh(...)->update('modal', '')`   |
-| Frame content cleared → modal closes itself             | `turbo_stream()->update($frameId, '')`                |
+| Form submission → close the requesting overlay          | `turbo_stream()->closeOverlay($request->overlayOrigin())` |
+| Update background content without discarding drafts     | Targeted `replace`/`update` + `closeOverlay($origin)` |
+| Server decision → open a new modal                       | `response()->modal()->open(view(...), source: ...)` |
+| Static reusable modal → close without erasing content    | `turbo_stream()->closeOverlay('static-modal-id')` |
 
 ## Opening: Turbo Frame as the natural path
 
-The modal component watches the Turbo Frame rendered by `frame="modal"`. When that frame receives
-content, the modal opens automatically. When the content is cleared, it closes.
+The modal component declares the canonical host `frame="modal"`. Each link opening creates a concrete Frame instance;
+when its loading template or response arrives, that instance opens. Unqualified navigation inside it reuses the same
+Frame. A second link explicitly targeting the canonical host starts a child instead of replacing the parent's draft.
 
 This is the path you want for most "open with content" flows. See the
 [frame-or-page recipe](./frame-or-page.md) for the full setup.
@@ -45,16 +47,17 @@ lives in a shared layout).
 
 ## Closing from the server
 
-Two equivalent paths, depending on whether the modal is frame-driven or static.
+Use the same explicit close operation for frame-driven instances and reusable static overlays.
 
-### Frame-driven modal — clear the frame
+### Frame-driven modal — close the requesting instance
 
 ```php
-return turbo_stream()->update('modal');
+return turbo_stream()->closeOverlay($request->overlayOrigin());
 ```
 
-The modal closes with its transition, then the frame is cleared. Cleanest option when the modal is
-content-driven.
+The modal closes through its normal lifecycle and the generated instance is discarded. A delayed response cannot close
+a newer opening. An empty `update($request->turboFrameId())` remains supported for a primary Frame, but the canonical
+`modal` host is not the child's id. See [overlay responses](./overlay-responses.md).
 
 ### Remove an open modal root after closing
 
@@ -69,11 +72,10 @@ Use this when the modal markup is disposable. For reusable layout modals, clear 
 
 ### Static modal — close without removing markup
 
-For modals that don't have a Turbo Frame inside and should stay in the DOM, append a self-removing
-[`modal-auto-close`](../controllers/modal-auto-close.md) marker:
+For modals without a Turbo Frame that should stay in the DOM, name the static root explicitly:
 
 ```php
-return turbo_stream()->append('edit-post', '<span data-controller="modal-auto-close"></span>');
+return turbo_stream()->closeOverlay('edit-post');
 ```
 
 For disposable static modal markup, you can also target the modal root with an empty update:
@@ -85,13 +87,14 @@ return turbo_stream()->update('edit-post');
 ## Combining with other streams
 
 The real value of server-driven modals is composing the close with everything else the response
-needs to do — refresh the underlying list, fire a toast, etc. See
+needs to do — update the affected row, fire a toast, etc. A native `refresh` is a page-wide operation, not an implicit
+close; an accepted refresh can discard the whole overlay stack. See
 [composing streams](./composing-streams.md).
 
 ## See also
 
 - [`<hw:modal>`](../components/modal.md) — the modal component.
-- [`modal-auto-close`](../controllers/modal-auto-close.md) — closes reusable static modals without
-  removing their markup.
+- [Overlay responses](./overlay-responses.md) — family-specific openings, common closing, contextual returns and refresh semantics.
+- [`modal-auto-close`](../controllers/modal-auto-close.md) — older Modal-only marker, retained for existing integrations.
 - [Frame-or-page views](./frame-or-page.md) — the canonical pattern for opening modals with server
   content.

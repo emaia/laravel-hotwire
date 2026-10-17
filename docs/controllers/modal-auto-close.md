@@ -7,12 +7,13 @@ open `<hw:modal>` via Turbo Stream so the server can dismiss the modal after a s
 **Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with
 `php artisan hotwire:controllers modal-auto-close`.
 
-> Pairs naturally with the [`closeModal` macro](../components/modal.md#convenience-macro) on
-> `TurboStreamBuilder`. Use the macro in controllers and let this controller handle the client-side close.
+For new code, prefer the package's common [`closeOverlay()` macro](../recipes/overlay-responses.md#return-to-a-parent-and-close):
+it closes Modal, Sheet or Drawer by explicit instance/static root id without depending on marker ancestry. This
+Modal-only controller remains available for existing integrations; no custom `closeModal` macro is required.
 
 ## Requirements
 
-- The [`modal`](./modal.md) controller published in the same app.
+- The [`modal`](./modal.md) controller loaded in the same app.
 
 ## How it works
 
@@ -58,7 +59,6 @@ The modal closes as soon as Stimulus connects.
 ## Notes
 
 - The modal must be **open** when the stream arrives — closing an already-closed modal is a no-op.
-- For modals driven by a Turbo Frame, you can alternatively close them by clearing the frame:
-  `turbo_stream()->update('frame-id', '')`. The modal's content observer will close it automatically.
-  This controller is the right fit for **static** modals (no Turbo Frame) where there is no observer to
-  trigger the close.
+- For frame-backed instances, target their concrete primary Frame, not the canonical host. An empty
+  `update`/`replace` is delayed until exit motion finishes; `closeOverlay($request->overlayOrigin())` avoids clearing
+  reusable markup directly. For a static modal, use `closeOverlay('static-root-id')` to preserve its content.

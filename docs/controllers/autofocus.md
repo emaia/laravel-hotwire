@@ -27,11 +27,12 @@ gap so modals, frame-loaded forms and wizard steps land with the right field foc
 
 ## Strategies
 
-| Strategy              | Picks                                                                                |
-|-----------------------|--------------------------------------------------------------------------------------|
-| `autofocus-attribute` | First `[autofocus]` element inside the controller scope. Default.                    |
-| `first-focusable`     | First `<input>`, `<select>`, `<textarea>` or `<button>` inside the controller scope. |
-| `target`              | The `data-autofocus-target="field"` element.                                         |
+| Strategy              | Picks                                                                                                       |
+|-----------------------|-------------------------------------------------------------------------------------------------------------|
+| `autofocus-attribute` | First `[autofocus]` element inside the controller scope. Default.                                           |
+| `first-focusable`     | First `<input>`, `<select>`, `<textarea>` or `<button>` inside the controller scope.                        |
+| `first-invalid`       | First visible, enabled, focusable control with `aria-invalid="true"`. Does nothing without eligible errors. |
+| `target`              | The `data-autofocus-target="field"` element.                                                                |
 
 All strategies skip elements that are `[disabled]`, `[type="hidden"]`, `[tabindex="-1"]`, or inside a
 `[hidden]` / `[aria-hidden="true"]` ancestor.
@@ -44,6 +45,11 @@ All strategies skip elements that are `[disabled]`, `[type="hidden"]`, `[tabinde
   frames. **Does not** run on `turbo:render`, so Drive's native focus restoration is left alone.
 - Never steals focus: if anything inside the controller scope is already the active element when the
   controller would run, the focus call is skipped.
+- `first-invalid` is stricter: it only recovers focus from the document body or the scope's own dialog container,
+  preserving focus in another form or overlay too. It skips CSS-hidden, inert and disabled controls, non-focusable error
+  wrappers and negative tabindex. On a form, controls associated with a different form are ignored.
+- `first-invalid` also observes `rich-text:ready` within its scope. A pending first invalid Rich Text is not skipped for
+  a later field, and readiness only recovers focus if the user has not already focused another control.
 
 ## Basic Usage
 
@@ -91,6 +97,30 @@ first that the user can type into."
     <input type="text" name="slug"/>
 </form>
 ```
+
+## Recovering focus after validation
+
+Use [`<hw:form error-focus>`](../components/form.md#error-focus) for the packaged form integration, or compose the
+strategy directly on a native form:
+
+```html
+<form data-controller="autofocus" data-autofocus-strategy-value="first-invalid">
+    <label>Name <input name="name" value="Ada"></label>
+    <label>Email <input name="email" value="invalid" aria-invalid="true" aria-describedby="email-error"></label>
+    <p id="email-error">Enter a valid email address.</p>
+    <button type="submit">Save</button>
+</form>
+```
+
+After a Frame replacement removes the focused input, this strategy focuses the first eligible invalid control rather
+than returning to the first field regardless of errors. Mark the interactive trigger or editor for custom widgets; a
+hidden transport input/select or a non-focusable error wrapper is not a focus destination. Focus does not scroll by
+default, and a relevant Frame load does not take focus from a control the user already chose.
+
+In-place Turbo Drive morphs that preserve the form/controller do not start a new focus attempt: there is no new `connect()`
+or Frame load, and the controller deliberately does not listen to `turbo:render`. Focus may stay in the input after
+Enter, or fall back to the body if Turbo disables a clicked submit button; `first-invalid` does not redirect it after
+that morph.
 
 ## Picking an explicit target
 

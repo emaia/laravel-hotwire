@@ -127,6 +127,7 @@ class Sheet extends Component
                 'id' => $this->id,
                 'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => 'sheet',
+                'data-hotwire-overlay-host' => $this->frame,
                 'data-sheet-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-sheet-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-sheet-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
@@ -134,7 +135,7 @@ class Sheet extends Component
                 'data-sheet-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->sheet#closeForCache',
                 'style' => $this->style(),
-            ], $attributes, $this->stimulus, protectedPrefixes: ['data-sheet-']),
+            ], $attributes, $this->stimulus, protectedPrefixes: ['data-sheet-', 'data-hotwire-overlay-host']),
         ];
     }
 

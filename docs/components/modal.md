@@ -154,12 +154,27 @@ ids and updates the persistent dialog references before opening:
 </hw:frame-or-page>
 ```
 
-When the frame receives content, the modal opens automatically. A successful action may close the modal by returning an
-empty `update` or `replace` stream for the frame id, or by returning a `refresh` stream:
+When the frame receives content, the modal opens automatically. Close only the submitting instance through the common
+overlay response macro:
 
 ```php
-return turbo_stream()->update('modal');
+return turbo_stream()->closeOverlay($request->overlayOrigin());
 ```
+
+The host can generate multiple instances from one declaration. Links targeting `modal` open a new instance (including
+links in an existing modal); links and forms without an explicit Frame target inside the opened content stay in that
+instance. The server view keeps `<hw:frame-or-page frame="modal">`, which emits the generated Frame id when responding
+to that instance. The package handles shell ids, accessible references, stacking and cleanup. Use the concrete id from
+the request if using an empty `update`/`replace` close stream instead: updating the canonical `modal` host does not close a child instance. A global
+`refresh` may discard a parent draft, so it is not a substitute for closing only the child. See
+[frame-backed overlay instances](./frame-or-page.md#frame-backed-overlay-instances).
+
+A shared host can serve compact customer forms and wide sales forms: use
+`<hw:button as="a" frame="modal" overlay-size="sm">` to size the loading state and
+`<hw:frame-or-page frame="modal" layout="layouts.app" overlay-size="lg">` to let the response
+override it. Size accepts `sm`, `md`, `lg`, `xl`, `full`, `auto` or a CSS width. It updates the positioner, panel,
+content and close-icon hooks together; closing restores the host's `size`. Modal does not accept `overlay-side`.
+See [presentation per opening](./frame-or-page.md#presentation-per-frame-opening).
 
 If the slot does not contain `<hw:modal.content>`, an empty content host is appended automatically. If the slot contains
 one content host, that host wraps the frame and its slot becomes fallback content. More than one content host with
@@ -273,22 +288,22 @@ content, and `size="full"` keeps each row at its natural height while the combin
 
 ## Props
 
-| Prop              | Type                         | Default            | Description                                                                         |
-|-------------------|------------------------------|--------------------|-------------------------------------------------------------------------------------|
-| `id`              | `string\|object`             | generated          | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
-| `size`            | `string`                     | `'md'`             | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`)     |
-| `class`           | `string`                     | `''`               | Additional CSS classes on the panel                                                 |
-| `close-button`    | `bool`                       | `true`             | Shows the X close icon                                                              |
-| `fixed-top`       | `bool`                       | `false`            | Pins the modal to the top with a margin (ignored when `size="full"`)              |
-| `frame`           | `string\|object\|false\|null` | `null`             | Enables dynamic modal content using a Turbo Frame. Objects are resolved with `dom_id()` |
-| `motion`          | `string`                     | `'default'`        | `default` follows CSS motion; `none` disables it                                    |
-| `initial-focus`   | `string`                     | `'auto'`           | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`           |
-| `stimulus`        | `Htmlable\|null`            | `null`             | Additional Stimulus attributes to merge onto the root element                       |
-| `view-transition` | `bool`                       | `false`            | Animates successive renders inside the frame host with the View Transitions API     |
-| `aria-label`      | `string\|null`               | `null`             | Authored accessible name routed to the dialog overlay                               |
-| `aria-labelledby` | `string\|null`              | `null`             | Authored accessible name reference routed to the dialog overlay                     |
-| `aria-description` | `string\|null`             | `null`             | Authored accessible description routed to the dialog overlay                        |
-| `aria-describedby` | `string\|null`             | `null`             | Authored accessible description reference routed to the dialog overlay              |
+| Prop               | Type                          | Default     | Description                                                                                |
+|--------------------|-------------------------------|-------------|--------------------------------------------------------------------------------------------|
+| `id`               | `string\|object`              | generated   | Root id. Pass a model for a [stable cross-request id](../recipes/stable-component-ids.md). |
+| `size`             | `string`                      | `'md'`      | Preset (`sm`/`md`/`lg`/`xl`/`full`/`auto`) or arbitrary width (`800px`, `60vw`)            |
+| `class`            | `string`                      | `''`        | Additional CSS classes on the panel                                                        |
+| `close-button`     | `bool`                        | `true`      | Shows the X close icon                                                                     |
+| `fixed-top`        | `bool`                        | `false`     | Pins the modal to the top with a margin (ignored when `size="full"`)                       |
+| `frame`            | `string\|object\|false\|null` | `null`      | Enables dynamic modal content using a Turbo Frame. Objects are resolved with `dom_id()`    |
+| `motion`           | `string`                      | `'default'` | `default` follows CSS motion; `none` disables it                                           |
+| `initial-focus`    | `string`                      | `'auto'`    | `auto`, `dialog`, `first-focusable`, or `none`; invalid values use `auto`                  |
+| `stimulus`         | `Htmlable\|null`              | `null`      | Additional Stimulus attributes to merge onto the root element                              |
+| `view-transition`  | `bool`                        | `false`     | Animates successive renders inside the frame host with the View Transitions API            |
+| `aria-label`       | `string\|null`                | `null`      | Authored accessible name routed to the dialog overlay                                      |
+| `aria-labelledby`  | `string\|null`                | `null`      | Authored accessible name reference routed to the dialog overlay                            |
+| `aria-description` | `string\|null`                | `null`      | Authored accessible description routed to the dialog overlay                               |
+| `aria-describedby` | `string\|null`                | `null`      | Authored accessible description reference routed to the dialog overlay                     |
 
 ## Subcomponents
 
@@ -363,10 +378,10 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 
 The modal closes automatically on `turbo:before-cache`, preventing ghost modals when navigating with Turbo Drive.
 
-For modals driven by a Turbo Frame, clearing the frame closes them via the content observer:
+For a frame-backed instance, use its validated request origin rather than the canonical host id:
 
 ```php
-return turbo_stream()->update('modal');
+return turbo_stream()->closeOverlay($request->overlayOrigin());
 ```
 
 ## Requirements

@@ -305,6 +305,10 @@ it('projects the Textarea family slot contract from its component class', functi
     ]);
 });
 
+it('declares the autofocus dependency for forms that opt into error focus', function () {
+    expect(HotwireRegistry::make()->component('form')->controllers)->toContain('autofocus');
+});
+
 it('projects form control slot contracts from their component classes', function (string $key, string $class) {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
     $slots = match ($class) {

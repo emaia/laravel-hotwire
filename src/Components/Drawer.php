@@ -136,6 +136,7 @@ class Drawer extends Component
                 'id' => $this->id,
                 'data-slot' => self::SLOTS['root']['name'],
                 'data-controller' => 'drawer',
+                'data-hotwire-overlay-host' => $this->frame,
                 'data-drawer-lock-scroll-value' => $this->lockScroll ? 'true' : 'false',
                 'data-drawer-close-on-escape-value' => $this->closeOnEscape ? 'true' : 'false',
                 'data-drawer-close-on-click-outside-value' => $this->closeOnClickOutside ? 'true' : 'false',
@@ -143,7 +144,7 @@ class Drawer extends Component
                 'data-drawer-lock-scroll-class' => 'overflow-hidden',
                 'data-action' => 'turbo:before-cache@window->drawer#closeForCache',
                 'style' => $this->style(),
-            ], $attributes, $this->stimulus, protectedPrefixes: ['data-drawer-']),
+            ], $attributes, $this->stimulus, protectedPrefixes: ['data-drawer-', 'data-hotwire-overlay-host']),
         ];
     }
 

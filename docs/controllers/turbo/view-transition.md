@@ -48,6 +48,11 @@ Putting `view-transition` only on a `<hw:frame-or-page>` response is not enough 
 in the page. Turbo preserves the current frame element and replaces its children; it does not copy attributes from the
 matching response frame. Enable the option on the layout-owned Modal, Sheet, or Drawer host.
 
+While multiple modal dialogs are open (`aria-modal="true"`, `data-state="open"`, not `hidden`), Frame renders use the
+normal Turbo renderer without starting a document View Transition. Named snapshots can otherwise lift a background
+panel above the foreground backdrop, temporarily removing its blur and dimming. This fallback applies to Frame
+transitions, not the overlays' opening/closing motion; transitions resume once only one modal dialog remains open.
+
 ## Values
 
 | Value          | Type      | Default | Description                                                                  |
