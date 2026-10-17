@@ -48,6 +48,8 @@ All strategies skip elements that are `[disabled]`, `[type="hidden"]`, `[tabinde
 - `first-invalid` is stricter: it only recovers focus from the document body or the scope's own dialog container,
   preserving focus in another form or overlay too. It skips CSS-hidden, inert and disabled controls, non-focusable error
   wrappers and negative tabindex. On a form, controls associated with a different form are ignored.
+- `first-invalid` also observes `rich-text:ready` within its scope. A pending first invalid Rich Text is not skipped for
+  a later field, and readiness only recovers focus if the user has not already focused another control.
 
 ## Basic Usage
 
@@ -114,6 +116,11 @@ After a Frame replacement removes the focused input, this strategy focuses the f
 than returning to the first field regardless of errors. Mark the interactive trigger or editor for custom widgets; a
 hidden transport input/select or a non-focusable error wrapper is not a focus destination. Focus does not scroll by
 default, and a relevant Frame load does not take focus from a control the user already chose.
+
+In-place Turbo Drive morphs that preserve the form/controller do not start a new focus attempt: there is no new `connect()`
+or Frame load, and the controller deliberately does not listen to `turbo:render`. Focus may stay in the input after
+Enter, or fall back to the body if Turbo disables a clicked submit button; `first-invalid` does not redirect it after
+that morph.
 
 ## Picking an explicit target
 

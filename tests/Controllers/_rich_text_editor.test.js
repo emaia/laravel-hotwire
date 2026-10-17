@@ -378,6 +378,15 @@ test("handleDrop fires for dataTransfer image files", () => {
 
 // --- editorClass ---
 
+test("invalid editors expose aria-invalid on the editable surface without losing editorClass", () => {
+    new RichTextEditor(elem(), { invalid: true, editorClass: "prose" });
+
+    expect(editorState.lastOptions.editorProps.attributes).toEqual({
+        class: "prose",
+        "aria-invalid": "true",
+    });
+});
+
 test("editorClass option lands on editorProps.attributes.class", () => {
     new RichTextEditor(elem(), { editorClass: "prose prose-sm focus:outline-none" });
 

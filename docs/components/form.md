@@ -187,8 +187,15 @@ does nothing. It only recovers focus from the document body or the form's own di
 or another form/overlay keeps its focus. This does not change an overlay's `initial-focus` policy.
 
 Hidden, inert, disabled and negative-tabindex controls are skipped. Composite controls such as Multi Select expose
-`aria-invalid="true"` on their interactive trigger, not on the hidden submission control. Custom widgets must likewise
-mark an eligible interactive element. Controls explicitly associated with another form are ignored.
+`aria-invalid="true"` on their interactive trigger, not on the hidden submission control. Rich Text forwards it to the
+Tiptap editor. If the first invalid Rich Text is still mounting, focus waits for that editor instead of jumping to a
+later error; focus chosen by the user while it loads is preserved. Custom widgets must likewise mark an eligible
+interactive element. Controls explicitly associated with another form are ignored.
+
+This is not a focus policy for in-place Turbo Drive morphs: when a same-page validation redirect preserves the form and
+its controller, no new mount or Frame load occurs, so `error-focus` does not start another attempt. An input can retain
+focus when submitting with Enter; clicking Submit can leave focus on the body because Turbo temporarily disables that
+button.
 
 Focus uses `preventScroll`; add `error-scroll` separately when the error should also be scrolled into view. While
 `error-focus` is enabled, `data-autofocus-*` attributes on the form are protected. For other autofocus strategies, leave
