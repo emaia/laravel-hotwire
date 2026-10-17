@@ -27,10 +27,6 @@
         <x-hw::modal.content />
     @endif
 
-    @if ($modalFrame !== null)
-        @include('hotwire::component-views.shared.overlay-return-feedback')
-    @endif
-
     @if (isset($loading_template))
         <template data-modal-target="loadingTemplate">
             {{ $loading_template }}

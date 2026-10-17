@@ -197,22 +197,17 @@ class LaravelHotwireServiceProvider extends ServiceProvider
             return;
         }
 
-        TurboStreamBuilder::macro('returnFromOverlay', function (string $origin, string|Htmlable $content, int|string|null $result = null) {
+        TurboStreamBuilder::macro('returnFromOverlay', function (string $origin, string|Htmlable $content) {
             if (trim($origin) === '' || preg_match('/\s/', $origin)) {
                 throw new InvalidArgumentException('Overlay origin must identify an explicit instance or static root.');
             }
             $html = $content instanceof Htmlable ? $content->toHtml() : $content;
             if (trim($html) === '') {
-                throw new InvalidArgumentException('An overlay return needs a non-empty fallback fragment for native consumers.');
-            }
-            if ($result !== null && trim((string) $result) === '') {
-                throw new InvalidArgumentException('An overlay return result must identify the saved record.');
+                throw new InvalidArgumentException('An overlay return needs a non-empty HTML fragment.');
             }
 
             /** @var TurboStreamBuilder $this */
-            return $this->action('hotwire-overlay-return', $origin, $html, $result === null ? [] : [
-                'data-overlay-result' => (string) $result,
-            ]);
+            return $this->action('hotwire-overlay-return', $origin, $html);
         });
     }
 

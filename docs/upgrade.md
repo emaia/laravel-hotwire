@@ -56,11 +56,11 @@ top-level opening, including when closing the requesting overlay in the same res
 one declared host of that family, with any Frame id. Use a Frame link to its id to select among multiple hosts of the
 same family.
 
-Replace raw overlay return actions and attributes with `returnFromOverlay($origin, $content, result: $id)`,
+Replace raw overlay return actions and attributes with `returnFromOverlay($origin, $content)`,
 `<hw:button overlay-return="customer" ...>` and `<hw:overlay-return name="customer">...</hw:overlay-return>`.
 The return replaces the wrapper's **contents**, so migrate options-only fragments to the complete field, including its
-`<select>`, labels and errors as needed. Keep the wrapper out of the returned fragment. `result:` is only required when
-the region declares its own renderer through `src`; declare captured scalar context through `:fields="[...]"`.
+`<select>`, labels and errors as needed. Keep the wrapper out of the returned fragment. Rich or contextual fields can
+return a chosen application fragment or a native Turbo Frame; there is no package-managed return renderer.
 
 Button and FrameOrPage infer the presentation family from Frame ids `modal`, `sheet` and `drawer`. Keep an explicit
 `overlay` naming the receiving family when adding `overlay-side` or `overlay-size` to a custom Frame id. See

@@ -822,7 +822,7 @@ return [
             'view' => 'hotwire::component-views.overlay-return',
             'docs' => 'docs/components/overlay-return.md',
             'category' => 'overlay',
-            'description' => 'Parent form region that receives the record created in a Modal, Sheet or Drawer, as a returned fragment or re-rendered by its own route',
+            'description' => 'Parent form region that receives a complete HTML field after creating a record in a Modal, Sheet or Drawer, preserving the rest of the draft',
             'controllers' => [],
             'styling' => [
                 'slots' => [

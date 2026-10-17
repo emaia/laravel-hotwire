@@ -70,25 +70,25 @@ it('returns a fragment to the captured parent region of an explicit origin', fun
         ->not->toContain('data-overlay-result');
 });
 
-it('includes the saved record identity for a parent region with its own renderer', function (int|string $result, string $expected) {
+it('returns a rendered View as the complete parent field', function () {
     $origin = 'modal--'.str_repeat('a', 32);
     $view = view()->file(__DIR__.'/../Fixtures/views/overlay-content.blade.php', ['title' => 'Acme <Ltd>']);
 
-    expect(turbo_stream()->returnFromOverlay($origin, $view, result: $result)->toHtml())
-        ->toContain('data-overlay-result="'.$expected.'"')
+    expect(turbo_stream()->returnFromOverlay($origin, $view)->toHtml())
+        ->not->toContain('data-overlay-result')
         ->toContain('Acme &lt;Ltd&gt;');
-})->with([
-    'integer key' => [42, '42'],
-    'uuid key' => ['0b6f4c1e-7d2a-4a7b-9b1e-1f2d3c4b5a69', '0b6f4c1e-7d2a-4a7b-9b1e-1f2d3c4b5a69'],
-]);
+});
 
-it('requires an explicit origin and a non-empty fallback fragment to return', function () {
+it('does not expose a renderer result argument on overlay returns', function () {
+    expect(fn () => turbo_stream()->returnFromOverlay('modal', '<select></select>', result: 42))
+        ->toThrow(Error::class, 'Unknown named parameter $result');
+});
+
+it('requires an explicit origin and a non-empty fragment to return', function () {
     expect(fn () => turbo_stream()->returnFromOverlay('  ', '<option>Acme</option>'))
         ->toThrow(InvalidArgumentException::class, 'Overlay origin');
     expect(fn () => turbo_stream()->returnFromOverlay('modal--'.str_repeat('a', 32), ' '))
         ->toThrow(InvalidArgumentException::class, 'fragment');
-    expect(fn () => turbo_stream()->returnFromOverlay('modal--'.str_repeat('a', 32), '<option>Acme</option>', result: ''))
-        ->toThrow(InvalidArgumentException::class, 'result');
 });
 
 it('does not replace an application returnFromOverlay macro', function () {

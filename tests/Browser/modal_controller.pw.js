@@ -1203,77 +1203,26 @@ test("a child Stream updates only its initiating form and closes only that insta
     await expect(firstForm.locator('select[name="customer_id"]')).toHaveValue("1");
 });
 
-test("a consumer renderer receives only declared context and close waits for its result", async ({ page }) => {
-    let release;
-    let fetched;
-    const gate = new Promise((resolve) => {
-        release = resolve;
-    });
-    const started = new Promise((resolve) => {
-        fetched = resolve;
-    });
-    let rendererUrl;
-    const scenario = await setupRenderedReturn(page, async (route) => {
-        rendererUrl = new URL(route.request().url());
-        fetched();
-        await gate;
-        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">New rendered customer</p>' });
-    });
-
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await started;
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
-    expect(rendererUrl.searchParams.get("result")).toBe("42");
-    expect(rendererUrl.searchParams.get("context[company_id]")).toBe("north");
-    expect(rendererUrl.searchParams.has("notes")).toBe(false);
-    release();
-
-    await expect(page.locator(".rich-result")).toHaveText("New rendered customer");
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "New customer", exact: true })).toBeFocused();
-    expect(scenario.creations()).toBe(1);
-});
-
-test("retrying a failed consumer renderer does not repeat customer creation", async ({ page }) => {
-    let attempts = 0;
-    const scenario = await setupRenderedReturn(page, async (route) => {
-        attempts++;
-        await route.fulfill(
-            attempts === 1
-                ? { status: 503, contentType: "text/html", body: "Unavailable" }
-                : { contentType: "text/html", body: '<p class="rich-result">Recovered selection</p>' },
-        );
-    });
-
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.getByRole("alert")).toContainText("Saved, but the field could not be updated");
-    await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
-    await page.getByRole("button", { name: "Retry return", exact: true }).click();
-
-    await expect(page.locator(".rich-result")).toHaveText("Recovered selection");
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
-    expect(scenario.creations()).toBe(1);
-    expect(attempts).toBe(2);
-});
-
-async function setupRenderedReturn(
-    page,
-    render,
-    { feedback = true, result = "42", close = true, replaceForm = false } = {},
-) {
+async function setupSimpleReturn(page, { close = false, replaceForm = false, fieldSource = false } = {}) {
     let creations = 0;
     await page.route("http://overlays.test/**", async (route) => {
         const request = route.request();
         const path = new URL(request.url()).pathname;
-        if (path === "/field") return render(route);
+        if (path === "/field") {
+            return route.fulfill({
+                contentType: "text/html",
+                body: '<turbo-frame id="returned-customer"><select name="customer_id"><option selected>Selected customer</option></select></turbo-frame>',
+            });
+        }
         if (path === "/customers") {
             creations++;
             const origin = request.headers()["x-hotwire-overlay-origin"];
+            const field = fieldSource
+                ? '<turbo-frame id="returned-customer" src="/field">Loading customer</turbo-frame>'
+                : `<select name="customer_id"><option selected>Selection ${creations}</option></select>`;
             return route.fulfill({
                 contentType: "text/vnd.turbo-stream.html",
-                body: `${replaceForm ? '<turbo-stream action="replace" target="customer-form"><template><form method="post" action="/customers"><button type="submit">Save customer</button></form></template></turbo-stream>' : ""}<turbo-stream action="hotwire-overlay-return" target="${origin}" ${result === null ? "" : `data-overlay-result="${result}"`}><template><option>Native fallback must not be used</option></template></turbo-stream>${close ? `<turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>` : ""}`,
+                body: `${replaceForm ? '<turbo-stream action="replace" target="customer-form"><template><form id="customer-form" method="post" action="/customers"><button type="submit">Save customer</button></form></template></turbo-stream>' : ""}<turbo-stream action="hotwire-overlay-return" target="${origin}"><template>${field}</template></turbo-stream>${close ? `<turbo-stream action="hotwire-overlay-close" target="${origin}"></turbo-stream>` : ""}`,
             });
         }
         const body =
@@ -1286,14 +1235,13 @@ async function setupRenderedReturn(
     await page.setContent(`
         <form id="parent"><select name="company_id"><option value="north">North</option><option value="south">South</option></select>
             <input name="notes" value="Private draft">
-            <div data-overlay-return-region="customer" data-overlay-return-src="/field" data-overlay-return-fields="company_id"><p>Old selection</p></div>
+            <div data-overlay-return-region="customer"><p>Old selection</p></div>
             <a href="/customer" data-turbo-frame="modal" data-overlay-return-to="customer">New customer</a>
         </form>
         <div data-controller="modal" data-hotwire-overlay-host="modal">
             <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
                 <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
             </div>
-            ${feedback ? '<template data-hotwire-overlay-return-feedback><div data-hotwire-overlay-return-error role="alert" tabindex="-1"><p data-hotwire-overlay-return-message></p><button type="button" data-hotwire-overlay-return-retry hidden>Retry return</button></div></template>' : ""}
         </div>
     `);
     await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
@@ -1307,36 +1255,28 @@ async function setupRenderedReturn(
     return { creations: () => creations };
 }
 
-test("a successful rich return without close removes its pending alert", async ({ page }) => {
-    await setupRenderedReturn(
-        page,
-        (route) => route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Selected customer</p>' }),
-        { close: false },
-    );
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).evaluate((button) => {
-        button.form.insertAdjacentHTML("afterbegin", '<input type="hidden" name="_token" value="csrf-token">');
+test("a simple return without close leaves the child usable and emits field changes", async ({ page }) => {
+    await setupSimpleReturn(page);
+    await page.locator('[data-overlay-return-region]').evaluate((region) => {
+        window.returnEvents = [];
+        for (const name of ["input", "change"]) region.addEventListener(name, (event) => {
+            window.returnEvents.push([event.type, event.bubbles]);
+        });
     });
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
     await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.locator(".rich-result")).toHaveText("Selected customer");
+    await expect(page.locator('[data-overlay-return-region] select')).toHaveText("Selection 1");
     await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
     await expect(page.getByRole("alert")).toHaveCount(0);
-    await expect
-        .poll(() =>
-            page.locator("[data-hotwire-overlay-instance]").evaluate((root) => root.contains(document.activeElement)),
-        )
-        .toBe(true);
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
+    expect(await page.evaluate(() => window.returnEvents)).toEqual([["input", true], ["change", true]]);
 });
 
 test("save and continue can submit the next form after returning a saved customer", async ({ page }) => {
-    await setupRenderedReturn(
-        page,
-        (route) => route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Selected customer</p>' }),
-        { close: false },
-    );
+    await setupSimpleReturn(page);
     await page.getByRole("link", { name: "New customer", exact: true }).click();
     await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.locator(".rich-result")).toHaveText("Selected customer");
+    await expect(page.locator('[data-overlay-return-region] select')).toHaveText("Selection 1");
     const id = await page.locator("[data-hotwire-overlay-instance] turbo-frame").getAttribute("id");
     let continued = 0;
     await page.route("http://overlays.test/continue", (route) => {
@@ -1358,304 +1298,70 @@ test("save and continue can submit the next form after returning a saved custome
     await expect(page.locator("[data-hotwire-overlay-instance]")).toContainText("Continuation saved");
 });
 
-test("a completed return allows a later save on the same form to return again", async ({ page }) => {
-    let renders = 0;
-    const scenario = await setupRenderedReturn(
-        page,
-        (route) => {
-            renders++;
-            return route.fulfill({ contentType: "text/html", body: `<p class="rich-result">Selection ${renders}</p>` });
-        },
-        { close: false },
-    );
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.locator(".rich-result")).toHaveText("Selection 1");
-    await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.locator(".rich-result")).toHaveText("Selection 2");
-    expect(scenario.creations()).toBe(2);
-});
-
-test("a pending renderer locks only the saved form rather than other forms in the instance", async ({ page }) => {
-    let release;
-    const gate = new Promise((resolve) => {
-        release = resolve;
-    });
-    await setupRenderedReturn(
-        page,
-        async (route) => {
-            await gate;
-            await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Returned</p>' });
-        },
-        { close: false },
-    );
-    let unrelated = 0;
-    await page.route("http://overlays.test/unrelated", (route) => {
-        unrelated++;
-        return route.fulfill({
-            contentType: "text/vnd.turbo-stream.html",
-            body: '<turbo-stream action="update" target="other-result"><template>Other form saved</template></turbo-stream>',
-        });
-    });
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Save customer" })).toBeVisible();
-    await page.locator("[data-hotwire-overlay-instance] turbo-frame").evaluate((frame) => {
-        frame.insertAdjacentHTML(
-            "beforeend",
-            '<form method="post" action="/unrelated"><button>Save other form</button></form><p id="other-result"></p>',
-        );
-    });
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.getByRole("alert")).toContainText("Updating the parent field");
-    await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
-    await page.getByRole("button", { name: "Save other form" }).click();
-    await expect(page.locator("#other-result")).toHaveText("Other form saved");
-    expect(unrelated).toBe(1);
-    release();
-    await expect(page.locator(".rich-result")).toHaveText("Returned");
-});
-
-for (const retry of [false, true]) {
-    test(`a replaced saved form stays locked until its renderer ${retry ? "succeeds on retry" : "succeeds"}`, async ({
-        page,
-    }) => {
-        let release;
-        let renders = 0;
-        const gate = new Promise((resolve) => {
-            release = resolve;
-        });
-        const scenario = await setupRenderedReturn(
-            page,
-            async (route) => {
-                renders++;
-                if (renders === 1) {
-                    await gate;
-                    if (retry) return route.fulfill({ status: 503, contentType: "text/html", body: "Unavailable" });
-                }
-                return route.fulfill({
-                    contentType: "text/html",
-                    body: `<p class="rich-result">Returned ${renders}</p>`,
-                });
-            },
-            { close: false, replaceForm: true },
-        );
+for (const replaceForm of [false, true]) {
+    test(`a completed simple return allows another save on the ${replaceForm ? "replacement" : "same"} form`, async ({ page }) => {
+        const scenario = await setupSimpleReturn(page, { replaceForm });
         await page.getByRole("link", { name: "New customer", exact: true }).click();
-        await page.getByRole("button", { name: "Save customer" }).evaluate((button) => {
-            button.form.insertAdjacentHTML(
-                "beforebegin",
-                '<form method="post" action="/other"><button>Other form</button></form>',
-            );
-            button.form.dataset.original = "true";
-        });
         await page.getByRole("button", { name: "Save customer" }).click();
-        await expect(page.getByRole("alert")).toContainText("Updating the parent field");
-        await expect(page.locator("form[data-original]")).toHaveCount(0);
-        await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
-        await expect(page.getByRole("button", { name: "Other form" })).toBeEnabled();
-        const resubmissionPrevented = await page.getByRole("button", { name: "Save customer" }).evaluate((button) => {
-            const form = button.form;
-            let prevented;
-            form.addEventListener(
-                "submit",
-                (event) => {
-                    prevented = event.defaultPrevented;
-                },
-                { once: true },
-            );
-            form.requestSubmit();
-            return prevented;
-        });
-        expect(resubmissionPrevented).toBe(true);
-        expect(scenario.creations()).toBe(1);
-        const laterReplacementPrevented = await page
-            .getByRole("button", { name: "Save customer" })
-            .evaluate((button) => {
-                const replacement = document.createElement("form");
-                replacement.method = "post";
-                replacement.action = "/customers";
-                replacement.innerHTML = '<button type="submit">Save customer</button>';
-                button.form.replaceWith(replacement);
-                let prevented;
-                replacement.addEventListener(
-                    "submit",
-                    (event) => {
-                        prevented = event.defaultPrevented;
-                    },
-                    { once: true },
-                );
-                replacement.requestSubmit();
-                return prevented;
-            });
-        expect(laterReplacementPrevented).toBe(true);
-        expect(scenario.creations()).toBe(1);
-        release();
-        if (retry) {
-            await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeVisible();
-            expect(
-                await page.getByRole("button", { name: "Save customer" }).evaluate((button) => {
-                    let prevented;
-                    button.form.addEventListener(
-                        "submit",
-                        (event) => {
-                            prevented = event.defaultPrevented;
-                        },
-                        { once: true },
-                    );
-                    button.form.requestSubmit();
-                    return prevented;
-                }),
-            ).toBe(true);
-            await page.getByRole("button", { name: "Retry return", exact: true }).click();
-        }
-        await expect(page.locator(".rich-result")).toHaveText(`Returned ${retry ? 2 : 1}`);
+        await expect(page.locator('[data-overlay-return-region] select')).toHaveText("Selection 1");
         await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
         await page.getByRole("button", { name: "Save customer" }).click();
-        await expect(page.locator(".rich-result")).toHaveText(`Returned ${retry ? 3 : 2}`);
+        await expect(page.locator('[data-overlay-return-region] select')).toHaveText("Selection 2");
         expect(scenario.creations()).toBe(2);
     });
 }
 
-test("a rich return without its feedback template fails before opening the creation form", async ({ page }) => {
-    const errors = [];
-    page.on("console", (message) => {
-        if (message.type() === "error") errors.push(message.text());
-    });
-    await setupRenderedReturn(page, (route) => route.fulfill({ contentType: "text/html", body: "Unused" }), {
-        feedback: false,
-    });
+test("a failed simple return blocks replacement creation forms but keeps independent forms usable", async ({ page }) => {
+    const scenario = await setupSimpleReturn(page, { replaceForm: true, close: true });
+    await page.route("http://overlays.test/other", (route) => route.fulfill({
+        contentType: "text/vnd.turbo-stream.html",
+        body: '<turbo-stream action="update" target="other-result"><template>Other saved</template></turbo-stream>',
+    }));
     await page.getByRole("link", { name: "New customer", exact: true }).click();
-
-    await expect.poll(() => errors.some((message) => message.includes("feedback template"))).toBe(true);
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
-});
-
-test("a successful creation missing result identity cannot be submitted again", async ({ page }) => {
-    const scenario = await setupRenderedReturn(
-        page,
-        (route) => route.fulfill({ contentType: "text/html", body: "Unused" }),
-        { result: null },
-    );
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Save customer" })).toBeVisible();
+    await page.locator("[data-hotwire-overlay-instance] turbo-frame").evaluate((frame) => {
+        frame.insertAdjacentHTML("beforeend", '<form method="post" action="/other"><button>Save other</button></form><p id="other-result"></p>');
+    });
+    await page.locator('[data-overlay-return-region]').evaluate((region) => region.replaceWith(region.cloneNode(true)));
     await page.getByRole("button", { name: "Save customer" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("Saved");
+    await expect(page.getByRole("alert")).toContainText("return destination changed");
     await expect(page.getByRole("button", { name: "Save customer" })).toBeDisabled();
+    const prevented = await page.locator("#customer-form").evaluate((form) => {
+        const replacement = form.cloneNode(true);
+        replacement.querySelector("button").disabled = false;
+        form.replaceWith(replacement);
+        const event = new SubmitEvent("submit", { bubbles: true, cancelable: true });
+        replacement.dispatchEvent(event);
+        return event.defaultPrevented;
+    });
+    expect(prevented).toBe(true);
+    await page.getByRole("button", { name: "Save other", exact: true }).click();
+    await expect(page.locator("#other-result")).toHaveText("Other saved");
     expect(scenario.creations()).toBe(1);
     await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
 });
 
-test("a changed unsaved context expires an in-flight renderer without replacing the field", async ({ page }) => {
+test("a returned native Frame loads its field without delaying the child's close", async ({ page }) => {
+    const scenario = await setupSimpleReturn(page, { close: true, fieldSource: true });
     let release;
-    let fetched;
-    const gate = new Promise((resolve) => {
-        release = resolve;
-    });
-    const started = new Promise((resolve) => {
-        fetched = resolve;
-    });
-    await setupRenderedReturn(page, async (route) => {
-        fetched();
+    const gate = new Promise((resolve) => { release = resolve; });
+    await page.route("http://overlays.test/field", async (route) => {
         await gate;
-        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Wrong company</p>' });
-    });
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await started;
-    await page.locator('[name="company_id"]').evaluate((control) => {
-        control.value = "south";
-    });
-    release();
-
-    await expect(page.getByRole("alert")).toContainText("return context changed");
-    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
-    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeHidden();
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
-});
-
-test("a renderer conflict is terminal rather than a retryable creation failure", async ({ page }) => {
-    await setupRenderedReturn(page, (route) =>
-        route.fulfill({ status: 409, contentType: "text/html", body: "Different company" }),
-    );
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-
-    await expect(page.getByRole("alert")).toContainText("incompatible with the return context");
-    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeHidden();
-    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
-});
-
-test("retiring an opening aborts its renderer and cannot update a reopened customer", async ({ page }) => {
-    let fetched;
-    let release;
-    const started = new Promise((resolve) => {
-        fetched = resolve;
-    });
-    const gate = new Promise((resolve) => {
-        release = resolve;
-    });
-    await setupRenderedReturn(page, async (route) => {
-        fetched();
-        await gate;
-        await route.fulfill({ contentType: "text/html", body: '<p class="rich-result">Stale customer</p>' });
-    });
-    const aborted = page.waitForEvent("requestfailed", (request) => new URL(request.url()).pathname === "/field");
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await started;
-    await page.keyboard.press("Escape");
-    await aborted;
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    release();
-
-    await expect(page.getByRole("button", { name: "Save customer" })).toBeEnabled();
-    await expect(page.locator('[data-overlay-return-region="customer"]')).toHaveText("Old selection");
-    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(1);
-});
-
-test("renderer retry checks context again before issuing another GET", async ({ page }) => {
-    let attempts = 0;
-    await setupRenderedReturn(page, (route) => {
-        attempts++;
-        return route.fulfill({ status: 503, contentType: "text/html", body: "Unavailable" });
-    });
-    await page.getByRole("link", { name: "New customer", exact: true }).click();
-    await page.getByRole("button", { name: "Save customer" }).click();
-    await expect(page.getByRole("button", { name: "Retry return", exact: true })).toBeVisible();
-    await page.locator('[name="company_id"]').evaluate((control) => {
-        control.value = "south";
-    });
-    await page.getByRole("button", { name: "Retry return", exact: true }).click();
-
-    await expect(page.getByRole("alert")).toContainText("return context changed");
-    expect(attempts).toBe(1);
-});
-
-for (const source of [
-    "https://other.test/field",
-    "//overlays.test/field",
-    "/field#fragment",
-    "https://name:secret@overlays.test/field",
-    " ",
-    "/field\\other",
-]) {
-    test(`a return renderer rejects unsafe source ${source}`, async ({ page }) => {
-        const errors = [];
-        page.on("console", (message) => {
-            if (message.type() === "error") errors.push(message.text());
+        await route.fulfill({
+            contentType: "text/html",
+            body: '<turbo-frame id="returned-customer"><select name="customer_id"><option selected>Selected customer</option></select></turbo-frame>',
         });
-        await setupRenderedReturn(page, (route) => route.fulfill({ contentType: "text/html", body: "Unused" }));
-        await page
-            .locator("[data-overlay-return-src]")
-            .evaluate((region, value) => region.setAttribute("data-overlay-return-src", value), source);
-        await page.getByRole("link", { name: "New customer", exact: true }).click();
-
-        await expect.poll(() => errors.some((message) => message.includes("safe same-origin URL"))).toBe(true);
-        await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
     });
-}
+    await page.getByRole("link", { name: "New customer", exact: true }).click();
+    const requested = page.waitForRequest("http://overlays.test/field");
+    await page.getByRole("button", { name: "Save customer" }).click();
+    await requested;
+    await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
+    await expect(page.locator("#returned-customer")).toHaveText("Loading customer");
+    release();
+    await expect(page.locator("#returned-customer select")).toHaveText("Selected customer");
+    expect(scenario.creations()).toBe(1);
+});
 
 test("an ambiguous return region blocks opening instead of selecting a global field", async ({ page }) => {
     await page.route("http://overlays.test/", (route) =>

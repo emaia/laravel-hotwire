@@ -391,6 +391,14 @@ Every PR that introduces a new component or controller must include:
 - `_overlay.js` — shared Presence-driven overlay lifecycle (`data-state`, `hidden`, `inert`, FocusTrap, body scroll
   lock, Escape key, focus return and cancelable CSS motion). Consumed by Modal, Alert Dialog, Drawer, Sheet and Sidebar.
   Exports `createOverlay(controller, options)` with animated and immediate open/close lifecycle methods.
+- `_overlay_host.js` — create and retire per-opening instances from reusable hosts; correlate Frame requests and
+  parent/child ownership. Never resolve a missing origin through the top overlay or let a late response affect a new
+  opening.
+- `_overlay_return.js` — capture the exact initiating form/region and apply returned HTML; fail safely if that
+  destination changes. The origin identifying the child to close and the region receiving its return are separate
+  identities.
+- `_overlay_presentation.js` — apply size/side per opening, preserve only managed presentation during morph and restore
+  host defaults without overwriting unrelated styles.
 
 ## Controller auto-loading
 

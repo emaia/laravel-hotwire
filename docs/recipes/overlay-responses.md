@@ -58,6 +58,9 @@ currently open static Modal, Sheet or Drawer root; closing that root retires its
 static markup. For normal multi-step navigation inside an already open overlay, use an unqualified link inside its
 Frame instead of opening another instance.
 
+Keep workflows to at most three nested overlay levels as a UX guideline; deeper flows should be redesigned rather than
+treated as unlimited nesting. This is a recommendation, not a runtime depth limit.
+
 ## Return to a parent and close
 
 The destination region in the parent and the child instance to close are different identities. Mark the region with
@@ -98,8 +101,10 @@ return turbo_stream()->closeOverlay('settings-dialog');
 The static dialog closes through its normal animation and keeps its markup for reopening. For an instance already
 closed or retired, the action is idempotent. `closeOverlay` is a Stream action, not an empty `update` that erases a
 reusable host. The return leaves the child open if its captured destination was replaced, and a following close action
-in the same response respects that failure. When the parent region renders its own field through a route, pass the
-saved record as `result:`; see [let the parent render its own field](../components/overlay-return.md#let-the-parent-render-its-own-field).
+in the same response respects that failure. The saved form is blocked against accidental resubmission; close the child
+and review the parent instead of creating the record again. Rich/contextual fields use an application-owned fragment
+or native Turbo Frame; see
+[let the parent render its own field](../components/overlay-return.md#let-the-parent-render-its-own-field).
 
 If the destination already has a **known, unique DOM id**, a native `replace` or `update` Stream can be composed with
 `closeOverlay($origin)` instead. Do not assume that the child Frame id also identifies the field in its parent.
@@ -153,8 +158,8 @@ pass explicit scoped ids for application-authored Frames.
   throws on contradictory headers; it is not an authorization check.
 - `turbo_stream()->closeOverlay(string $origin)` returns the builder and requires an explicit concrete Frame or static
   root id. There is no default host, stack-top fallback or family-specific close alias.
-- `turbo_stream()->returnFromOverlay(string $origin, string|Htmlable $content, int|string|null $result = null)` returns
-  the builder; `result` is needed only by a region with its own renderer.
+- `turbo_stream()->returnFromOverlay(string $origin, string|Htmlable $content)` returns the builder and replaces the
+  captured region's contents with the supplied HTML. It does not load a separate renderer or wait for nested Frames.
 - `<hw:button>` accepts `overlay-side`, `overlay-size` and `overlay-return`; `overlay` names the family only when `frame`
   is not `modal`, `sheet` or `drawer`. [`<hw:overlay-return>`](../components/overlay-return.md) marks the parent region.
 - Existing application macros and Stream actions are not overwritten by the package.

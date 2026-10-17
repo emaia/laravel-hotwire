@@ -44,66 +44,77 @@ its own. The link must belong to a form with exactly one matching region, or the
 
 ## Let the parent render its own field
 
-A reusable customer form does not need to know whether its caller shows a native select or a searchable Multi Select.
-A richer consumer passes `src`, a same-origin GET route that renders the field for the saved record, and the scalar
-controls of its own form that route needs as `fields`:
+A reusable child can receive an application-owned presentation hint, such as
+`/customers/create?field=rich&company=3`, and return the corresponding complete field after saving. Carry those hints
+through the child's form action and validation source. If the company can change before opening, update the link from
+the current control value with a small application Stimulus controller; a URL rendered with the page's initial value is
+not a snapshot of the current draft. The package does not serialize parent fields or track their values.
 
-```blade
-<hw:form action="/sales" method="post">
-    <hw:field name="company_id" label="Company">
-        <hw:select :options="$companies" />
-    </hw:field>
+Validate the hint against a fixed set of supported field views, authorize the company and saved record, and check that
+the selection belongs to that company on the server. Never use a client-provided hint as an arbitrary view name or URL.
+This direct-fragment approach needs no second request and works with Multi Select just like a native select.
 
-    <hw:overlay-return name="customer" :src="route('sales.fields.customer')" :fields="['company_id']">
-        @include('sales._customer-field')
-    </hw:overlay-return>
+For example, choose an allowlisted field view **before** creating the customer:
 
-    <hw:button as="a" href="/customers/create" frame="modal" overlay-return="customer">New customer</hw:button>
-</hw:form>
+```php
+$fieldView = match ($request->query('field', 'native')) {
+    'native' => 'sales._customer-field',
+    'rich' => 'sales._rich-customer-field',
+    default => abort(422),
+};
 ```
 
-The child's response adds the saved record's identity alongside the native fallback fragment:
+After validation and creation, pass that view to `returnFromOverlay($origin, view($fieldView, $fieldData))` and compose
+`closeOverlay($origin)` as usual. The rich view can render a Multi Select limited to one selection:
+
+```blade
+<hw:field name="customer_id" :id="$fieldId" label="Customer">
+    <hw:multi-select :options="$customers" :selected="[$selected]" :max="1" />
+</hw:field>
+```
+
+Supply a unique `$fieldId` and the authorized customers for the captured company. The parent must accept the Multi
+Select's array field (`customer_id[]`) and revalidate that selection against the submitted company.
+
+When the parent must own a separate rendering route, return a native Turbo Frame as the region's new contents:
+
+```blade
+{{-- sales/_customer-field-loader.blade.php --}}
+<turbo-frame id="{{ $fieldFrame }}"
+    src="{{ route('sales.fields.customer', ['selected' => $customer->id, 'company' => $company->id]) }}">
+    Loading customer field…
+</turbo-frame>
+```
+
+Generate a unique Frame id for this returned field, including across simultaneous openings:
 
 ```php
 return turbo_stream()
-    ->returnFromOverlay($origin, view('sales._customer-field', [
-        'customers' => Customer::pluck('name', 'id'),
-        'selected' => $customer->id,
-    ]), result: $customer->getKey())
-    ->closeOverlay($origin)
-    ->toast('success', 'Customer created');
+    ->returnFromOverlay($origin, view('sales._customer-field-loader', [
+        'customer' => $customer,
+        'company' => $company,
+        'fieldFrame' => 'customer-field-'.Str::uuid(),
+    ]))
+    ->closeOverlay($origin);
 ```
 
-The fallback must still contain the complete field for native consumers without `src`, not only `<option>` elements.
-For a region with `src`, the package ignores the fallback and requests `src` with `result=<id>` and
-`context[company_id]=<value>`. Only the declared, enabled scalar controls of the initiating form are sent; the draft is
-not serialized. The route returns a **non-empty HTML fragment**, not a Frame or a page layout, and owns field names,
-markup, filtering and the selected value. The result id and context are not authorization: authenticate, authorize and
-revalidate the selection on the server.
+The GET route reads the Frame id with `request()->turboFrameId()` from Turbo's header, validates it and returns a
+**matching `<turbo-frame>`** containing the complete field. No extra `frame` query parameter is needed. Turbo owns
+this loading; `closeOverlay()` does **not** wait for it. The record is already saved if the field fails to load.
+Provide application-owned loading/error recovery that reloads only the GET, or let the user reopen a refreshed customer
+selector; do not repeat the creation POST. The original region contents have already been replaced by the loader.
 
-The context is checked before and after the request and again on retry. A replaced form or region, a changed `src` or
-`fields`, or changed context values expire the return instead of rediscovering another destination. A `409` response
-means the record cannot be selected in that context; the old field remains and the child stays open. Redirects, empty
-or page responses, non-HTML responses and failed requests are not applied.
-
-Creating and returning are separate steps. A following `closeOverlay()` closes the child only after the field is
-updated. A temporary failure offers **Retry return**, which repeats only the GET, never the creation POST. While a
-return is pending or needs retry, forms in that child cannot submit; unrelated forms stay usable.
-
-Modal, Sheet and Drawer hosts include the retry feedback. A raw HTML host using `src` must include a
-`template[data-hotwire-overlay-return-feedback]` with a focusable `[data-hotwire-overlay-return-error]` alert containing
-`[data-hotwire-overlay-return-message]` and a `button[data-hotwire-overlay-return-retry]`.
+Both approaches use context captured by the application at opening. An inactive parent cannot be edited directly,
+but Streams or application JavaScript can still change it; reconcile such changes in the application and revalidate
+the final sale on submission. The package checks the identity of the captured form and region, not business values.
 
 ## Props
 
-| Prop     | Type           | Default  | Description                                                                                |
-|----------|----------------|----------|--------------------------------------------------------------------------------------------|
-| `name`   | `string`       | required | Region name, local to the form, selected by `overlay-return` on the opening link.          |
-| `src`    | `?string`      | `null`   | Same-origin GET route that renders the field for the saved record instead of the fallback. |
-| `fields` | `list<string>` | `[]`     | Control names of the initiating form sent to `src` as `context[...]`. Requires `src`.      |
+| Prop   | Type     | Default  | Description                                                                     |
+|--------|----------|----------|---------------------------------------------------------------------------------|
+| `name` | `string` | required | Region name, local to the form, selected by `overlay-return` on the opening link. |
 
-Other attributes are rendered on the wrapper `<div>`. Invalid names, cross-origin or fragment `src` URLs and `fields`
-without `src` throw `InvalidArgumentException`.
+Other attributes are rendered on the wrapper `<div>`. Invalid names throw `InvalidArgumentException`.
 
 ## Styling hooks
 

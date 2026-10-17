@@ -225,16 +225,6 @@ export function createOverlayHost(controller) {
                 return;
         }
         const returnContext = captureOverlayReturn(link);
-        if (returnContext?.renderer) {
-            const feedback = template.querySelector("template[data-hotwire-overlay-return-feedback]")?.content;
-            if (
-                !feedback?.querySelector("[data-hotwire-overlay-return-error]") ||
-                !feedback.querySelector("[data-hotwire-overlay-return-message]") ||
-                !feedback.querySelector("button[data-hotwire-overlay-return-retry]")
-            ) {
-                throw new Error("A rich overlay return requires a complete feedback template on its host.");
-            }
-        }
         const record = createRecord(openingFor(link), returnContext);
         const instance = await connectedInstance(record);
         if (!instance) return;
@@ -331,11 +321,7 @@ export function createOverlayHost(controller) {
             record.otherFormsAtSubmission = new Set(
                 [...record.frame.querySelectorAll("form")].filter((form) => form !== event.target),
             );
-            if (record.returnApplied) {
-                record.returnApplied = false;
-                delete record.returnResult;
-                record.closeRequested = false;
-            }
+            record.returnApplied = false;
         }
 
         const context = { "X-Hotwire-Overlay-Origin": record.frame.id };
