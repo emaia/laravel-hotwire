@@ -309,6 +309,10 @@ closed.
 | `dropdown.label` | `inset` | `false` | Align the label with inset items. |
 | `dropdown.item` | `href` | `null` | Render an anchor instead of a button. |
 | `dropdown.item` | `frame` | `null` | Turbo Frame target for an enabled anchor item. |
+| `dropdown.item` | `overlay` | `null` | Overlay family (`modal`, `sheet`, `drawer`) when `frame` names a custom host. |
+| `dropdown.item` | `overlay-side` | `null` | Sheet or Drawer side for this opening. |
+| `dropdown.item` | `overlay-size` | `null` | Overlay size for this opening. |
+| `dropdown.item` | `overlay-return` | `null` | Name of the parent [`<hw:overlay-return>`](./overlay-return.md) region that receives the created record. |
 | `dropdown.item` | `variant` | `default` | `default` or `destructive`. |
 | `dropdown.item` | `disabled` | `false` | Disable the item. |
 | `dropdown.item` | `inset` | `false` | Add leading space for iconless items. |
@@ -318,6 +322,20 @@ closed.
 values are omitted. An explicit `data-turbo-frame` wins and can be bound to `false` to suppress the prop. Button items
 and disabled links omit frame metadata. Disabled links also omit `href` and receive `aria-disabled="true"` and
 `tabindex="-1"`.
+
+### Opening an overlay from an item
+
+A framed link item accepts the same overlay options as [`<hw:button>`](./button.md), so a menu can open a Modal, Sheet
+or Drawer and return its result to the form that contains the menu:
+
+```blade
+<hw:dropdown.item href="{{ route('customers.create') }}" frame="modal" overlay-size="sm" overlay-return="customer">
+    New customer
+</hw:dropdown.item>
+```
+
+Overlay options require an enabled item with `href` and a frame; a disabled item omits them. When the overlay closes,
+focus returns to the trigger that opened the menu, since the item itself is hidden with the menu.
 
 ## Components
 

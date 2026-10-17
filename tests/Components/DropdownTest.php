@@ -22,6 +22,39 @@ it('targets only enabled dropdown links with frame', function () {
     $disabled->assertDontSee('data-turbo-frame', false);
 });
 
+// --- Overlay openings ---
+
+it('emits overlay presentation and return hints on an enabled framed link item', function () {
+    $this->blade('<x-hw::dropdown.item href="/customers/create" frame="modal" overlay-size="sm" overlay-return="customer">New customer</x-hw::dropdown.item>')
+        ->assertSee('data-turbo-frame="modal"', false)
+        ->assertSee('data-overlay-family="modal"', false)
+        ->assertSee('data-overlay-size="sm"', false)
+        ->assertSee('data-overlay-return-to="customer"', false)
+        ->assertDontSee(' overlay-size="sm"', false)
+        ->assertDontSee(' overlay-return="customer"', false);
+
+    $this->blade('<x-hw::dropdown.item href="/cart" frame="cart-panel" overlay="drawer" overlay-side="bottom">Cart</x-hw::dropdown.item>')
+        ->assertSee('data-overlay-family="drawer"', false)
+        ->assertSee('data-overlay-side="down"', false);
+});
+
+it('drops overlay hints from a disabled link item', function () {
+    $this->blade('<x-hw::dropdown.item href="/customers/create" frame="modal" overlay-size="sm" overlay-return="customer" disabled>New customer</x-hw::dropdown.item>')
+        ->assertDontSee('data-overlay-family', false)
+        ->assertDontSee('data-overlay-size', false)
+        ->assertDontSee('data-overlay-return-to', false);
+});
+
+it('rejects overlay options on a dropdown item that is not a framed link', function (string $props) {
+    $this->blade("<x-hw::dropdown.item {$props}>New customer</x-hw::dropdown.item>");
+})->with([
+    'button item' => 'frame="modal" overlay-return="customer"',
+    'no frame' => 'href="/customers/create" overlay-return="customer"',
+    'custom host without family' => 'href="/customers/create" frame="cart-panel" overlay-size="lg"',
+    'modal side' => 'href="/customers/create" frame="modal" overlay-side="left"',
+    'invalid region name' => 'href="/customers/create" frame="modal" overlay-return="new customer"',
+])->throws(ViewException::class);
+
 it('rejects unsupported dropdown item button types', function () {
     $this->blade('<x-hw::dropdown.item type="invalid">Action</x-hw::dropdown.item>');
 })->throws(ViewException::class, 'Unsupported button type');

@@ -39,7 +39,8 @@ return turbo_stream()
 
 The returned fragment replaces the region's **contents**, so render the complete field, not only its `<option>`
 elements. The name is local to the form: two forms on the same page can both use `customer` and each opening updates
-its own. The link must belong to a form with exactly one matching region, or the opening is blocked.
+its own. The link must belong to a form with exactly one matching region, or the opening is blocked. A
+[`<hw:dropdown.item>`](./dropdown.md#opening-an-overlay-from-an-item) inside the form accepts the same `overlay-return`.
 
 ## Let the parent render its own field
 
