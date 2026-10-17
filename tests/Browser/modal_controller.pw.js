@@ -3072,6 +3072,101 @@ for (const identifier of ["drawer", "sheet"]) {
     });
 }
 
+for (const family of ["modal", "sheet", "drawer"]) {
+    test(`Escape during ${family} entry prevents late content from reopening it and preserves its parent`, async ({
+        page,
+    }) => {
+        await mountFrameOverlay(page, family, {
+            beforeOverlay: `
+                <div id="parent-shell" data-controller="modal">
+                    <button id="open-parent" data-action="modal#open">Open parent</button>
+                    <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+                        <div data-modal-target="backdrop"></div>
+                        <div data-modal-target="dialog">
+                            <input id="parent-draft" value="Unsaved parent">
+                            <button id="open-child" type="button">Open child</button>
+                        </div>
+                    </div>
+                </div>
+            `,
+            overlayAttributes: 'tabindex="-1"',
+        });
+        await page.addStyleTag({
+            content: `
+            #${family}-shell > [data-${family}-target="modal"] { opacity: 0; transition: opacity 10s linear; }
+            #${family}-shell > [data-${family}-target="modal"][data-state="open"] { opacity: 1; }
+        `,
+        });
+
+        const parent = page.locator('#parent-shell > [data-modal-target="modal"]');
+        const child = page.locator(`#${family}-shell > [data-${family}-target="modal"]`);
+        const frame = page.locator(`#${family}-frame`);
+
+        await page.locator("#open-parent").click();
+        await expect(parent).toHaveAttribute("data-state", "open");
+        await page.locator("#open-child").click();
+        await child.evaluate((element) => (element.dataset.motion = "default"));
+        await frame.evaluate((element) => (element.innerHTML = '<p id="child-content">Loaded child</p>'));
+        await expect(child).toHaveAttribute("data-state", "open");
+
+        const dismissal = await page.evaluate(async (family) => {
+            const root = document.getElementById(`${family}-shell`);
+            const controller = window.StimulusApplication.getControllerForElementAndIdentifier(root, family);
+            const entering = controller.overlay.phase;
+            // Keep entry pending without making a non-animated reversal wait for the full entry duration.
+            controller.modalTarget.style.transitionDuration = "100ms";
+            document.activeElement.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+            );
+            const closing = controller.overlay.phase;
+            document.getElementById("child-content").append(" updated after Escape");
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            return {
+                entering,
+                closing,
+                openAfterMutation: controller.isOpen,
+            };
+        }, family);
+
+        expect(dismissal).toEqual({
+            entering: "opening",
+            closing: "closing",
+            openAfterMutation: false,
+        });
+        await child.evaluate((element) =>
+            element.getAnimations({ subtree: true }).forEach((animation) => animation.finish()),
+        );
+        await expect(child).toHaveAttribute("hidden", "");
+        await expect(frame).toBeEmpty();
+        await expect(parent).toHaveAttribute("data-state", "open");
+        await expect(page.locator("#parent-draft")).toHaveValue("Unsaved parent");
+        await expect(page.locator("#open-child")).toBeFocused();
+
+        const openAfterClose = await frame.evaluate(async (element, family) => {
+            element.innerHTML = "<p>Late content after closing</p>";
+            element.dispatchEvent(new CustomEvent("turbo:frame-load", { bubbles: true }));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            const controller = window.StimulusApplication.getControllerForElementAndIdentifier(
+                element.closest(`[data-controller="${family}"]`),
+                family,
+            );
+            return controller.isOpen;
+        }, family);
+        expect(openAfterClose).toBe(false);
+        await expect(child).toHaveAttribute("hidden", "");
+
+        await child.evaluate((element) => (element.dataset.motion = "none"));
+        await frame.evaluate((element) => {
+            element.dispatchEvent(new CustomEvent("turbo:before-fetch-request", { bubbles: true }));
+            element.innerHTML = "<p>New explicit opening</p>";
+        });
+        await expect(child).toHaveAttribute("data-state", "open");
+        await expect(frame).toHaveText("New explicit opening");
+        await expect(parent).toHaveAttribute("data-state", "open");
+    });
+}
+
 test("Escape during nested overlay entry closes the entering overlay", async ({ page }) => {
     await page.setContent(`
         <style>

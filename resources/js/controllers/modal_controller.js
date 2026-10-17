@@ -86,6 +86,7 @@ export default class ModalController extends Controller {
             closeOnEscape: this.closeOnEscapeValue,
             initialFocus: () => this.initialFocusValue,
             initialFocusFallback: () => this.modalTarget,
+            onEscape: () => this.close(),
             onOpen: () => {
                 this.#dispatchEvent("modal:opened");
             },

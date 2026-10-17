@@ -88,6 +88,7 @@ export default class DrawerController extends Controller {
             initialFocusFallback: () => this.modalTarget,
             escapeCapture: true,
             stopEscapePropagation: true,
+            onEscape: () => this.close(),
             onOpen: () => this.dispatch("opened"),
             onClose: () => {
                 this.dispatch("closed");
