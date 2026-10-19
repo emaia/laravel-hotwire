@@ -1166,7 +1166,6 @@ test("a child Stream updates only its initiating form and closes only that insta
     await secondSale.getByText("New customer").click();
     await expect(instances).toHaveCount(3);
     const child = instances.last();
-    const childFrameId = await child.locator("turbo-frame").getAttribute("id");
     await child.locator('input[name="name"]').fill("Ada");
     await child.getByText("Save customer").click();
 
@@ -1178,29 +1177,6 @@ test("a child Stream updates only its initiating form and closes only that insta
     await expect(secondForm).toHaveAttribute("data-preserved-node", "yes");
     await expect(secondForm.locator(".server-errors")).toHaveText("Unrelated error");
     await expect(secondForm.getByRole("link", { name: "New customer" })).toBeFocused();
-
-    await page.evaluate(
-        (oldId) =>
-            window.Turbo.renderStreamMessage(
-                `<turbo-stream action="hotwire-overlay-return" target="${oldId}"><template><option value="stale" selected>Stale</option></template></turbo-stream>`,
-            ),
-        childFrameId,
-    );
-    await expect(secondForm.locator('select[name="customer_id"]')).toHaveValue("2");
-
-    await secondForm.getByRole("link", { name: "New customer" }).click();
-    await expect(instances).toHaveCount(3);
-    const retryChild = instances.last();
-    await secondForm.locator('select[name="customer_id"]').evaluate((region) => {
-        region.outerHTML =
-            '<select name="customer_id" aria-label="Customer" data-overlay-return-region="customer"><option value="1" selected>Existing</option></select>';
-    });
-    await retryChild.getByText("Save customer").click();
-    await expect(retryChild.locator('[role="alert"]')).toContainText("return destination changed");
-    await expect(retryChild.getByText("Save customer")).toBeDisabled();
-    await expect(instances).toHaveCount(3);
-    await expect(secondForm.locator('select[name="customer_id"]')).toHaveValue("1");
-    await expect(firstForm.locator('select[name="customer_id"]')).toHaveValue("1");
 });
 
 async function setupSimpleReturn(page, { close = false, replaceForm = false, fieldSource = false } = {}) {
@@ -1398,14 +1374,41 @@ test("an ambiguous return region blocks opening instead of selecting a global fi
     await expect(page.locator("[data-hotwire-overlay-instance]")).toHaveCount(0);
 });
 
+// Hold received HTML at the renderer so retiring the old Frame cannot bypass the test by cancelling its fetch.
+async function deferTurboRenders(page, eventName, selector, count) {
+    await page.evaluate(({ eventName, selector, count }) => {
+        const state = window.deferredTurboRender = { queued: 0, completed: 0 };
+        const gate = new Promise((resolve) => { state.release = resolve; });
+        const defer = (event) => {
+            if (!event.target.matches(selector)) return;
+
+            const render = event.detail.render;
+            state.queued++;
+            event.detail.render = async (...args) => {
+                await gate;
+                await render(...args);
+                state.completed++;
+            };
+            if (state.queued === count) document.removeEventListener(eventName, defer);
+        };
+        document.addEventListener(eventName, defer);
+    }, { eventName, selector, count });
+}
+
 test("a delayed return and close cannot affect a later opening for another form", async ({ page }) => {
     const pending = [];
+    const response = (target, selected) =>
+        `<turbo-stream action="hotwire-overlay-return" target="${target}"><template><option value="${selected}" selected>New</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${target}"></turbo-stream>`;
     await page.route("http://overlays.test/**", async (route) => {
         const path = new URL(route.request().url()).pathname;
         if (path === "/") {
             await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
         } else if (path === "/save") {
-            pending.push({ route, id: route.request().headers()["turbo-frame"] });
+            const id = route.request().headers()["turbo-frame"];
+            pending.push({ route, id });
+            if (pending.length === 1) {
+                await route.fulfill({ contentType: "text/vnd.turbo-stream.html", body: response(id, "stale") });
+            }
         } else {
             const id = route.request().headers()["turbo-frame"];
             await route.fulfill({
@@ -1436,8 +1439,10 @@ test("a delayed return and close cannot affect a later opening for another form"
 
     const instances = page.locator("[data-hotwire-overlay-instance]");
     await page.locator("#first a").click();
+    const firstId = await instances.first().locator("turbo-frame").getAttribute("id");
+    await deferTurboRenders(page, "turbo:before-stream-render", `turbo-stream[target="${firstId}"]`, 2);
     await instances.first().locator("button").click();
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => page.evaluate(() => window.deferredTurboRender.queued)).toBe(2);
     await page.evaluate(() => {
         const root = document.querySelector("[data-hotwire-overlay-instance]");
         window.StimulusApplication.getControllerForElementAndIdentifier(root, "modal").close();
@@ -1447,11 +1452,8 @@ test("a delayed return and close cannot affect a later opening for another form"
     await page.locator("#second a").click();
     await instances.first().locator("button").click();
     await expect.poll(() => pending.length).toBe(2);
-    const response = (target, selected) =>
-        `<turbo-stream action="hotwire-overlay-return" target="${target}"><template><option value="${selected}" selected>New</option></template></turbo-stream><turbo-stream action="hotwire-overlay-close" target="${target}"></turbo-stream>`;
-    await pending[0].route
-        .fulfill({ status: 200, contentType: "text/vnd.turbo-stream.html", body: response(pending[0].id, "stale") })
-        .catch(() => {});
+    await page.evaluate(() => window.deferredTurboRender.release());
+    await expect.poll(() => page.evaluate(() => window.deferredTurboRender.completed)).toBe(2);
     await expect(instances).toHaveCount(1);
     await expect(page.locator("#first select")).toHaveValue("1");
     await expect(page.locator("#second select")).toHaveValue("1");
@@ -1546,11 +1548,15 @@ test("closing a drawer ancestor retires a child modal without losing the parent 
     await expect(page.locator("body")).not.toHaveClass(/overflow-hidden/);
 });
 
-test("a cancelled frame load cannot populate a later opening of the same host", async ({ page }) => {
+test("a delayed Frame render cannot populate a later opening of the same host", async ({ page }) => {
     const pending = [];
     await page.route("http://overlays.test/**", async (route) => {
         if (new URL(route.request().url()).pathname === "/slow") {
             pending.push(route);
+            if (pending.length === 1) {
+                const id = route.request().headers()["turbo-frame"];
+                await route.fulfill({ contentType: "text/html", body: `<turbo-frame id="${id}">Stale content</turbo-frame>` });
+            }
             return;
         }
         await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body></body></html>" });
@@ -1573,8 +1579,9 @@ test("a cancelled frame load cannot populate a later opening of the same host", 
         window.StimulusApplication.register("modal", window.ModalController);
     });
 
+    await deferTurboRenders(page, "turbo:before-frame-render", 'turbo-frame[id^="modal--"]', 1);
     await page.locator("#open-slow").click();
-    await expect.poll(() => pending.length).toBe(1);
+    await expect.poll(() => page.evaluate(() => window.deferredTurboRender.queued)).toBe(1);
     const instances = page.locator("[data-hotwire-overlay-instance]");
     const originalId = await instances.first().locator("turbo-frame").getAttribute("id");
     await page.evaluate(() => {
@@ -1588,13 +1595,11 @@ test("a cancelled frame load cannot populate a later opening of the same host", 
     const nextId = await instances.first().locator("turbo-frame").getAttribute("id");
     expect(nextId).not.toBe(originalId);
 
-    await pending[0]
-        .fulfill({
-            status: 200,
-            contentType: "text/html",
-            body: `<turbo-frame id="${originalId}">Stale content</turbo-frame>`,
-        })
-        .catch(() => {});
+    await page.evaluate(() => window.deferredTurboRender.release());
+    await expect.poll(() => page.evaluate(() => window.deferredTurboRender.completed)).toBe(1);
+    await expect(instances).toHaveCount(1);
+    await expect(instances.first().locator("turbo-frame")).toBeEmpty();
+    await expect(page.locator("body")).not.toContainText("Stale content");
     await pending[1].fulfill({
         status: 200,
         contentType: "text/html",

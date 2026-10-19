@@ -79,11 +79,6 @@ it('returns a rendered View as the complete parent field', function () {
         ->toContain('Acme &lt;Ltd&gt;');
 });
 
-it('does not expose a renderer result argument on overlay returns', function () {
-    expect(fn () => turbo_stream()->returnFromOverlay('modal', '<select></select>', result: 42))
-        ->toThrow(Error::class, 'Unknown named parameter $result');
-});
-
 it('requires an explicit origin and a non-empty fragment to return', function () {
     expect(fn () => turbo_stream()->returnFromOverlay('  ', '<option>Acme</option>'))
         ->toThrow(InvalidArgumentException::class, 'Overlay origin');

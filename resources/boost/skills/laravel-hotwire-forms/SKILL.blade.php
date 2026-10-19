@@ -208,8 +208,9 @@ to the URL that can render the matching frame. Use `frame="id"` when the form mu
 {!! $close('frame-or-page') !!}
 ```
 
-To close a reusable static modal from a successful Stream response, append a self-removing element with
-`data-controller="modal-auto-close"`. This is a Stream response pattern, not a form prop.
+Close the submitting opening with `turbo_stream()->closeOverlay($request->overlayOrigin())`, guarding null when the
+action also serves page requests. Pass a root id such as `closeOverlay('settings-dialog')` only for static markup that
+is not loaded through a Frame. No marker controller is needed.
 
 ## Conditional fields
 

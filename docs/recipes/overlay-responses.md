@@ -148,6 +148,16 @@ is the validation/re-render source, **not** a second lazy content request. Use a
 be fetched on demand. Nested lazy Frames can be used in either transport, but their ids must be unique per instance;
 pass explicit scoped ids for application-authored Frames.
 
+## JavaScript loading
+
+The default lazy loader imports a controller when its `data-controller` appears in the DOM, not when its overlay opens.
+A hidden host in the layout therefore loads its controller and shared helpers immediately after discovery. Modal, Sheet
+and Drawer share those dependencies rather than downloading a separate copy for each family.
+
+A page with no overlay controllers does not load this code unless the application opts into eager loading or preloading.
+An eager Modal also brings its helpers into the initial JavaScript graph. Measure production chunks with the application's
+actual loader configuration; lazy Frame content and lazy controller imports are separate concerns.
+
 ## Public entries and compatibility
 
 - `response()->modal()`, `sheet()` and `drawer()` return a family-specific `OverlayResponse` entry.
@@ -164,8 +174,7 @@ pass explicit scoped ids for application-authored Frames.
   is not `modal`, `sheet` or `drawer`. [`<hw:overlay-return>`](../components/overlay-return.md) marks the parent region.
 - Existing application macros and Stream actions are not overwritten by the package.
 
-The older `modal-auto-close` marker remains available for existing Modal-only integrations. New server responses should
-use `closeOverlay()` for all three families, including static roots, instead of depending on a marker's ancestry. There
-is no need to register a `closeModal`/`autoCloseOverlay` macro or rename the marker to use the common lifecycle.
+Use `closeOverlay()` for all three families, including static roots. No marker controller or application-defined
+`closeModal`/`autoCloseOverlay` macro is needed.
 Empty `update`/`replace` Streams targeting a concrete primary Frame remain supported for content-driven closing, but
 must not target the canonical host to close a generated child.

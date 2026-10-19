@@ -1452,12 +1452,6 @@ return [
             'category' => 'overlay',
             'description' => 'Controls an accessible modal with optional Turbo Frame-driven content',
         ],
-        'modal-auto-close' => [
-            'source' => 'resources/js/controllers/modal_auto_close_controller.js',
-            'docs' => 'docs/controllers/modal-auto-close.md',
-            'category' => 'overlay',
-            'description' => 'Closes the nearest modal when inserted by a Turbo Stream',
-        ],
         'money-input' => [
             'source' => 'resources/js/controllers/money_input_controller.js',
             'docs' => 'docs/controllers/money-input.md',

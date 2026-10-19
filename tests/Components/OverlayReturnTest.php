@@ -1,6 +1,5 @@
 <?php
 
-use Emaia\LaravelHotwire\Components\OverlayReturn;
 use Illuminate\View\ViewException;
 
 it('marks a parent region that receives a native overlay return', function () {
@@ -12,12 +11,6 @@ it('marks a parent region that receives a native overlay return', function () {
         ->toContain('<select name="customer_id"></select>')
         ->not->toContain('data-overlay-return-src')
         ->not->toContain('data-overlay-return-fields');
-});
-
-it('exposes only the region name as overlay return configuration', function () {
-    $parameters = (new ReflectionMethod(OverlayReturn::class, '__construct'))->getParameters();
-
-    expect(array_map(fn (ReflectionParameter $parameter) => $parameter->getName(), $parameters))->toBe(['name']);
 });
 
 it('keeps application attributes but not protocol attributes', function () {

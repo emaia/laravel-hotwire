@@ -176,6 +176,15 @@ it('documents validation and prefill for multistep forms', function () {
         ->toContain('TurboFormRequest');
 });
 
+it('closes the submitting frame opening instead of its reusable host in form guidance', function () {
+    $skill = renderBoostAsset(boostAssetsPath('skills/laravel-hotwire-forms/SKILL.blade.php'));
+    $frames = Str::between($skill, '## Frames and modals', '## Conditional fields');
+
+    expect($frames)
+        ->toContain('closeOverlay($request->overlayOrigin())')
+        ->not->toContain("closeOverlay('post-modal-shell')");
+});
+
 it('documents explicit parts and low-level slot escapes for custom composed elements', function () {
     $guideline = renderBoostAsset(boostAssetsPath('guidelines/core.blade.php'));
     $alert = File::get(__DIR__.'/../../docs/components/alert.md');

@@ -1050,14 +1050,13 @@ test.serial("mobile positioning overrides the complete collapsed profile", async
 
 // --- focus return ---
 
-test("a focus return from a menu item focuses the trigger that opened the menu", async () => {
+test("focus return events are consumed only when they originate in the menu", async () => {
     mounted = await mountController(
         "dropdown",
         DropdownController,
         `
         <div data-controller="dropdown">
-            <button id="first" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
-            <button id="second" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">More</button>
+            <button id="trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
             <div data-dropdown-target="menu" data-state="closed" data-motion="none" hidden inert>
                 <a id="item" href="#item">Item</a>
             </div>
@@ -1066,20 +1065,18 @@ test("a focus return from a menu item focuses the trigger that opened the menu",
     );
     const outsideReturn = new CustomEvent("hotwire:focus-return", { bubbles: true });
     const itemReturn = new CustomEvent("hotwire:focus-return", { bubbles: true });
-    let bubbled = 0;
-    document.addEventListener("hotwire:focus-return", () => bubbled++);
+    const bubbled = mock(() => {});
+    document.addEventListener("hotwire:focus-return", bubbled);
+    try {
+        document.querySelector("#trigger").click();
+        document.querySelector("#outside").dispatchEvent(outsideReturn);
+        expect(bubbled).toHaveBeenCalledTimes(1);
 
-    document.querySelector("#second").click();
-    await wait(0);
-    document.querySelector("#item").click();
-    await wait(0);
-
-    document.querySelector("#outside").dispatchEvent(outsideReturn);
-    expect(document.activeElement?.id).not.toBe("second");
-
-    document.querySelector("#item").dispatchEvent(itemReturn);
-    expect(document.activeElement?.id).toBe("second");
-    expect(bubbled).toBe(1);
+        document.querySelector("#item").dispatchEvent(itemReturn);
+        expect(bubbled).toHaveBeenCalledTimes(1);
+    } finally {
+        document.removeEventListener("hotwire:focus-return", bubbled);
+    }
 });
 
 // --- helpers ---

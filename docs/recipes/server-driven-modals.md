@@ -95,6 +95,6 @@ close; an accepted refresh can discard the whole overlay stack. See
 
 - [`<hw:modal>`](../components/modal.md) — the modal component.
 - [Overlay responses](./overlay-responses.md) — family-specific openings, common closing, contextual returns and refresh semantics.
-- [`modal-auto-close`](../controllers/modal-auto-close.md) — older Modal-only marker, retained for existing integrations.
+- [`closeOverlay()`](./overlay-responses.md#return-to-a-parent-and-close) — explicit closing for instances and static roots.
 - [Frame-or-page views](./frame-or-page.md) — the canonical pattern for opening modals with server
   content.

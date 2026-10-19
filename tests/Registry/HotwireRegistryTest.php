@@ -74,6 +74,10 @@ it('loads the component catalog', function () {
         ->and($registry->component('spinner'))->not->toBeNull();
 });
 
+it('does not expose the retired modal auto close controller', function () {
+    expect(HotwireRegistry::make()->controller('modal-auto-close'))->toBeNull();
+});
+
 it('uses family references instead of manual slot inventories for components', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
 

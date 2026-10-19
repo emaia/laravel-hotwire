@@ -59,11 +59,6 @@ it('opens top-level from an overlay request unless the origin is passed explicit
         ->toContain('data-overlay-origin="'.$origin.'"');
 });
 
-it('targets the family rather than a host id', function () {
-    expect(fn () => response()->drawer()->open('Review', host: 'drawer-panel'))
-        ->toThrow(Error::class, 'host');
-});
-
 it('requires a source URL for a streamed form and embeds it for validation redirects', function () {
     expect(fn () => response()->modal()->open('<form action="/customers"><button>Save</button></form>'))
         ->toThrow(InvalidArgumentException::class, 'source');

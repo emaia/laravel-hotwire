@@ -41,8 +41,23 @@ root id explicitly. Empty updates/replacements still work when targeting the req
 canonical host. See [overlay responses](./recipes/overlay-responses.md) for conditional opening and contextual returns.
 
 Native `refresh` is no longer intercepted as an implicit close. An ignored refresh preserves the stack; an accepted page
-refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts. The older
-`modal-auto-close` controller remains available, but new integrations do not need a marker or custom close macro.
+refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts.
+
+### Modal Auto Close removed
+
+The `modal-auto-close` controller has been removed. Replace marker appends with the common close action:
+
+```php
+// Reusable static markup: pass the overlay root id, not its inner Frame id.
+return turbo_stream()->closeOverlay('edit-post');
+
+// Frame-backed opening: close only the instance that submitted the request.
+return turbo_stream()->closeOverlay($request->overlayOrigin());
+```
+
+Guard a nullable `overlayOrigin()` when the same action also serves ordinary page requests. Remove marker elements and
+any published `modal_auto_close_controller.js` from the application, then rebuild assets. The package does not remove
+application-owned published files automatically. Modal, Sheet and Drawer all use the same explicit close action.
 
 ### Use the public overlay response and return API
 
@@ -1140,11 +1155,10 @@ top-layer attributes while Turbo morphs their contents. An open overlay stays op
 the usual closed `data-state` or `data-mobile-state`, `hidden`, and `inert` attributes.
 
 If an application previously closed an overlay by returning closed markup in a page or Turbo Stream refresh morph, make
-the close explicit before rendering that response. Frame-backed Modal, Drawer, and Sheet instances already close through
-their empty `update`/`replace` or `refresh` stream lifecycle. For a reusable static Modal, append a
-[`modal-auto-close`](./controllers/modal-auto-close.md) marker; custom static overlay flows can call their controller's
-public `close()` action (`cancel()` for Alert Dialog) before applying the refresh. Morphing still updates ordinary
-descendants and `data-motion`.
+the close explicit before rendering that response. Use `closeOverlay($request->overlayOrigin())` for frame-backed Modal,
+Drawer and Sheet instances, or pass the root id for reusable static markup. A native `refresh` is not a close action.
+Custom static overlay flows can call their controller's public `close()` action (`cancel()` for Alert Dialog) before
+applying the refresh. Morphing still updates ordinary descendants and `data-motion`.
 
 ### Refresh published Frame Src controllers
 
