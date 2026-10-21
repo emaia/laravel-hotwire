@@ -18,6 +18,7 @@ class Form extends Component
         'autoSubmit',
         'unsavedChanges',
         'errorScroll',
+        'errorFocus',
         'cleanQueryParams',
         'conditionalFields',
         'trackFrameSrc',
@@ -42,6 +43,7 @@ class Form extends Component
         public ?string $enctype = null,
         public mixed $state = null,
         public ?Htmlable $stimulus = null,
+        public bool $errorFocus = false,
     ) {
         $this->id = app(ComponentId::class)->resolve($this->id, 'hw-form', 'form');
         $this->frame = FrameTarget::normalize($this->frame);
@@ -78,6 +80,7 @@ class Form extends Component
             $this->autoSubmit ? 'auto-submit' : null,
             $this->unsavedChanges ? 'unsaved-changes' : null,
             $this->errorScroll ? 'error-scroll' : null,
+            $this->errorFocus ? 'autofocus' : null,
             $this->cleanQueryParams ? 'clean-query-params' : null,
             $this->conditionalFields ? 'conditional-fields' : null,
         ])));

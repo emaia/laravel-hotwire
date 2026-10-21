@@ -33,6 +33,7 @@ export default class extends Controller {
         this.onOutsideClick = this.onOutsideClick.bind(this);
         this.onKeydown = this.onKeydown.bind(this);
         this.onDocumentFocusIn = this.onDocumentFocusIn.bind(this);
+        this.onFocusReturn = this.onFocusReturn.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
         this.activeTrigger = null;
         this.focusedTrigger = null;
@@ -60,6 +61,7 @@ export default class extends Controller {
         document.addEventListener("keydown", this.onKeydown);
         document.addEventListener("focusin", this.onDocumentFocusIn);
         document.addEventListener("turbo:before-cache", this.closeForCache);
+        this.element.addEventListener("hotwire:focus-return", this.onFocusReturn);
 
         this.syncState();
         if (this.hasContentTarget && this.presenceElement !== this.contentTarget) this.setupContent(this.contentTarget);
@@ -70,6 +72,7 @@ export default class extends Controller {
         document.removeEventListener("keydown", this.onKeydown);
         document.removeEventListener("focusin", this.onDocumentFocusIn);
         document.removeEventListener("turbo:before-cache", this.closeForCache);
+        this.element.removeEventListener("hotwire:focus-return", this.onFocusReturn);
         this.element.removeAttribute("data-hotwire-escape-scope");
         this.focusedTrigger = null;
         this.contentHasFocus = false;
@@ -185,6 +188,14 @@ export default class extends Controller {
         this.contentHasFocus = Boolean(this.presenceElement?.contains(event.target));
         const trigger = event.target.closest?.('[data-popover-target~="trigger"]');
         this.focusedTrigger = trigger && this.element.contains(trigger) ? trigger : null;
+    }
+
+    onFocusReturn(event) {
+        const trigger = this.currentTrigger;
+        if (!this.hasContentTarget || !this.contentTarget.contains(event.target) || !trigger) return;
+
+        event.stopPropagation();
+        trigger.focus({ preventScroll: true });
     }
 
     closeForCache() {

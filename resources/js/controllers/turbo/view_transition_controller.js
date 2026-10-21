@@ -43,6 +43,8 @@ export default class extends Controller {
 
         if (skipTransition) return;
         if (!document.startViewTransition) return;
+        // Document snapshots lift named background panels above a stacked dialog's backdrop.
+        if (document.querySelectorAll('[aria-modal="true"][data-state="open"]:not([hidden])').length > 1) return;
 
         const originalRender = event.detail.render;
 

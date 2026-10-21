@@ -1048,6 +1048,37 @@ test.serial("mobile positioning overrides the complete collapsed profile", async
     expect(computePosition.mock.calls[0][2].placement).toBe("bottom-start");
 });
 
+// --- focus return ---
+
+test("focus return events are consumed only when they originate in the menu", async () => {
+    mounted = await mountController(
+        "dropdown",
+        DropdownController,
+        `
+        <div data-controller="dropdown">
+            <button id="trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false">Menu</button>
+            <div data-dropdown-target="menu" data-state="closed" data-motion="none" hidden inert>
+                <a id="item" href="#item">Item</a>
+            </div>
+            <button id="outside" type="button">Outside</button>
+        </div>`,
+    );
+    const outsideReturn = new CustomEvent("hotwire:focus-return", { bubbles: true });
+    const itemReturn = new CustomEvent("hotwire:focus-return", { bubbles: true });
+    const bubbled = mock(() => {});
+    document.addEventListener("hotwire:focus-return", bubbled);
+    try {
+        document.querySelector("#trigger").click();
+        document.querySelector("#outside").dispatchEvent(outsideReturn);
+        expect(bubbled).toHaveBeenCalledTimes(1);
+
+        document.querySelector("#item").dispatchEvent(itemReturn);
+        expect(bubbled).toHaveBeenCalledTimes(1);
+    } finally {
+        document.removeEventListener("hotwire:focus-return", bubbled);
+    }
+});
+
 // --- helpers ---
 
 async function mount({ open = false, closeOnSelect = null } = {}) {

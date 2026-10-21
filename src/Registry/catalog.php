@@ -57,6 +57,7 @@ use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Navbar\Item as NavbarItem;
 use Emaia\LaravelHotwire\Components\Optimistic;
+use Emaia\LaravelHotwire\Components\OverlayReturn;
 use Emaia\LaravelHotwire\Components\Pagination;
 use Emaia\LaravelHotwire\Components\Popover;
 use Emaia\LaravelHotwire\Components\Progress;
@@ -375,7 +376,7 @@ return [
             'view' => 'hotwire::component-views.drawer',
             'docs' => 'docs/components/drawer.md',
             'category' => 'overlay',
-            'description' => 'Accessible directional drawer with focus management and optional Turbo Frame content',
+            'description' => 'Directional drawer with focus management and optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['drawer', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -495,8 +496,8 @@ return [
             'view' => 'hotwire::component-views.form',
             'docs' => 'docs/components/form.md',
             'category' => 'forms',
-            'description' => 'Laravel form with CSRF, method spoofing, Turbo Frames, auto-submit and unsaved-change protection',
-            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'clean-query-params', 'conditional-fields'],
+            'description' => 'Laravel form with CSRF, method spoofing, Turbo Frames, auto-submit, validation error focus and unsaved-change protection',
+            'controllers' => ['auto-submit', 'unsaved-changes', 'error-scroll', 'autofocus', 'clean-query-params', 'conditional-fields'],
             'styling' => [
                 'slots' => [
                     ['class' => Form::class],
@@ -755,7 +756,7 @@ return [
             'view' => 'hotwire::component-views.modal',
             'docs' => 'docs/components/modal.md',
             'category' => 'overlay',
-            'description' => 'Accessible modal dialog with focus management and optional Turbo Frame content',
+            'description' => 'Accessible modal dialog with focus management and optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['modal', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -813,6 +814,19 @@ return [
             'styling' => [
                 'slots' => [
                     ['class' => Optimistic::class],
+                ],
+            ],
+        ],
+        'overlay-return' => [
+            'class' => OverlayReturn::class,
+            'view' => 'hotwire::component-views.overlay-return',
+            'docs' => 'docs/components/overlay-return.md',
+            'category' => 'overlay',
+            'description' => 'Parent form region that receives a complete HTML field after creating a record in a Modal, Sheet or Drawer, preserving the rest of the draft',
+            'controllers' => [],
+            'styling' => [
+                'slots' => [
+                    ['class' => OverlayReturn::class],
                 ],
             ],
         ],
@@ -977,7 +991,7 @@ return [
             'view' => 'hotwire::component-views.sheet',
             'docs' => 'docs/components/sheet.md',
             'category' => 'overlay',
-            'description' => 'Accessible off-canvas dialog on any edge with optional Turbo Frame content',
+            'description' => 'Accessible off-canvas dialog on any edge with optional reusable Turbo Frame host for stacked instances',
             'controllers' => ['sheet', 'turbo--view-transition'],
             'styling' => [
                 'slots' => [
@@ -1274,7 +1288,7 @@ return [
             'source' => 'resources/js/controllers/autofocus_controller.js',
             'docs' => 'docs/controllers/autofocus.md',
             'category' => 'forms',
-            'description' => 'Focuses a configured field initially and after relevant Turbo Frame loads',
+            'description' => 'Focuses a configured field or the first validation error initially and after relevant Turbo Frame loads',
         ],
         'back-to-top' => [
             'source' => 'resources/js/controllers/back_to_top_controller.js',
@@ -1437,12 +1451,6 @@ return [
             'docs' => 'docs/controllers/modal.md',
             'category' => 'overlay',
             'description' => 'Controls an accessible modal with optional Turbo Frame-driven content',
-        ],
-        'modal-auto-close' => [
-            'source' => 'resources/js/controllers/modal_auto_close_controller.js',
-            'docs' => 'docs/controllers/modal-auto-close.md',
-            'category' => 'overlay',
-            'description' => 'Closes the nearest modal when inserted by a Turbo Stream',
         ],
         'money-input' => [
             'source' => 'resources/js/controllers/money_input_controller.js',
@@ -1660,7 +1668,7 @@ return [
             'source' => 'resources/js/controllers/turbo/view_transition_controller.js',
             'docs' => 'docs/controllers/turbo/view-transition.md',
             'category' => 'turbo',
-            'description' => 'Wraps Turbo Frame renders in View Transitions when supported',
+            'description' => 'Animates Turbo Frame updates with View Transitions when supported, using normal renders while modal dialogs are stacked',
         ],
         'unsaved-changes' => [
             'source' => 'resources/js/controllers/unsaved_changes_controller.js',

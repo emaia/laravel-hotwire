@@ -49,8 +49,10 @@ The `toast()` macro takes the same notification arguments as [its Turbo Stream t
 `type`, `message`, and the optional `description`, `position` and `duration` — so both branches of a controller read alike:
 
 ```php
-if ($request->wasFromTurboFrame('modal')) {
-    return turbo_stream()->update('modal')->toast('success', 'Task updated', 'Your changes are now live.');
+if ($request->wasFromTurboFrame() && $request->wantsTurboStream()) {
+    return turbo_stream()
+        ->closeOverlay($request->overlayOrigin())
+        ->toast('success', 'Task updated', 'Your changes are now live.');
 }
 
 return to_route('tasks.show', $task)->toast('success', 'Task updated', 'Your changes are now live.');

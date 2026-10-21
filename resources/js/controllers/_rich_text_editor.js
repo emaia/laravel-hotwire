@@ -36,6 +36,7 @@ export class RichTextEditor {
             editable = true,
             placeholder = null,
             editorClass = "",
+            invalid = false,
             extensions,
             onUpdate,
             onFocus,
@@ -45,8 +46,11 @@ export class RichTextEditor {
         } = options;
 
         const editorProps = {};
-        if (editorClass) {
-            editorProps.attributes = { class: editorClass };
+        if (editorClass || invalid) {
+            editorProps.attributes = {
+                ...(editorClass ? { class: editorClass } : {}),
+                ...(invalid ? { "aria-invalid": "true" } : {}),
+            };
         }
         if (onImageDrop) {
             editorProps.handlePaste = (_view, event) => this.handleImage(event, onImageDrop);

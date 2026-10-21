@@ -170,6 +170,15 @@ test("editableValue=false makes the editor read-only", async () => {
     expect(editorState.lastOptions.editable).toBe(false);
 });
 
+test("forwards the wrapper's validation state to the real editor", async () => {
+    await mount(tmpl().replace(
+        'data-controller="rich-text"',
+        'data-controller="rich-text" aria-invalid="true"',
+    ));
+
+    expect(editorState.lastOptions.editorProps.attributes?.["aria-invalid"]).toBe("true");
+});
+
 // --- update sync ---
 
 test("editor update syncs the hidden input with HTML by default", async () => {

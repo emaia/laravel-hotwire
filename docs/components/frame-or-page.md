@@ -48,13 +48,107 @@ Pair with a frame host in your dashboard layout so the overlay opens automatical
 common hosts are [`<hw:modal frame="modal">`](./modal.md), [`<hw:sheet frame="settings-panel">`](./sheet.md), and
 [`<hw:drawer frame="drawer-panel">`](./drawer.md).
 
+### Frame-backed overlay instances
+
+One Modal, Sheet or Drawer host in the layout can now receive several simultaneous openings. A link targeting the
+canonical host frame (`data-turbo-frame="modal"`, for example) starts a **new instance** with its own concrete Frame id;
+the package allocates that id and carries it through Frame requests and submissions. A link **inside** the instance
+without `data-turbo-frame` navigates within the current Frame instead of stacking another overlay. Explicitly targeting
+the canonical id from inside an instance starts a new task on the stack. Do not author numbered hosts or generated ids.
+
+Keep the view bound to the canonical id:
+
+```blade
+{{-- One shared host in the layout; no host per record or nested task. --}}
+<hw:modal frame="modal" />
+
+{{-- /customers/create responds to a Frame opening or direct page navigation. --}}
+<hw:frame-or-page frame="modal" layout="layouts.app">
+    <hw:frame-or-page.frame target="modal">...</hw:frame-or-page.frame>
+    <hw:frame-or-page.page>...</hw:frame-or-page.page>
+</hw:frame-or-page>
+```
+
+The `.frame target="modal"` branch still means **the canonical host**; the response wrapper uses the current
+instance's concrete id. The request carries matching `Turbo-Frame`, `X-Hotwire-Overlay-Host`, and
+`X-Hotwire-Overlay-Instance` headers. Invalid or inconsistent instance headers are rejected, and an unrelated host does
+not select this view's frame branch. Regular Frame requests without an instance retain their existing behavior. These
+headers correlate the render; they do not authorize access to a route. Laravel policies and validation still apply.
+
+Default Frame navigation, pagination and forms inside an instance target its concrete Frame. If an element explicitly
+sets `data-turbo-frame="modal"`, it targets a **new opening**; omit it for navigation within the current one. Direct
+navigation without Frame headers still renders the standalone page. Closing a child leaves the parent form and its
+unsaved inputs in place; cache snapshots discard live instances. A full-page refresh is not a draft-preservation
+operation: it can retire every open instance.
+
+Frames nested **inside** an overlay retain their own `Turbo-Frame` id on requests and validation redirects. Those
+requests also carry `X-Hotwire-Overlay-Origin` with the owning overlay's concrete Frame id; the host/instance headers
+are reserved for requests targeting the overlay's own Frame, so a nested `frame-or-page` is not mistaken for the outer
+overlay response. A form using `track-frame-src` can redirect validation errors back to its nested Frame.
+`request()->overlayOrigin()` resolves the owning instance from either kind of request, so a form submitting from a
+nested Frame still closes and returns to the right overlay; its own `Turbo-Frame` id would not identify the instance.
+The origin is a correlation hint, not authorization.
+
+#### Returning to the initiating form
+
+When a child creates a record for a parent form, wrap the destination field in
+[`<hw:overlay-return>`](./overlay-return.md) with a name **local to that form**, and select it with `overlay-return` on
+the opening link. No document-wide field id or numbered Modal host is required:
+
+```blade
+<form>
+    <hw:overlay-return name="customer">
+        @include('customers._field')
+    </hw:overlay-return>
+    <hw:button as="a" href="{{ route('customers.create') }}" frame="modal" overlay-return="customer">
+        New customer
+    </hw:button>
+    <input name="notes" value="Draft in progress">
+</form>
+```
+
+The link must belong to a form containing **exactly one** matching region; an absent or ambiguous region blocks the
+opening. The package retains references to that form and region for this opening, so two sale forms can reuse the name
+`customer` without cross-updating.
+
+After creating the record, return the field's new contents and close only the submitting overlay:
+
+```php
+$origin = $request->overlayOrigin();
+
+return turbo_stream()
+    ->returnFromOverlay($origin, view('customers._field', [
+        'customers' => $customers,
+        'selected' => $customer->id,
+    ]))
+    ->closeOverlay($origin)
+    ->toast('success', 'Customer created');
+```
+
+The return replaces only the captured region's **contents**, emits native `input` and `change` events, and keeps the
+parent form, its other values and its errors in place. `closeOverlay` uses the same concrete instance and normal
+animated lifecycle; it never falls back to the top overlay. A duplicate or late Stream for a retired opening does
+nothing. If the original form, opener or region was replaced while saving, the return does **not** rediscover a
+different region with the same name: the child stays open with an alert, and the close action in that response is
+suppressed. The record may already be saved; the user can close the child and select it in the current form.
+
+Neither call submits the parent form or closes on every successful HTTP response; leaving the child open for "Save and
+continue" remains an explicit server decision. Validation errors that re-render a Frame keep its concrete id and do not
+run either Stream action.
+
+For the family-specific `response()->modal()/sheet()/drawer()->open(...)` entries and composed
+`closeOverlay($origin)`, see the [overlay responses recipe](../recipes/overlay-responses.md).
+
 ## Props
 
-| Prop     | Type                    | Default | Description                                                                                    |
-|----------|-------------------------|---------|------------------------------------------------------------------------------------------------|
-| `frame`  | `string\|object\|null` | `null`  | One frame id. Accepts a string or any object resolvable via `dom_id()`.                         |
-| `frames` | `?iterable`             | `null`  | A non-empty list of frame id strings or objects resolvable via `dom_id()`.                     |
-| `layout` | `?string`               | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper. |
+| Prop           | Type                   | Default | Description                                                                                           |
+|----------------|------------------------|---------|-------------------------------------------------------------------------------------------------------|
+| `frame`        | `string\|object\|null` | `null`  | One frame id. Accepts a string or any object resolvable via `dom_id()`.                               |
+| `frames`       | `?iterable`            | `null`  | A non-empty list of frame id strings or objects resolvable via `dom_id()`.                            |
+| `layout`       | `?string`              | `null`  | Blade component name (e.g. `dashboard` or `layouts.dashboard`) or class-string of the wrapper.        |
+| `overlay`      | `?string`              | `null`  | Receiving family (`modal`, `sheet`, or `drawer`). Inferred when the served frame is one of those ids. |
+| `overlay-side` | `?string`              | `null`  | Sheet side or Drawer direction. Modal does not accept this prop.                                      |
+| `overlay-size` | `?string`              | `null`  | Modal preset/CSS max-width or Sheet/Drawer CSS dimension.                                             |
 
 Provide exactly one of `frame` or `frames`. Empty ids and non-list `frames` values throw
 `InvalidArgumentException`. Configuring more than one frame requires `layout` because direct navigation
@@ -141,7 +235,9 @@ One route can serve different frame hosts while sharing its main content:
 ```
 
 `Turbo-Frame: modal` emits `<turbo-frame id="modal">`; `Turbo-Frame: settings-panel` emits
-`<turbo-frame id="settings-panel">`. Direct navigation and unknown headers render `dashboard` instead.
+`<turbo-frame id="settings-panel">`. An opening from a shared overlay host emits the correlated concrete id instead,
+while `target="modal"` or `target="settings-panel"` still selects the right branch. Direct navigation and unknown
+headers render `dashboard` instead.
 
 ## Forwarded attributes
 
@@ -162,6 +258,37 @@ Forwarding configures the frame emitted by this response. It does not configure 
 layout-owned host, enable the integration there, for example
 `<hw:modal frame="modal" view-transition>`, `<hw:sheet frame="settings-panel" view-transition>`, or
 `<hw:drawer frame="drawer-panel" view-transition>`.
+
+### Presentation per frame opening
+
+The three overlay hosts are an exception to the normal attribute rule above: their controllers read the response
+frame's `data-overlay-*` metadata **before** Turbo swaps its children. Declare the receiving family explicitly, then
+specify only the settings this response owns:
+
+```blade
+{{-- Layout: a shared Modal host serves many routes. --}}
+<hw:modal frame="modal" />
+
+{{-- Customer create response (direct navigation still renders layouts.app). --}}
+<hw:frame-or-page frame="modal" layout="layouts.app" overlay-size="sm">
+    <hw:modal.title>New customer</hw:modal.title>
+    ...
+</hw:frame-or-page>
+```
+
+`<hw:button as="a" frame="modal" overlay-size="lg">` may hint at the size during loading.
+The response wins for each property it declares; omitted properties keep the hint or the authored host default. Size
+alone keeps the current side/direction. Subsequent frame navigations can update the same open instance. Closing or
+abandoning a load restores host defaults, including defaults updated by a Turbo morph. Modal presets are `sm`, `md`,
+`lg`, `xl`, `full`, `auto`; a CSS dimension sets max-width. Sheet sides are `left`, `right`, `top`, `bottom`; Drawer
+directions are `up`, `right`, `down`, `left` (with `top`/`bottom` aliases). Changing axis moves the size to the matching
+width/height variable. Invalid family, side and empty/unsafe size values throw in Blade.
+
+For plain anchor and raw frame markup, use `data-overlay-family`, `data-overlay-side`, and `data-overlay-size` on the
+link or response `<turbo-frame>`. A family must match the receiving controller. Presentation metadata is emitted only
+in the frame branch; the standalone page does not carry overlay attributes. `view-transition` remains a **host-level**
+choice: set it on `<hw:modal>`, `<hw:sheet>` or `<hw:drawer>` in the layout. A response cannot toggle the host's
+view-transition controller for one opening by itself.
 
 On **direct navigation with a `layout`**, the slot is rendered directly inside the layout component
 with no surrounding `<turbo-frame>`, so frame-specific attributes like `src` / `loading` have no
@@ -214,14 +341,18 @@ public function update(Request $request, Message $message)
     $message->update($request->validate([...]));
 
     return turbo_stream()
-        ->refresh(method: 'morph')
-        ->update('modal')
+        ->update($request->turboFrameId())
         ->toast('success', 'Saved');
 }
 ```
 
 See the [frame-or-page recipe](../recipes/frame-or-page.md) for the full pattern including dashboard
 layout setup and frame host wiring.
+
+Use the request's **concrete** Frame id when closing just this instance with an empty stream. An empty update for the
+canonical `modal` host does not close a child instance. A `refresh` stream affects the whole page and may discard the
+parent's unsaved draft; use it only when that is intentional. Server-driven instance-aware close operations are covered
+by the separate overlay response API.
 
 ## Returning validation errors to the frame source
 
@@ -248,23 +379,19 @@ the hidden input is unavailable, but the server-rendered input remains the deter
 A common confusion: trying to configure shared chrome (a modal, sheet, drawer, or sidebar host) from within a view
 that opens *as a frame*. That chrome lives in the host page's layout — it was already rendered with
 its own settings before the frame request fired. The frame payload only swaps content inside the
-matching `<turbo-frame>`; it cannot retroactively change elements outside the frame. Modal, Sheet and Drawer are a narrow
-exception for accessibility: their frame integration links semantic title and description slots to the persistent host.
+matching `<turbo-frame>`; it cannot generally change elements outside the frame. Modal, Sheet and Drawer have two
+explicit exceptions: accessible title/description links, and the [presentation metadata](#presentation-per-frame-opening)
+for side/size. Other root settings still belong to the host.
 
 Three options, in order of how much they cost you:
 
-1. **Use multiple hosts**. Render two hosts, such as `<hw:modal frame="modal-edit" :fixed-top="true">`
-   and `<hw:sheet frame="settings-panel" side="right">`, in the layout and pick per link via `data-turbo-frame`.
-   Zero JS, zero stream gymnastics, the choice is explicit at the call site.
-2. **Return a Turbo Stream with `morph`** when you detect the frame request:
-   ```php
-   if ($request->wasFromTurboFrame('modal')) {
-       return turbo_stream()->morph('modal', view('messages._edit-modal', compact('message')));
-   }
-   ```
-   `morph` diffs the DOM and only patches changed attributes/classes, so the modal stays mounted and
-   open — no flicker. Avoid `->replace('modal', ...)`: it destroys the open modal and the new one
-   won't auto-open, since the modal's content-mutation observer never fires on a fresh mount.
+1. **Use presentation metadata** for size and side on a shared host. Other structural differences can use separate
+   hosts, such as `<hw:modal frame="modal-edit" :fixed-top="true">` and
+   `<hw:sheet frame="settings-panel" side="right">`, chosen by `data-turbo-frame`.
+2. **Return targeted Streams for application-owned surrounding content** when a response needs to change more than its
+   Frame. Target known unique elements, not the canonical `modal` host: an active generated instance has a different
+   identity, and morphing the host does not configure that instance. Use the supported presentation metadata or an
+   additional explicitly configured host for different overlay chrome; do not replace the active root to restyle it.
 3. **Render `<hw:modal frame="modal">` or another frame host inside the view itself** instead of relying on a shared
    host. More flexible per-view, but you lose the convenience of one host serving every link.
 

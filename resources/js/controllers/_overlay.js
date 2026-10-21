@@ -286,12 +286,19 @@ export function createOverlay(
     }
 
     function restoreTriggerFocus() {
-        if (!triggerElement || triggerElement.disabled || typeof triggerElement.focus !== "function") return;
+        const trigger = triggerElement;
+        if (!trigger || trigger.disabled || typeof trigger.focus !== "function") return;
 
         try {
-            triggerElement.focus({ preventScroll: true });
+            trigger.focus({ preventScroll: true });
         } catch (_error) {
-            triggerElement.focus();
+            trigger.focus();
+        }
+
+        // A trigger that can no longer take focus, such as an item of a menu that has closed or is still exiting,
+        // asks its container to place focus instead of leaving it on the body.
+        if (trigger.isConnected && document.activeElement !== trigger) {
+            trigger.dispatchEvent(new CustomEvent("hotwire:focus-return", { bubbles: true }));
         }
     }
 

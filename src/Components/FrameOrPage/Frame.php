@@ -18,6 +18,6 @@ class Frame extends Branch
     public function shouldRender(): bool
     {
         return $this->context->activeFrameId !== null
-            && ($this->target === null || $this->target === $this->context->activeFrameId);
+            && ($this->target === null || $this->target === $this->context->activeFrameHost);
     }
 }

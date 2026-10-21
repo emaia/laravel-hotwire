@@ -112,6 +112,69 @@ it('renders frame as a Turbo Frame target', function () {
         ->assertDontSee(' frame="modal"', false);
 });
 
+it('emits overlay hints for a framed anchor and drops them when disabled', function () {
+    $this->blade('<x-hw::button as="a" href="/edit" frame="sheet" overlay="sheet" overlay-side="left" overlay-size="28rem">Open</x-hw::button>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-side="left"', false)
+        ->assertSee('data-overlay-size="28rem"', false);
+
+    $this->blade('<x-hw::button as="a" href="/edit" frame="sheet" overlay="sheet" overlay-side="left" disabled>Open</x-hw::button>')
+        ->assertDontSee('data-overlay-family', false)
+        ->assertDontSee('data-overlay-side', false);
+
+    $this->blade('<x-hw::button as="a" href="/edit" data-turbo-frame="sheet" overlay="sheet" overlay-size="28rem">Open</x-hw::button>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-size="28rem"', false);
+});
+
+it('rejects overlay hints without an active framed anchor or a compatible family', function (string $props) {
+    $this->blade("<x-hw::button {$props}>Open</x-hw::button>");
+})->with([
+    'no family for a custom host' => 'as="a" href="/edit" frame="cart-panel" overlay-size="lg"',
+    'inferred modal has no side' => 'as="a" href="/edit" frame="modal" overlay-side="left"',
+    'inferred family on a button' => 'frame="sheet" overlay-size="28rem"',
+    'modal has no side' => 'as="a" href="/edit" frame="modal" overlay="modal" overlay-side="left"',
+    'not a frame link' => 'as="a" href="/edit" overlay="sheet" overlay-side="left"',
+    'not an anchor' => 'frame="sheet" overlay="sheet" overlay-size="28rem"',
+    'suppressed frame' => 'as="a" href="/edit" frame="sheet" :data-turbo-frame="false" overlay="sheet" overlay-size="28rem"',
+    'no URL' => 'as="a" frame="sheet" overlay="sheet" overlay-size="28rem"',
+])->throws(ViewException::class);
+
+it('infers the overlay family from a canonical host frame', function (string $frame) {
+    $this->blade('<x-hw::button as="a" href="/edit" frame="'.$frame.'" overlay-size="lg">Open</x-hw::button>')
+        ->assertSee('data-overlay-family="'.$frame.'"', false)
+        ->assertSee('data-overlay-size="lg"', false);
+})->with(['modal', 'sheet', 'drawer']);
+
+it('needs an explicit family only for a custom host frame', function () {
+    $this->blade('<x-hw::button as="a" href="/cart" frame="cart-panel" overlay="drawer" overlay-side="bottom">Cart</x-hw::button>')
+        ->assertSee('data-overlay-family="drawer"', false)
+        ->assertSee('data-overlay-side="down"', false);
+
+    $this->blade('<x-hw::button as="a" href="/edit" frame="modal">Open</x-hw::button>')
+        ->assertDontSee('data-overlay-family', false);
+});
+
+// --- Overlay return ---
+
+it('names the parent region that receives the overlay result', function () {
+    $this->blade('<x-hw::button as="a" href="/customers/create" frame="modal" overlay-return="customer">New customer</x-hw::button>')
+        ->assertSee('data-overlay-return-to="customer"', false)
+        ->assertDontSee('overlay-return="customer"', false);
+
+    $this->blade('<x-hw::button as="a" href="/customers/create" frame="modal" overlay-return="customer" disabled>New customer</x-hw::button>')
+        ->assertDontSee('data-overlay-return-to', false);
+});
+
+it('rejects an overlay return without a framed anchor or a valid region name', function (string $props) {
+    $this->blade("<x-hw::button {$props}>New customer</x-hw::button>");
+})->with([
+    'not a frame link' => 'as="a" href="/customers/create" overlay-return="customer"',
+    'not an anchor' => 'frame="modal" overlay-return="customer"',
+    'blank name' => 'as="a" href="/customers/create" frame="modal" overlay-return=" "',
+    'whitespace in name' => 'as="a" href="/customers/create" frame="modal" overlay-return="new customer"',
+])->throws(ViewException::class);
+
 it('lets an explicit data-turbo-frame attribute override the frame prop', function () {
     $view = $this->blade('<x-hw::button as="a" href="/tasks/create" frame="modal" data-turbo-frame="drawer">New task</x-hw::button>');
 

@@ -5,6 +5,7 @@ namespace Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Dropdown;
 use Emaia\LaravelHotwire\Support\FrameTarget;
+use Emaia\LaravelHotwire\Support\OverlayReturnRegion;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 
 class Item extends Component
@@ -16,9 +17,16 @@ class Item extends Component
         public bool $inset = false,
         public string $type = 'button',
         public string|object|bool|null $frame = null,
+        public ?string $overlay = null,
+        public ?string $overlaySide = null,
+        public ?string $overlaySize = null,
+        public ?string $overlayReturn = null,
     ) {
         $this->frame = FrameTarget::normalize($this->frame);
         $this->type = PolymorphicTag::buttonType($this->type);
+        if ($overlayReturn !== null) {
+            OverlayReturnRegion::name($overlayReturn);
+        }
     }
 
     public function render()
@@ -39,6 +47,10 @@ class Item extends Component
         $data['dropdownItemInset'] = $this->inset;
         $data['dropdownItemType'] = $this->type;
         $data['dropdownItemFrame'] = $this->frame;
+        $data['dropdownItemOverlay'] = $this->overlay;
+        $data['dropdownItemOverlaySide'] = $this->overlaySide;
+        $data['dropdownItemOverlaySize'] = $this->overlaySize;
+        $data['dropdownItemOverlayReturn'] = $this->overlayReturn;
 
         unset(
             $data['href'],
@@ -47,6 +59,10 @@ class Item extends Component
             $data['inset'],
             $data['type'],
             $data['frame'],
+            $data['overlay'],
+            $data['overlaySide'],
+            $data['overlaySize'],
+            $data['overlayReturn'],
         );
 
         return $data;

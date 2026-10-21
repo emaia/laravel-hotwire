@@ -7,6 +7,8 @@ use InvalidArgumentException;
 
 final class ComponentId
 {
+    private ?string $overrideScope = null;
+
     /** @var array<string, int> */
     private array $counters = [];
 
@@ -51,8 +53,32 @@ final class ComponentId
         return $candidate;
     }
 
+    /**
+     * Isolate fragment identities without leaking their scope into the surrounding render.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $render
+     * @return T
+     */
+    public function withinScope(string $scope, callable $render): mixed
+    {
+        $previous = $this->overrideScope;
+        $this->overrideScope = $scope;
+
+        try {
+            return $render();
+        } finally {
+            $this->overrideScope = $previous;
+        }
+    }
+
     private function renderScope(): string
     {
+        if ($this->overrideScope !== null) {
+            return $this->overrideScope;
+        }
+
         $frame = $this->request->turboFrameId();
 
         if ($frame === null) {

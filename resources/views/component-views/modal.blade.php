@@ -3,10 +3,11 @@
         'id' => $modalId,
         'data-slot' => $slotName,
         'data-controller' => 'modal',
+        'data-hotwire-overlay-host' => $modalFrame,
         'data-modal-initial-focus-value' => $modalInitialFocus,
         'data-modal-lock-scroll-class' => 'overflow-hidden',
         'data-action' => 'turbo:before-cache@window->modal#closeForCache',
-    ], $attributes, $modalStimulus, protectedPrefixes: ['data-modal-']);
+    ], $attributes, $modalStimulus, protectedPrefixes: ['data-modal-', 'data-hotwire-overlay-host']);
     $modalOverlayLabelContext->validateRoot($slot);
     $frameHostCount = $modalFrame === null ? 0 : \Emaia\LaravelHotwire\Support\OverlayFrameHost::count(
         $slot->toHtml(),

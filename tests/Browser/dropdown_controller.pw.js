@@ -304,6 +304,79 @@ test("native Tab navigation and nested Escape close before the parent drawer", a
     await expect(modal).toHaveAttribute("data-state", "closed");
 });
 
+function menuOverlayFixture(motion) {
+    return `
+        <style>
+            #menu { transition: opacity 400ms linear; }
+            #menu[data-state="closed"] { opacity: 0; }
+            #menu[data-state="open"] { opacity: 1; }
+        </style>
+        <div data-controller="drawer">
+            <div data-controller="dropdown">
+                <button id="first-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false" aria-controls="menu">Menu</button>
+                <button id="second-trigger" data-dropdown-target="trigger" data-action="dropdown#toggle" aria-expanded="false" aria-controls="menu">More</button>
+                <div id="menu" data-dropdown-target="menu" data-state="closed" data-motion="${motion}" hidden inert>
+                    <button id="open-drawer" type="button" data-action="drawer#open">Open drawer</button>
+                </div>
+            </div>
+            <div data-drawer-target="modal" data-state="closed" data-motion="none" hidden inert>
+                <div data-drawer-target="backdrop"></div>
+                <div data-drawer-target="dialog" role="dialog" tabindex="-1">
+                    <button id="close-drawer" type="button" data-action="drawer#close">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+for (const trigger of ["first-trigger", "second-trigger"]) {
+    test(`an overlay opened from a menu item returns focus to the ${trigger} that opened the menu`, async ({ page }) => {
+        await page.setContent(menuOverlayFixture("none"));
+        await installControllers(page);
+
+        const menu = page.locator("#menu");
+        const modal = page.locator('[data-drawer-target="modal"]');
+
+        await page.locator(`#${trigger}`).click();
+        await expect(menu).toBeVisible();
+        await page.locator("#open-drawer").click();
+        await expect(modal).toHaveAttribute("data-state", "open");
+        await expect(menu).toBeHidden();
+
+        await page.locator("#close-drawer").click();
+
+        await expect(modal).toHaveAttribute("data-state", "closed");
+        await expect(page.locator(`#${trigger}`)).toBeFocused();
+        await expect(menu).toBeHidden();
+    });
+}
+
+test("an overlay closed while the menu is still exiting returns focus to the menu trigger", async ({ page }) => {
+    await page.setContent(menuOverlayFixture("default"));
+    await installControllers(page);
+
+    const menu = page.locator("#menu");
+    const modal = page.locator('[data-drawer-target="modal"]');
+
+    await page.locator("#second-trigger").click();
+    await expect(menu).toHaveAttribute("data-state", "open");
+    await page.locator("#open-drawer").click();
+    await expect(modal).toHaveAttribute("data-state", "open");
+
+    const exiting = await page.evaluate(() => {
+        const menu = document.querySelector("#menu");
+        const state = { visible: menu.checkVisibility(), inert: menu.inert };
+        const root = document.querySelector('[data-controller~="drawer"]');
+        window.app.getControllerForElementAndIdentifier(root, "drawer").close();
+        return state;
+    });
+
+    expect(exiting).toEqual({ visible: true, inert: true });
+    await expect(modal).toHaveAttribute("data-state", "closed");
+    await expect(page.locator("#second-trigger")).toBeFocused();
+    await expect(menu).toBeHidden();
+});
+
 async function installControllers(page) {
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ path: "node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js" });
@@ -342,7 +415,17 @@ async function bundle() {
         .replace("export function createTopLayer", "function createTopLayer");
 
     const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
         .replace("export function createFrameOverlay", "function createFrameOverlay");
+
+    const presentation = (await readFile("resources/js/controllers/_overlay_presentation.js", "utf8"))
+        .replace(/^export /gm, "");
+    const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8"))
+        .replace(/^export /gm, "");
+    const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
+        .replace(/^export /gm, "")
+        .replace('import("@hotwired/turbo")', "Promise.resolve(window.Turbo)");
 
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
@@ -361,6 +444,8 @@ async function bundle() {
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
         .replace("export default class DrawerController extends Controller", "class DrawerController extends Controller");
 
     return `
@@ -373,6 +458,9 @@ async function bundle() {
         ${presence}
         ${overlay}
         ${frameOverlay}
+        const { createOverlayPresentation } = (() => { ${presentation}; return { createOverlayPresentation }; })();
+        ${overlayReturn}
+        ${host}
         ${floating}
         ${controller}
         ${drawer}
