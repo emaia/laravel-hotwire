@@ -134,6 +134,10 @@ Use the guarded `:root:not([data-theme="dark"])` selector for light-only colour 
 also matches `<html data-theme="dark">` and can therefore replace dark tokens with light values. Theme-independent
 tokens such as `--radius` can remain on bare `:root`.
 
+Component motion variables are not tokens: presets declare them on the component root, where they shadow a `:root`
+value. Override Reveal timing on its root selectors as described in
+[Reveal application defaults](components/reveal.md#application-defaults).
+
 ## Semantic contrast
 
 Every semantic text pair must meet a WCAG 2.x contrast ratio of at least `4.50:1` in both themes. The shared registered

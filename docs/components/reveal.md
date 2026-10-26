@@ -26,8 +26,8 @@ The root and items are polymorphic:
 
 ## Explicit nested items
 
-Use `<hw:reveal.item>` when the animated units are not direct children. The parent supplies sequential indexes across
-the nested markup:
+Use `<hw:reveal.item>` when the animated units are not direct children. The parent analyzes the rendered structure and
+supplies sequential indexes across the nested markup:
 
 ```blade
 <hw:reveal as="section" delay="110ms" motion="flat">
@@ -46,15 +46,56 @@ the nested markup:
 ```
 
 The first explicit item switches the root out of direct-child mode. Raw `data-reveal-item` is a low-level escape hatch
-for explicit items inside a Reveal root, not a root-scoped annotation. Structural CSS matches `data-reveal-item` globally,
-so putting it in a reusable partial animates that partial wherever it renders; a stream insertion outside a Reveal root
-replays the entrance. Add the marker at the Reveal composition site instead. For an intentionally standalone item, add
-`data-reveal-skip` to the stream payload when its entrance should not replay.
+for explicit items inside a Reveal root, not a root-scoped annotation. Every raw item participates in the document-order
+sequence, but the server only writes a missing index to an item that also opts in with `data-slot="reveal-item"`.
+Structural CSS matches `data-reveal-item` globally, so putting it in a reusable partial animates that partial wherever
+it
+renders; a stream insertion outside a Reveal root replays the entrance. Add the marker at the Reveal composition site
+instead. For an intentionally standalone item, add `data-reveal-skip` to the stream payload
+when its entrance should not replay.
 
 For a list of reusable partials, let `<hw:reveal>` own direct-child mode. It emits `data-reveal-children` automatically
 and keeps the partial markup neutral. The controller assigns missing indexes in document order, but that happens only
 after it connects. Set `--reveal-index` server-side when the visual order differs or when the stagger must be correct on
 the first paint rather than progressively corrected after controller loading.
+
+`<hw:reveal.item>` receives a deterministic server index from the rendered HTML structure of its nearest
+`<hw:reveal>` or `<hw:sidebar reveal>` root. Nested roots maintain independent sequences, including a manually mounted
+`data-controller="reveal"` inside a package root. A Blade wrapper that creates a package root can index item markup
+passed
+through its slot because indexing happens after the slot renders. A manually mounted root outside a package root has no
+server resolver, so the controller assigns missing indexes in document order after connecting. Outside any Reveal
+controller an item remains a CSS animation item with the default index `0`, but has no controller lifecycle.
+
+Independent sequences share the same clock: the first item of a nested root starts together with the first item of the
+outer root, and the nested root takes no position in the outer sequence. To continue the cascade after the outer items,
+give the nested root a `delay` covering the outer steps before it:
+
+```blade
+<hw:reveal stagger="90ms">
+    <hw:reveal.item>Overview</hw:reveal.item>
+    <hw:reveal.item>Usage</hw:reveal.item>
+
+    {{-- Two outer steps × 90ms. --}}
+    <hw:reveal stagger="90ms" delay="180ms">
+        <hw:reveal.item>Requests</hw:reveal.item>
+        <hw:reveal.item>Errors</hw:reveal.item>
+    </hw:reveal>
+</hw:reveal>
+```
+
+The offset is not derived from the outer root, so update it when the number of outer items before the nested root or
+the outer stagger changes.
+
+An application component can opt into the same server indexing contract without consuming Blade context:
+
+```blade
+<div data-slot="reveal-item" data-reveal-item>
+    {{ $slot }}
+</div>
+```
+
+The resolver only adds a missing `--reveal-index`; an inline value supplied by the application is always preserved.
 
 When a component must own the Reveal root without an extra wrapper, prefer that component's explicit integration when
 available. [`<hw:sidebar reveal>`](sidebar.md#reveal-integration), for example, mounts Reveal directly on its existing
@@ -81,18 +122,18 @@ This is presentation, not lazy loading: all content remains in the document and 
 
 The structural foundation routes three motions, while the selected preset supplies their visual blur and shift values:
 
-| Motion | Effect |
-| ------ | ------ |
-| `rise` | Fade, blur, and vertical movement. |
+| Motion | Effect                                       |
+|--------|----------------------------------------------|
+| `rise` | Fade, blur, and vertical movement.           |
 | `flat` | Fade and vertical movement without `filter`. |
-| `fade` | Opacity only. |
+| `fade` | Opacity only.                                |
 
 Use `motion="flat"` to omit `filter`, including when the blur itself causes a rendering conflict. Use `motion="fade"`
 when an item contains a fixed-position dropdown, popover, tooltip, or overlay: both `filter` and `transform` create a
 containing block while present, and only `fade` omits both. Reveal uses `animation-fill-mode: backwards`, so those
 properties are released after every animation instead of changing fixed positioning permanently.
 
-Timing props become CSS custom properties:
+Timing props become inline CSS custom properties on the root:
 
 ```blade
 <hw:reveal stagger="45ms" duration="420ms" delay="90ms" :max-steps="8">
@@ -100,7 +141,15 @@ Timing props become CSS custom properties:
 </hw:reveal>
 ```
 
-`max-steps` caps the delay for long lists. Override `--reveal-blur`, `--reveal-shift`, or `--reveal-easing` on the root
+| Prop        | Custom property      | Structural fallback | Bloom   |
+|-------------|----------------------|---------------------|---------|
+| `stagger`   | `--reveal-stagger`   | `70ms`              | `90ms`  |
+| `duration`  | `--reveal-duration`  | `520ms`             | `680ms` |
+| `delay`     | `--reveal-delay`     | `0ms`               | —       |
+| `max-steps` | `--reveal-max-steps` | `11`                | —       |
+
+Each item starts after `delay + min(index, max-steps) × stagger`, so `max-steps` caps the delay for long lists. Override
+`--reveal-blur`, `--reveal-shift`, or `--reveal-easing` on the root
 for smaller adjustments. To supply an application keyframe while preserving the stagger formula and `backwards` fill,
 set `--reveal-animation`:
 
@@ -113,6 +162,25 @@ set `--reveal-animation`:
 Nova uses the structural defaults (`6px` blur, `0.75rem` shift, `520ms` duration and `70ms` stagger). Bloom uses a
 softer authored profile (`12px`, `1.25rem`, `680ms` and `90ms`) with a longer ease-out curve. Explicit `stagger`,
 `duration` and other component props still override the selected preset through inline custom properties.
+
+### Application defaults
+
+Presets declare their profile in the `components` layer on the Reveal root, not on `:root`, so a value set on `:root`
+is shadowed wherever the preset declares the same property. Target the root selectors instead; an unlayered application
+rule wins over the preset and changes every package root without editing markup:
+
+```css
+[data-slot="reveal"],
+[data-slot="sidebar-container"][data-controller~="reveal"],
+[data-slot="sidebar"][data-controller~="reveal"] {
+    --reveal-duration: 320ms;
+    --reveal-stagger: 60ms;
+}
+```
+
+Component props still win because they render inline. A manually mounted `data-controller="reveal"` root without
+`data-slot="reveal"` matches neither the preset nor this rule and uses the structural fallbacks under every preset; set
+the custom properties on that root directly.
 
 ## Render and document scope
 
@@ -139,7 +207,9 @@ completed state is removed before Turbo caches the page.
 
 - A descendant [`animated-number`](../controllers/animated-number.md) restarts when its Reveal batch is shown, unless
   its own lazy observer is still waiting for the counter to enter the viewport.
-- [`<hw:progress>`](progress.md) indicators animate from zero in sync with their owning item.
+- [`<hw:progress>`](progress.md) indicators animate from zero in sync with their owning item: they start
+  `--reveal-progress-delay` (`120ms`) after it and run for `--reveal-progress-duration` (`900ms`). Set either on the
+  root to change them.
 - Listen for `reveal:shown` to coordinate application behavior or a [`chart`](../controllers/chart.md):
 
 ```blade
@@ -153,20 +223,20 @@ connect when every item is still offscreen.
 
 ## Props
 
-| Prop          | Type                 | Default                    | Description |
-| ------------- | -------------------- | -------------------------- | ----------- |
-| `trigger`     | `string`             | `'load'`                   | `load` or per-item `scroll`. |
-| `scope`       | `string`             | `'render'`                 | `render` or persistent `document` scope. |
-| `motion`      | `string`             | `'rise'`                   | `rise`, `flat`, or `fade`. |
-| `stagger`     | `?string`            | preset                     | Delay between item indexes. |
-| `duration`    | `?string`            | preset                     | Entrance duration. |
-| `delay`       | `?string`            | preset                     | Initial delay before the first item. |
-| `max-steps`   | `int\|string\|null` | preset                     | Maximum stagger index used by the delay formula. |
-| `threshold`   | `number\|string`     | `0.15`                     | IntersectionObserver threshold for `scroll`. |
-| `root-margin` | `string`             | `'0px 0px -10% 0px'`      | IntersectionObserver root margin for `scroll`. |
-| `once`        | `bool`               | `true`                     | Reveal each scroll item only once. |
-| `as`          | `string`             | `'div'`                    | Root HTML element. |
-| `stimulus`    | `Htmlable\|null`     | `null`                     | Additional Stimulus bindings merged on the root. |
+| Prop          | Type                | Default              | Description                                      |
+|---------------|---------------------|----------------------|--------------------------------------------------|
+| `trigger`     | `string`            | `'load'`             | `load` or per-item `scroll`.                     |
+| `scope`       | `string`            | `'render'`           | `render` or persistent `document` scope.         |
+| `motion`      | `string`            | `'rise'`             | `rise`, `flat`, or `fade`.                       |
+| `stagger`     | `?string`           | preset               | Delay between item indexes.                      |
+| `duration`    | `?string`           | preset               | Entrance duration.                               |
+| `delay`       | `?string`           | `0ms`                | Initial delay before the first item.             |
+| `max-steps`   | `int\|string\|null` | `11`                 | Maximum stagger index used by the delay formula. |
+| `threshold`   | `number\|string`    | `0.15`               | IntersectionObserver threshold for `scroll`.     |
+| `root-margin` | `string`            | `'0px 0px -10% 0px'` | IntersectionObserver root margin for `scroll`.   |
+| `once`        | `bool`              | `true`               | Reveal each scroll item only once.               |
+| `as`          | `string`            | `'div'`              | Root HTML element.                               |
+| `stimulus`    | `Htmlable\|null`    | `null`               | Additional Stimulus bindings merged on the root. |
 
 Root tags support `div`, `section`, `main`, `header`, `footer`, `aside`, `nav`, `ul`, and `ol`. Item tags support `div`,
 `article`, `section`, `header`, `footer`, `aside`, and `li`. Regular HTML attributes pass through. Reveal-owned
@@ -174,7 +244,8 @@ Root tags support `div`, `section`, `main`, `header`, `footer`, `aside`, `nav`, 
 
 ## Progressive enhancement
 
-Structural CSS contains the visibility, delay formula, armed state, `flat`/`fade` routing, layer-safe fallback keyframes,
+Structural CSS contains the visibility, delay formula, armed state, `flat`/`fade` routing, layer-safe fallback
+keyframes,
 Turbo safeguards, and reduced-motion fallback. The selected preset supplies visual motion variables. A preset may
 redefine the named fallback keyframes in its own `components` layer without replacing the scheduling machinery. This
 split means the initial cascade starts before the lazy controller chunk connects. If JavaScript is disabled or fails,

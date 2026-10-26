@@ -94,8 +94,10 @@ it('keeps visual preset ownership separate from component template ownership', f
     expect($presets)
         ->toContain('does not require application PHP')
         ->toMatch('/does not require\s+publishing package views/')
-        ->toMatch('/application-owned fork of markup\s+and behavior/')
-        ->toMatch('/targets, lifecycle and\s+accessibility/');
+        ->toContain('transfers only its Blade markup to the application')
+        ->toContain('the PHP classes, controllers, shared helpers and preset CSS still follow the installed package')
+        ->toMatch('/partial fork,\s+not a complete component eject/')
+        ->toMatch('/targets,\s+lifecycle and accessibility/');
 });
 
 it('documents the official preset token metadata contract without name inference', function () {

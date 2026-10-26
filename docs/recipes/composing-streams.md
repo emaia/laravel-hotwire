@@ -4,27 +4,33 @@ Describe a complete UI transition in a single response by chaining Turbo Stream 
 Combined with the [`toast()`](../components/toast.md#the-toast-stream-macro) macro, controller
 actions stay small and declarative.
 
-## The macro
+## Built-in macros
 
 `toast()` ships with the package — nothing to register. See
 [its parameters](../components/toast.md#the-toast-stream-macro), including `target` for a viewport with a
 custom id.
 
+[`closeOverlay($origin)`](./overlay-responses.md) closes the specified Modal, Sheet or Drawer instance without erasing
+reusable markup. Both macros preserve any application-defined implementation rather than replacing it.
+
 ## Common compositions
 
-### Save → close → refresh → toast
+### Save → update a row → close → toast
 
-The canonical "modal form succeeded" response:
+Update the affected row instead of refreshing other forms that may hold drafts. In this example the route's Frame
+presentation is an overlay, while ordinary page submissions keep their redirect:
 
 ```php
 public function update(UpdatePostRequest $request, Post $post)
 {
     $post->update($request->validated());
 
-    if ($request->wasFromTurboFrame('modal') && $request->wantsTurboStream()) {
+    $origin = $request->overlayOrigin();
+
+    if ($origin !== null && $request->wantsTurboStream()) {
         return turbo_stream()
-            ->refresh(method: 'morph')
-            ->update('modal')
+            ->replace(dom_id($post), view('posts._row', compact('post')))
+            ->closeOverlay($origin)
             ->toast('success', 'Post updated');
     }
 
@@ -34,9 +40,10 @@ public function update(UpdatePostRequest $request, Post $post)
 }
 ```
 
-Order matters less than you might think — Turbo applies streams in order, but `refresh` morphs the
-DOM in place, the modal frame is cleared, and the toast appends to the persistent toaster.
-The redirect keeps direct and non-JavaScript submissions usable.
+Turbo starts the actions in order, but the next action does not wait for the close animation or a page visit to finish.
+Use a global `refresh(method: 'morph')` only when discarding other open drafts is intentional. It remains native to Turbo,
+including request-id suppression; it does not implicitly close a single overlay or guarantee that a toast survives a
+later page replacement. The redirect keeps direct and non-JavaScript submissions usable.
 
 ### Optimistic action rejected → revert + explain
 

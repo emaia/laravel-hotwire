@@ -223,10 +223,11 @@ Moving those preludes behind the imported sources could change encoding or casca
 in the ordered visual sources after their imports. These checks do not change the generated CSS of Nova or Bloom.
 
 A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
-publishing package views. Copying or overriding a component template is instead an application-owned fork of markup
-and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and
-accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
-treatment, must change.
+publishing package views. Copying or overriding a component template transfers only its Blade markup to the application;
+the PHP classes, controllers, shared helpers and preset CSS still follow the installed package. This is a partial fork,
+not a complete component eject. The application must track package changes and preserve the documented slots, targets,
+lifecycle and accessibility relationships itself. Use that boundary only when the semantic component contract, rather
+than its visual treatment, must change.
 
 Tailwind converts underscores to spaces only inside arbitrary values. Keep the underscore in a utility such as
 `bg-[color-mix(in_oklch,var(--background),transparent_20%)]`, but use a real space in raw CSS such as
@@ -382,8 +383,10 @@ settlement.
 While one of these modal overlays stays connected, Turbo morphs can update its contents but do not overwrite
 `data-state` (or Sidebar's `data-mobile-state`), `data-presence`, `hidden`, `inert`, or active top-layer attributes.
 `data-motion` and attributes on ordinary descendants remain morphable; nested overlays independently protect their own
-targets. An open overlay therefore stays open through refresh morphs; close it through its public action or frame/stream
-lifecycle rather than relying on closed server-rendered attributes.
+targets. A retained static overlay therefore stays open through content morphs; close it through its public action or
+frame/stream lifecycle rather than relying on closed server-rendered attributes. Generated remote instances are
+temporary page state, not permanent morph destinations: an accepted page refresh discards them when rendering the new
+page without those instances. Use targeted Frame/Stream updates when other overlays must keep unsaved drafts.
 
 The selected preset transitions only `opacity`, `scale`, and `translate`. Presence suppresses transition and animation while
 the first placement is prepared, so a resolved flip cannot animate the closed transform before enter begins. During

@@ -621,7 +621,8 @@ class CheckCommand extends Command
 
     private function viewOverrideRelativePath(string $path): ?string
     {
-        $path = $this->comparablePath($path);
+        // A linked view belongs to its override location, not to the target's directory.
+        $path = $this->comparablePath(dirname($path)).'/'.$this->pathForComparison(basename($path));
         $root = rtrim($this->comparablePath(resource_path('views/vendor/hotwire')), '/');
 
         if (! $this->containsPath($root, $path) || $path === $root) {

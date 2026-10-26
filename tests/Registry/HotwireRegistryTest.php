@@ -74,6 +74,10 @@ it('loads the component catalog', function () {
         ->and($registry->component('spinner'))->not->toBeNull();
 });
 
+it('does not expose the retired modal auto close controller', function () {
+    expect(HotwireRegistry::make()->controller('modal-auto-close'))->toBeNull();
+});
+
 it('uses family references instead of manual slot inventories for components', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
 
@@ -303,6 +307,10 @@ it('projects the Textarea family slot contract from its component class', functi
         'textarea' => 'visual',
         'textarea-counter' => 'visual',
     ]);
+});
+
+it('declares the autofocus dependency for forms that opt into error focus', function () {
+    expect(HotwireRegistry::make()->component('form')->controllers)->toContain('autofocus');
 });
 
 it('projects form control slot contracts from their component classes', function (string $key, string $class) {

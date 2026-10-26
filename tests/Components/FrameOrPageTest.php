@@ -20,7 +20,149 @@ beforeEach(function () {
 
 afterEach(function () {
     request()->headers->remove('Turbo-Frame');
+    request()->headers->remove('X-Hotwire-Overlay-Host');
+    request()->headers->remove('X-Hotwire-Overlay-Instance');
+    request()->headers->remove('X-Hotwire-Overlay-Origin');
 });
+
+// --- Overlay instance frames ---
+
+it('matches a concrete overlay instance without teaching the view its generated frame id', function () {
+    $token = str_repeat('a', 32);
+    request()->headers->set('Turbo-Frame', 'modal--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', 'modal');
+    request()->headers->set('X-Hotwire-Overlay-Instance', $token);
+
+    $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page frame="modal" layout="dashboard-shell">
+            <x-hw::frame-or-page.frame target="modal">Instance content</x-hw::frame-or-page.frame>
+            <x-hw::frame-or-page.page>Page content</x-hw::frame-or-page.page>
+        </x-hw::frame-or-page>
+    BLADE)
+        ->assertSee('<turbo-frame id="modal--'.$token.'"', false)
+        ->assertSee('Instance content')
+        ->assertDontSee('Page content')
+        ->assertDontSee('data-test-layout', false);
+});
+
+it('keeps canonical frame-only mode for ordinary requests and uses the instance when correlated', function () {
+    $token = str_repeat('b', 32);
+    request()->headers->set('Turbo-Frame', 'sheet--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', 'sheet');
+    request()->headers->set('X-Hotwire-Overlay-Instance', $token);
+
+    $this->blade('<x-hw::frame-or-page frame="sheet">Panel</x-hw::frame-or-page>')
+        ->assertSee('<turbo-frame id="sheet--'.$token.'"', false);
+
+    request()->headers->remove('X-Hotwire-Overlay-Host');
+    request()->headers->remove('X-Hotwire-Overlay-Instance');
+    $this->blade('<x-hw::frame-or-page frame="sheet">Panel</x-hw::frame-or-page>')
+        ->assertSee('<turbo-frame id="sheet"', false)
+        ->assertDontSee('sheet--'.$token, false);
+});
+
+it('selects the canonical branch for one of several hosts even though the response uses its instance id', function () {
+    $token = str_repeat('1', 32);
+    request()->headers->set('Turbo-Frame', 'drawer--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', 'drawer');
+    request()->headers->set('X-Hotwire-Overlay-Instance', $token);
+
+    $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page :frames="['modal', 'drawer']" layout="dashboard-shell">
+            Shared content
+            <x-hw::frame-or-page.frame target="modal">Modal only</x-hw::frame-or-page.frame>
+            <x-hw::frame-or-page.frame target="drawer">Drawer only</x-hw::frame-or-page.frame>
+        </x-hw::frame-or-page>
+    BLADE)
+        ->assertSee('<turbo-frame id="drawer--'.$token.'"', false)
+        ->assertSee('Shared content')
+        ->assertSee('Drawer only')
+        ->assertDontSee('Modal only');
+});
+
+it('keeps a nested frame separate from its owning overlay while validating the origin context', function () {
+    $token = str_repeat('3', 32);
+    request()->headers->set('Turbo-Frame', 'customer-details');
+    request()->headers->set('X-Hotwire-Overlay-Origin', 'modal--'.$token);
+
+    $this->blade('<x-hw::frame-or-page frame="customer-details" layout="dashboard-shell">Nested content</x-hw::frame-or-page>')
+        ->assertSee('<turbo-frame id="customer-details"', false)
+        ->assertSee('Nested content')
+        ->assertDontSee('data-test-layout', false);
+});
+
+it('selects the internal Frame branch even when its owning overlay host is also configured', function () {
+    request()->headers->set('Turbo-Frame', 'customer-details');
+    request()->headers->set('X-Hotwire-Overlay-Origin', 'modal--'.str_repeat('a', 32));
+
+    expect(request()->wasFromOverlay(host: 'modal'))->toBeTrue();
+
+    $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page :frames="['modal', 'customer-details']" layout="dashboard-shell">
+            <x-hw::frame-or-page.frame target="modal">Outer content</x-hw::frame-or-page.frame>
+            <x-hw::frame-or-page.frame target="customer-details">Inner content</x-hw::frame-or-page.frame>
+        </x-hw::frame-or-page>
+    BLADE)
+        ->assertSee('<turbo-frame id="customer-details"', false)
+        ->assertSee('Inner content')
+        ->assertDontSee('Outer content');
+});
+
+it('rejects forged or inconsistent overlay origin headers', function (string $frame, string $origin, ?string $host, ?string $instance) {
+    request()->headers->set('Turbo-Frame', $frame);
+    request()->headers->set('X-Hotwire-Overlay-Origin', $origin);
+    if ($host !== null) {
+        request()->headers->set('X-Hotwire-Overlay-Host', $host);
+    }
+    if ($instance !== null) {
+        request()->headers->set('X-Hotwire-Overlay-Instance', $instance);
+    }
+
+    expect(fn () => $this->blade('<x-hw::frame-or-page frame="customer-details" layout="dashboard-shell">Content</x-hw::frame-or-page>'))
+        ->toThrow(ViewException::class, 'Invalid overlay origin context');
+})->with([
+    'invalid nested origin' => ['customer-details', '../../modal', null, null],
+    'mismatched primary origin' => ['modal--'.str_repeat('4', 32), 'sheet--'.str_repeat('4', 32), 'modal', str_repeat('4', 32)],
+]);
+
+it('rejects an unrelated instance when a frame-only view has no page layout', function () {
+    $token = str_repeat('2', 32);
+    request()->headers->set('Turbo-Frame', 'drawer--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', 'drawer');
+    request()->headers->set('X-Hotwire-Overlay-Instance', $token);
+
+    expect(fn () => $this->blade('<x-hw::frame-or-page frame="modal">Content</x-hw::frame-or-page>'))
+        ->toThrow(ViewException::class, 'not configured for the requested overlay host');
+});
+
+it('rejects an unmatched overlay context instead of emitting a frame for another instance', function (string $frame, string $host) {
+    $token = str_repeat('c', 32);
+    request()->headers->set('Turbo-Frame', $frame.'--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', $host);
+    request()->headers->set('X-Hotwire-Overlay-Instance', $token);
+
+    $view = $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hw::frame-or-page>');
+
+    $view->assertSee('data-test-layout="dashboard"', false)
+        ->assertDontSee('<turbo-frame id="modal--'.$token.'"', false);
+})->with([
+    'other host' => ['drawer', 'drawer'],
+    'unlisted host' => ['sheet', 'sheet'],
+]);
+
+it('rejects invalid instance transport before rendering', function (string $host, string $instance) {
+    $token = str_repeat('d', 32);
+    request()->headers->set('Turbo-Frame', 'modal--'.$token);
+    request()->headers->set('X-Hotwire-Overlay-Host', $host);
+    request()->headers->set('X-Hotwire-Overlay-Instance', $instance);
+
+    expect(fn () => $this->blade('<x-hw::frame-or-page frame="modal" layout="dashboard-shell">Content</x-hw::frame-or-page>'))
+        ->toThrow(ViewException::class, 'Invalid overlay instance context');
+})->with([
+    'missing host' => ['', str_repeat('d', 32)],
+    'invalid instance' => ['modal', '../../evil'],
+    'mismatched instance' => ['modal', str_repeat('e', 32)],
+]);
 
 it('renders only the frame when no layout is given', function () {
     $view = $this->blade('<x-hw::frame-or-page frame="modal">Content</x-hw::frame-or-page>');
@@ -229,6 +371,60 @@ it('forwards extra attributes to the inner turbo-frame', function () {
 
     $view->assertSee('src="/edit"', false);
     $view->assertSee('loading="lazy"', false);
+});
+
+// --- Overlay presentation ---
+
+it('emits validated presentation metadata only for a matching frame response', function () {
+    request()->headers->set('Turbo-Frame', 'sheet');
+
+    $this->blade('<x-hw::frame-or-page frame="sheet" layout="dashboard-shell" overlay="sheet" overlay-side="left" overlay-size="28rem">Settings</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-side="left"', false)
+        ->assertSee('data-overlay-size="28rem"', false)
+        ->assertSee('data-overlay-family="sheet"', false);
+
+    request()->headers->remove('Turbo-Frame');
+
+    $this->blade('<x-hw::frame-or-page frame="sheet" layout="dashboard-shell" overlay="sheet" overlay-side="left" overlay-size="28rem">Settings</x-hw::frame-or-page>')
+        ->assertDontSee('data-overlay-side=', false)
+        ->assertDontSee('data-overlay-size=', false)
+        ->assertDontSee('data-overlay-family=', false);
+});
+
+it('accepts a modal size without a side and drawer directions with their aliases', function () {
+    $this->blade('<x-hw::frame-or-page frame="modal" overlay="modal" overlay-size="xl">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-size="xl"', false)
+        ->assertDontSee('data-overlay-side=', false);
+
+    $this->blade('<x-hw::frame-or-page frame="drawer" overlay="drawer" overlay-side="top" overlay-size="30vh">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-side="up"', false)
+        ->assertSee('data-overlay-size="30vh"', false);
+});
+
+it('rejects ambiguous or incompatible overlay presentation', function (string $props, string $message) {
+    expect(fn () => $this->blade("<x-hw::frame-or-page frame=\"modal\" {$props}>Content</x-hw::frame-or-page>"))
+        ->toThrow(ViewException::class, $message);
+})->with([
+    ['overlay="modal" overlay-side="left"', 'Modal does not support overlay-side'],
+    ['overlay-side="left"', 'Modal does not support overlay-side'],
+    ['overlay="sheet" overlay-side="up"', 'Sheet overlay-side must be one of'],
+    ['overlay="drawer" overlay-side="rigth"', 'Drawer overlay-side must be one of'],
+    ['overlay="bogus" overlay-size="lg"', 'Overlay family must be one of'],
+    ['overlay="modal" overlay-size=" "', 'Overlay size must be a non-empty'],
+    ['overlay="sheet" overlay-size="28rem; color:red"', 'Overlay size must be a non-empty'],
+]);
+
+it('infers the family from a canonical host frame and requires it for a custom host', function () {
+    $this->blade('<x-hw::frame-or-page frame="sheet" overlay-side="left">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-family="sheet"', false)
+        ->assertSee('data-overlay-side="left"', false);
+
+    $this->blade('<x-hw::frame-or-page frame="cart-panel" overlay="drawer" overlay-side="bottom">Content</x-hw::frame-or-page>')
+        ->assertSee('data-overlay-family="drawer"', false)
+        ->assertSee('data-overlay-side="down"', false);
+
+    expect(fn () => $this->blade('<x-hw::frame-or-page frame="cart-panel" overlay-size="lg">Content</x-hw::frame-or-page>'))
+        ->toThrow(ViewException::class, 'Overlay presentation requires an overlay family');
 });
 
 it('supports frame component aliases when rendering as a frame', function () {

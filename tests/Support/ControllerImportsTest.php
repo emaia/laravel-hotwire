@@ -85,7 +85,16 @@ it('resolves the modal controller transitive overlay helpers', function () {
         ->toContain('_overlay_stack.js')
         ->toContain('_focus_trap.js')
         ->toContain('_top_layer.js')
-        ->toContain('_frame_overlay.js');
+        ->toContain('_frame_overlay.js')
+        ->toContain('_overlay_presentation.js')
+        ->toContain('_overlay_host.js')
+        ->toContain('_overlay_return.js');
+
+    $drawer = realpath($base.'/drawer_controller.js');
+    expect(array_map('basename', $this->imports->sharedDependencies($drawer, $base)))
+        ->toContain('_overlay_presentation.js')
+        ->toContain('_overlay_host.js')
+        ->toContain('_overlay_return.js');
 });
 
 it('resolves the file upload feedback presenter', function () {

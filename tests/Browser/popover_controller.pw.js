@@ -211,6 +211,40 @@ test("nested inside a modal, Escape closes the popover before the modal", async 
     await expect(modal).toHaveAttribute("data-state", "closed");
 });
 
+for (const closeWith of ["button", "Escape"]) {
+    test(`an overlay opened from a Popover returns focus to its active trigger after ${closeWith}`, async ({ page }) => {
+        await page.setContent(`
+            <div data-controller="modal">
+                <div data-controller="popover">
+                    <button data-popover-target="trigger" data-action="popover#toggle">First</button>
+                    <button id="active-trigger" data-popover-target="trigger" data-action="popover#toggle">Second</button>
+                    <div data-popover-target="content" data-state="closed" data-motion="none" hidden inert>
+                        <button data-action="modal#open">Open overlay</button>
+                    </div>
+                </div>
+                <div data-modal-target="modal" data-state="closed" data-motion="none" hidden inert>
+                    <div data-modal-target="backdrop"></div>
+                    <div data-modal-target="dialog" role="dialog" tabindex="-1">
+                        <button id="inside">Interact inside overlay</button>
+                        <button data-action="modal#close">Close overlay</button>
+                    </div>
+                </div>
+            </div>
+        `);
+        await installControllers(page, ["modal", "popover"]);
+        await page.locator("#active-trigger").click();
+        await page.getByRole("button", { name: "Open overlay", exact: true }).click();
+        const modal = page.locator('[data-modal-target="modal"]');
+        await expect(modal).toHaveAttribute("data-state", "open");
+        await page.locator("#inside").click();
+        await expect(page.locator('[data-popover-target="content"]')).toBeHidden();
+        if (closeWith === "Escape") await page.keyboard.press("Escape");
+        else await page.getByRole("button", { name: "Close overlay", exact: true }).click();
+        await expect(modal).toHaveAttribute("data-state", "closed");
+        await expect(page.locator("#active-trigger")).toBeFocused();
+    });
+}
+
 async function installControllers(page, controllers) {
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ path: "node_modules/@floating-ui/core/dist/floating-ui.core.umd.min.js" });
@@ -264,12 +298,24 @@ async function bundle() {
         .replace("export function createTopLayer", "function createTopLayer");
 
     const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
         .replace("export function createFrameOverlay", "function createFrameOverlay");
+
+    const presentation = (await readFile("resources/js/controllers/_overlay_presentation.js", "utf8"))
+        .replace(/^export /gm, "");
+    const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8"))
+        .replace(/^export /gm, "");
+    const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
+        .replace(/^export /gm, "")
+        .replace('import("@hotwired/turbo")', "Promise.resolve(window.Turbo)");
 
     const modal = (await readFile("resources/js/controllers/modal_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
         .replace("export default class ModalController extends Controller", "class ModalController extends Controller");
 
     return `
@@ -284,6 +330,9 @@ async function bundle() {
         ${overlayStack}
         ${overlay}
         ${frameOverlay}
+        const { createOverlayPresentation } = (() => { ${presentation}; return { createOverlayPresentation }; })();
+        ${overlayReturn}
+        ${host}
         ${modal}
         window.PopoverController = PopoverController;
         window.ModalController = ModalController;

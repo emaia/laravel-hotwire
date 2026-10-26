@@ -7,6 +7,7 @@
     'formattedValue' => '99',
     'formattedMax' => '100',
     'formattedPercentage' => '99',
+    'revealCounter' => null,
 ])
 
 <div>{{ $slot }}</div>

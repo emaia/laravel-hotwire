@@ -6,8 +6,13 @@
     <x-hw::frame
         :id="$activeFrameId"
         :view-transition="$attributes->has('view-transition') && $attributes->get('view-transition') !== false"
-        {{ $attributes->except('view-transition') }}
-    >{{ $slot }}</x-hw::frame>
+        :data-overlay-family="$presentation['family']"
+        :data-overlay-side="$presentation['side']"
+        :data-overlay-size="$presentation['size']"
+        {{ $attributes->except(['view-transition', 'overlay', 'overlay-side', 'overlay-size', 'data-overlay-family', 'data-overlay-side', 'data-overlay-size']) }}
+    >
+        {{ $slot }}
+    </x-hw::frame>
 @else
     <x-dynamic-component :component="$layoutComponent">
         {{ $slot }}

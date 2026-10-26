@@ -36,6 +36,7 @@ export default class extends Controller {
         this.onKeydown = this.onKeydown.bind(this);
         this.onMenuClick = this.onMenuClick.bind(this);
         this.onDocumentFocusIn = this.onDocumentFocusIn.bind(this);
+        this.onFocusReturn = this.onFocusReturn.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
         this.onMediaChange = this.onMediaChange.bind(this);
         this.activeTrigger = null;
@@ -56,6 +57,7 @@ export default class extends Controller {
     connect() {
         this.element.addEventListener("click", this.onInternalClick, true);
         this.element.addEventListener("click", this.onTriggerClick);
+        this.element.addEventListener("hotwire:focus-return", this.onFocusReturn);
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onKeydown);
         document.addEventListener("focusin", this.onDocumentFocusIn);
@@ -68,6 +70,7 @@ export default class extends Controller {
     disconnect() {
         this.element.removeEventListener("click", this.onInternalClick, true);
         this.element.removeEventListener("click", this.onTriggerClick);
+        this.element.removeEventListener("hotwire:focus-return", this.onFocusReturn);
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
         document.removeEventListener("focusin", this.onDocumentFocusIn);
@@ -193,6 +196,16 @@ export default class extends Controller {
     onDocumentFocusIn(event) {
         const trigger = event.target.closest?.('[data-dropdown-target~="trigger"]');
         this.focusedTrigger = trigger && this.element.contains(trigger) ? trigger : null;
+    }
+
+    // An overlay opened from a menu item cannot return focus to it once the menu closes; send it to the trigger that
+    // opened the menu.
+    onFocusReturn(event) {
+        const trigger = this.currentTrigger;
+        if (!this.hasMenuTarget || !this.menuTarget.contains(event.target) || !trigger) return;
+
+        event.stopPropagation();
+        trigger.focus({ preventScroll: true });
     }
 
     onMenuClick(event) {

@@ -2,6 +2,78 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.83.0 - 2026-10-21
+
+### Reusable overlay hosts and composable responses
+
+Reuse one Modal, Sheet or Drawer host for independent and nested workflows, with per-opening presentation, contextual returns and explicit instance-scoped closing.
+
+#### One host, multiple openings
+
+- Open several instances from a single layout host without application-authored clone ids or additional hosts per form.
+- Set size and side per opening; response metadata takes precedence over loading hints, without changing other instances.
+- Keep navigation and validation inside the current instance, preserving parent drafts, focus and unrelated errors.
+
+See [Modal](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/modal.md), [Sheet](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/sheet.md), [Drawer](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/drawer.md) and [Frame Or Page](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/frame-or-page.md) for examples.
+
+#### Server-driven opening, return and closing
+
+- Open through `response()->modal()/sheet()/drawer()->open(...)` and compose the response with updates and toasts.
+- Return complete field HTML with `returnFromOverlay($origin, $content)` to the specific parent region captured by `<hw:overlay-return>` and the opener's `overlay-return` prop.
+- Close only the intended opening with `closeOverlay($origin)`. Late responses cannot affect a later opening, and replaced return destinations fail safely.
+- Compose rich or contextual fields with application-owned fragments or native Turbo Frames, without a package-managed renderer or retry flow.
+
+See [overlay responses](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/recipes/overlay-responses.md) and [Overlay Return](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/overlay-return.md).
+
+#### Validation and keyboard focus
+
+- Opt into `error-focus` on `<hw:form>` to focus the first eligible invalid control after validation, including delayed Rich Text initialization.
+- Return focus to the active Dropdown or Popover trigger when an overlay's original opener is no longer focusable.
+- Preserve native Turbo refresh behavior; a refresh is not an implicit close or a guarantee that other drafts survive.
+
+See [Form](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/components/form.md#error-focus) and [Autofocus](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/controllers/autofocus.md).
+
+#### Upgrade notes
+
+**`modal-auto-close` has been removed.** Replace marker appends with `closeOverlay()`, remove any published controller copy, and rebuild assets. Frame-backed openings now have concrete instance ids: use `$request->overlayOrigin()` rather than the canonical host id, guarding `null` for actions that also serve page requests. Static overlays close by their root id.
+
+Stream openings use an explicit `origin:` for children and require `source:` when the fragment contains a form. Contextual returns supply the complete region contents; `host:`, `result:` and package-managed return renderers are not supported.
+
+See the [upgrade guide](https://github.com/emaia/laravel-hotwire/blob/0.83.0/docs/upgrade.md#frame-backed-overlays-now-create-concrete-instances) before updating existing integrations.
+
+#### Maintenance
+
+Update the Tiptap dependency group to 3.32.0 and refresh development tooling.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.82.0...0.83.0
+
+## 0.82.0 - 2026-10-17
+
+### Structural Reveal indexing
+
+Reveal now derives server-rendered item sequences from the rendered HTML structure, supporting nested roots and Blade wrappers without shared component context.
+
+#### Independent Reveal sequences
+
+- Assign missing item indexes within the nearest Reveal root, including Sidebar integrations.
+- Keep nested sequences independent and preserve explicit inline indexes.
+- Support application components through the `data-slot="reveal-item"` and `data-reveal-item` attributes.
+
+See [Reveal](https://github.com/emaia/laravel-hotwire/blob/0.82.0/docs/components/reveal.md) for examples, timing overrides and nested sequence offsets.
+
+#### Upgrade notes
+
+Reveal no longer uses `revealCounter` Blade context or `data-reveal-owner`. Custom integrations must remove those dependencies and adopt the structural item attributes.
+
+See the [upgrade guide](https://github.com/emaia/laravel-hotwire/blob/0.82.0/docs/upgrade.md#reveal-indexes-are-structural).
+
+#### Accessibility and maintenance
+
+- Remove unsupported `aria-orientation` from Toggle Group.
+- Update JavaScript dependencies and development tooling.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.81.0...0.82.0
+
 ## 0.81.0 - 2026-09-22
 
 ### Video embeds and regenerable CSS bundles
@@ -1373,6 +1445,8 @@ Laravel Hotwire now defaults to the `hw` prefix and supports the preferred short
 
 
 
+
+
 ```
 The configured `hotwire.prefix` remains customizable for apps that want another prefix.
 
@@ -1384,6 +1458,8 @@ Apps can also generate project-specific Stimulus helper metadata with:
 
 ```bash
 php artisan hotwire:ide-json
+
+
 
 
 
@@ -1634,6 +1710,8 @@ export default class extends CarouselController {
 
 
 
+
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -1643,6 +1721,8 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
+
 
 
 
@@ -1851,6 +1931,8 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -1874,6 +1956,8 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
+
 
 
 
@@ -2074,6 +2158,8 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
+
 ```
 #### Controller features
 
@@ -2140,6 +2226,8 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
+
 
 
 
@@ -2298,6 +2386,8 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -2307,6 +2397,8 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
+
 
 
 
@@ -2462,6 +2554,8 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -2475,6 +2569,8 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
+
 
 
 
@@ -2638,6 +2734,8 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -2650,6 +2748,8 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
+
 
 
 
@@ -2735,6 +2835,8 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
+
 
 
 
@@ -2904,6 +3006,8 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -2995,6 +3099,8 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
+
 ```
 #### Model-aware frame ids
 
@@ -3004,6 +3110,8 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
+
 
 
 
@@ -3167,12 +3275,16 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
+
 
 
 
@@ -3339,12 +3451,16 @@ export default class extends CarouselController {
 
 
 
+
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
+
 
 
 

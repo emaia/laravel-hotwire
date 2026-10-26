@@ -23,6 +23,85 @@ Delete identical shadows to resume package-managed template updates. Review modi
 installed package and keep only intentional forks. `hotwire:check --fix` preserves every file under the legacy override
 directory byte for byte; it never migrates or overwrites application markup automatically.
 
+### Reveal indexes are structural
+
+Reveal no longer exposes or consumes the generic `revealCounter` Blade context. Application subcomponents that used
+`@aware(['revealCounter' => null])` must remove that context, direct `$revealCounter?->index` reads, and
+`$revealCounter->index++` mutations. Opt into server indexing by emitting the structural item contract instead:
+
+```blade
+<div data-slot="reveal-item" data-reveal-item>
+    {{ $slot }}
+</div>
+```
+
+`<hw:reveal>` and `<hw:sidebar reveal>` now assign missing indexes from the rendered HTML structure. The nearest
+`data-controller~="reveal"` root owns each item, nested roots maintain independent sequences, and every raw
+`data-reveal-item` participates in document order. An inline `--reveal-index` remains authoritative and is never
+replaced. `data-reveal-owner` is no longer emitted or read; remove application selectors or integrations that depend on
+it.
+
+A manually mounted `data-controller="reveal"` outside a package root still uses runtime indexing. A manual root nested
+inside a package root and a package root created by a Blade wrapper can now receive deterministic server indexes because
+the resolver runs after slot rendering. Reveal's public props also remain isolated from generic Blade component data, so
+intermediate components cannot shadow its configuration.
+
+### Frame-backed overlays now create concrete instances
+
+Modal, Sheet and Drawer hosts are reusable: a link targeting their canonical Frame opens a generated instance, while
+unqualified links/forms inside it reuse that instance. Keep `frame="modal"` (or the other canonical host) in
+`frame-or-page` views; the package emits the matching concrete Frame from validated request context.
+
+Do not compare every overlay request to the literal `modal` id or close it with `update('modal')`. For a route whose
+Frame presentation is an overlay, use `closeOverlay($request->overlayOrigin())`; for reusable static markup, pass its
+root id explicitly. Empty updates/replacements still work when targeting the requesting primary Frame rather than the
+canonical host. See [overlay responses](./recipes/overlay-responses.md) for conditional opening and contextual returns.
+
+Replace manual host-header fallbacks used for rendering with `request()->wasFromOverlay(host: 'modal')` (or your
+custom canonical host id); the argument matches a host, not a family. See
+[overlay detection](./recipes/overlay-responses.md#detect-an-overlay-for-rendering) for the full contract.
+
+Native `refresh` is no longer intercepted as an implicit close. An ignored refresh preserves the stack; an accepted page
+refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts.
+
+### Modal Auto Close removed
+
+The `modal-auto-close` controller has been removed. Replace marker appends with the common close action:
+
+```php
+// Reusable static markup: pass the overlay root id, not its inner Frame id.
+return turbo_stream()->closeOverlay('edit-post');
+
+// Frame-backed opening: close only the instance that submitted the request.
+return turbo_stream()->closeOverlay($request->overlayOrigin());
+```
+
+Guard a nullable `overlayOrigin()` when the same action also serves ordinary page requests. Remove marker elements and
+any published `modal_auto_close_controller.js` from the application, then rebuild assets. The package does not remove
+application-owned published files automatically. Modal, Sheet and Drawer all use the same explicit close action.
+
+### Use the public overlay response and return API
+
+`request()->overlayOrigin()` now returns `null` for page and ordinary Frame requests without overlay headers. Check for
+`null` before calling `closeOverlay()` or `returnFromOverlay()`; inconsistent overlay headers still throw. Neither
+method falls back to a default host or the top overlay.
+
+`response()->modal()/sheet()/drawer()->open(...)` no longer accepts `host:` or automatically captures the requesting
+overlay as its parent. Pass `origin: $request->overlayOrigin()` when opening a child; omit it for an independent
+top-level opening, including when closing the requesting overlay in the same response. Stream openings require exactly
+one declared host of that family, with any Frame id. Use a Frame link to its id to select among multiple hosts of the
+same family.
+
+Replace raw overlay return actions and attributes with `returnFromOverlay($origin, $content)`,
+`<hw:button overlay-return="customer" ...>` and `<hw:overlay-return name="customer">...</hw:overlay-return>`.
+The return replaces the wrapper's **contents**, so migrate options-only fragments to the complete field, including its
+`<select>`, labels and errors as needed. Keep the wrapper out of the returned fragment. Rich or contextual fields can
+return a chosen application fragment or a native Turbo Frame; there is no package-managed return renderer.
+
+Button and FrameOrPage infer the presentation family from Frame ids `modal`, `sheet` and `drawer`. Keep an explicit
+`overlay` naming the receiving family when adding `overlay-side` or `overlay-size` to a custom Frame id. See
+[Overlay Return](./components/overlay-return.md) and [overlay responses](./recipes/overlay-responses.md) for examples.
+
 ### Selective preset command renamed
 
 `hotwire:styles` has been removed. Replace every invocation with `hotwire:bundle-preset`; its selection, preset, output
@@ -1097,11 +1176,10 @@ top-layer attributes while Turbo morphs their contents. An open overlay stays op
 the usual closed `data-state` or `data-mobile-state`, `hidden`, and `inert` attributes.
 
 If an application previously closed an overlay by returning closed markup in a page or Turbo Stream refresh morph, make
-the close explicit before rendering that response. Frame-backed Modal, Drawer, and Sheet instances already close through
-their empty `update`/`replace` or `refresh` stream lifecycle. For a reusable static Modal, append a
-[`modal-auto-close`](./controllers/modal-auto-close.md) marker; custom static overlay flows can call their controller's
-public `close()` action (`cancel()` for Alert Dialog) before applying the refresh. Morphing still updates ordinary
-descendants and `data-motion`.
+the close explicit before rendering that response. Use `closeOverlay($request->overlayOrigin())` for frame-backed Modal,
+Drawer and Sheet instances, or pass the root id for reusable static markup. A native `refresh` is not a close action.
+Custom static overlay flows can call their controller's public `close()` action (`cancel()` for Alert Dialog) before
+applying the refresh. Morphing still updates ordinary descendants and `data-motion`.
 
 ### Refresh published Frame Src controllers
 

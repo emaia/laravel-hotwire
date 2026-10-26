@@ -103,8 +103,8 @@ public function confirmDestroy(Task $task)
 </hw:frame-or-page>
 ```
 
-`<hw:frame-or-page>` wraps a frame request in `<turbo-frame id="modal">`. That response lands in the
-content host already rendered by `<hw:modal frame="modal">`; the response must not add another
+`<hw:frame-or-page>` wraps the request in its matching concrete `<turbo-frame>`. That response lands in the
+instance created from `<hw:modal frame="modal">`; the response must not add another
 `<hw:modal.content>`. On direct navigation, the same view renders in the dashboard layout. The
 `<hw:form>` emits the CSRF token and method override for the explicit `DELETE` action.
 
@@ -117,10 +117,12 @@ public function destroy(Request $request, Task $task)
 
     $task->delete();
 
-    if ($request->wasFromTurboFrame('modal') && $request->wantsTurboStream()) {
+    $origin = $request->overlayOrigin();
+
+    if ($origin !== null && $request->wantsTurboStream()) {
         return turbo_stream()
             ->remove(dom_id($task))
-            ->update('modal')
+            ->closeOverlay($origin)
             ->toast('success', 'Task deleted');
     }
 
@@ -131,7 +133,7 @@ public function destroy(Request $request, Task $task)
 ```
 
 For the modal submission, one stream describes the whole transition: the row vanishes, the modal
-frame is cleared, and the toast appears. Direct and non-JavaScript submissions follow the normal
+instance closes, and the toast appears. Direct and non-JavaScript submissions follow the normal
 redirect fallback.
 
 ## Variants

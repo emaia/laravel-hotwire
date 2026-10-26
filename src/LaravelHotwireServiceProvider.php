@@ -17,17 +17,23 @@ use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\ComponentId;
 use Emaia\LaravelHotwire\Support\CssModuleManifest;
 use Emaia\LaravelHotwire\Support\HotwireTagCompiler;
+use Emaia\LaravelHotwire\Support\OverlayFrameContext;
+use Emaia\LaravelHotwire\Support\OverlayResponse;
 use Emaia\LaravelHotwire\Support\SessionToast;
 use Emaia\LaravelHotwire\Support\ViteControllerAssetResolver;
 use Emaia\LaravelHotwire\Support\ViteManifestCache;
 use Emaia\LaravelHotwireTurbo\TurboStreamBuilder;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Foundation\Vite;
 use Illuminate\Foundation\ViteException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 use RuntimeException;
 use WeakMap;
 
@@ -87,6 +93,11 @@ class LaravelHotwireServiceProvider extends ServiceProvider
 
         $this->registerTagCompiler($prefix);
         $this->registerToastMacro();
+        $this->registerOverlayStreamMacros();
+        $this->registerOverlayReturnMacro();
+        $this->registerOverlayResponseMacros();
+        $this->registerOverlayOriginMacro();
+        $this->registerOverlayRequestMacro();
         $this->registerRedirectToastMacro();
         $this->registerViteControllerPreloadsMacro();
     }
@@ -161,6 +172,77 @@ class LaravelHotwireServiceProvider extends ServiceProvider
                 'position' => $position,
                 'duration' => $duration,
             ], fn (mixed $value): bool => $value !== null));
+        });
+    }
+
+    private function registerOverlayStreamMacros(): void
+    {
+        if (TurboStreamBuilder::hasMacro('closeOverlay')) {
+            return;
+        }
+
+        TurboStreamBuilder::macro('closeOverlay', function (string $origin) {
+            if (trim($origin) === '' || preg_match('/\s/', $origin)) {
+                throw new InvalidArgumentException('Overlay origin must identify an explicit instance or static root.');
+            }
+
+            /** @var TurboStreamBuilder $this */
+            return $this->action('hotwire-overlay-close', $origin);
+        });
+    }
+
+    private function registerOverlayReturnMacro(): void
+    {
+        if (TurboStreamBuilder::hasMacro('returnFromOverlay')) {
+            return;
+        }
+
+        TurboStreamBuilder::macro('returnFromOverlay', function (string $origin, string|Htmlable $content) {
+            if (trim($origin) === '' || preg_match('/\s/', $origin)) {
+                throw new InvalidArgumentException('Overlay origin must identify an explicit instance or static root.');
+            }
+            $html = $content instanceof Htmlable ? $content->toHtml() : $content;
+            if (trim($html) === '') {
+                throw new InvalidArgumentException('An overlay return needs a non-empty HTML fragment.');
+            }
+
+            /** @var TurboStreamBuilder $this */
+            return $this->action('hotwire-overlay-return', $origin, $html);
+        });
+    }
+
+    private function registerOverlayResponseMacros(): void
+    {
+        foreach (['modal', 'sheet', 'drawer'] as $family) {
+            if (ResponseFactory::hasMacro($family)) {
+                continue;
+            }
+
+            ResponseFactory::macro($family, fn (): OverlayResponse => new OverlayResponse($family));
+        }
+    }
+
+    private function registerOverlayOriginMacro(): void
+    {
+        if (Request::hasMacro('overlayOrigin')) {
+            return;
+        }
+
+        Request::macro('overlayOrigin', function (): ?string {
+            /** @var Request $this */
+            return OverlayFrameContext::origin($this);
+        });
+    }
+
+    private function registerOverlayRequestMacro(): void
+    {
+        if (Request::hasMacro('wasFromOverlay')) {
+            return;
+        }
+
+        Request::macro('wasFromOverlay', function (?string $host = null): bool {
+            /** @var Request $this */
+            return OverlayFrameContext::matches($this, $host);
         });
     }
 

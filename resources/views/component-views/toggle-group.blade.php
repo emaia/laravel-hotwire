@@ -32,7 +32,6 @@
         'data-variant' => $toggleGroupVariant,
         'data-size' => $toggleGroupSize,
         'data-connected' => $isConnected ? 'true' : null,
-        'aria-orientation' => $toggleGroupOrientation,
         'aria-disabled' => $isDisabled ? 'true' : null,
         'data-disabled' => $isDisabled ? 'true' : null,
         'data-auto-submit-delay-param' => $autoSubmitDelayParam,

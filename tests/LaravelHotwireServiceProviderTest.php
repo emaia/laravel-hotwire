@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
@@ -58,10 +59,13 @@ it('does not expose package views through vendor publish', function () {
         'hotwire-views',
     );
     $providerPaths = ServiceProvider::pathsToPublish(LaravelHotwireServiceProvider::class);
+    $allPaths = ServiceProvider::pathsToPublish();
 
     expect($paths)->toBe([])
         ->and(array_keys($providerPaths))->not->toContain(dirname(__DIR__).'/resources/views')
-        ->and(array_values($providerPaths))->not->toContain(base_path('resources/views/vendor/hotwire'));
+        ->and(array_values($providerPaths))->not->toContain(base_path('resources/views/vendor/hotwire'))
+        ->and(array_keys($allPaths))->not->toContain(dirname(__DIR__).'/resources/views')
+        ->and(array_values($allPaths))->not->toContain(base_path('resources/views/vendor/hotwire'));
 });
 
 it('merges the package config so defaults resolve without publishing', function () {
@@ -83,7 +87,15 @@ it('keeps conventional application view overrides working', function () {
     view()->getFinder()->flush();
 
     try {
-        expect(view()->getFinder()->find('hotwire::component-views.badge'))->toBe($override);
+        expect(view()->getFinder()->find('hotwire::component-views.badge'))->toBe($override)
+            ->and(Blade::render('<x-hw::badge>Example</x-hw::badge>'))->toBe('application override');
+
+        File::delete($override);
+        view()->getFinder()->flush();
+
+        expect(Blade::render('<x-hw::badge>Example</x-hw::badge>'))
+            ->toContain('data-slot="badge"')
+            ->toContain('Example');
     } finally {
         File::deleteDirectory(resource_path('views/vendor/hotwire'));
         view()->getFinder()->flush();

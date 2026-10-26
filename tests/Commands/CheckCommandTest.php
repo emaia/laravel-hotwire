@@ -237,6 +237,30 @@ it('preserves legacy view overrides byte for byte with fix', function () {
     expect(File::get(resource_path("views/{$path}")))->toBe($content);
 });
 
+it('classifies symlinked view overrides without changing their target or ownership', function (bool $modified, string $status) {
+    $source = dirname(__DIR__, 2).'/resources/views/component-views/chart.blade.php';
+    $content = $modified ? "<x-hw::chart />\r\n" : File::get($source);
+    $target = base_path('shared/chart.blade.php');
+    $override = resource_path('views/vendor/hotwire/component-views/chart.blade.php');
+    File::ensureDirectoryExists(dirname($target));
+    File::ensureDirectoryExists(dirname($override));
+    File::put($target, $content);
+    symlink($target, $override);
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain("chart.blade.php  {$status}")
+        ->assertSuccessful();
+
+    expect(is_link($override))->toBeTrue()
+        ->and(readlink($override))->toBe($target)
+        ->and(File::get($target))->toBe($content)
+        ->and(isset(readPackageJson()['devDependencies']['echarts']))->toBe($modified);
+})->with([
+    'identical shadow' => [false, 'identical shadow'],
+    'modified soft fork' => [true, 'modified soft fork'],
+]);
+
 it('does not scan the legacy override tree when passed as an explicit path', function () {
     writeView('vendor/hotwire/component-views/removed.blade.php', '<x-hw::chart />');
 

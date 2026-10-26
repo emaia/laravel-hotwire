@@ -896,10 +896,17 @@ async function bundleControllers() {
         .replace(/import \{[^}]*\} from "\.\/_top_layer\.js";\s*/, "")
         .replace("export function createOverlay", "function createOverlay");
 
-    const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8")).replace(
-        "export function createFrameOverlay",
-        "function createFrameOverlay",
-    );
+    const frameOverlay = (await readFile("resources/js/controllers/_frame_overlay.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace("export function createFrameOverlay", "function createFrameOverlay");
+    const presentation = (await readFile("resources/js/controllers/_overlay_presentation.js", "utf8"))
+        .replace(/^export /gm, "");
+    const overlayReturn = (await readFile("resources/js/controllers/_overlay_return.js", "utf8"))
+        .replace(/^export /gm, "");
+    const host = (await readFile("resources/js/controllers/_overlay_host.js", "utf8"))
+        .replace(/import \{[^}]*\} from "\.\/_overlay_return\.js";\s*/, "")
+        .replace(/^export /gm, "")
+        .replace('import("@hotwired/turbo")', "Promise.resolve(window.Turbo)");
 
     const floating = (await readFile("resources/js/controllers/_floating.js", "utf8"))
         .replace(/import \{[^}]*\} from "@floating-ui\/dom";\s*/, "")
@@ -910,6 +917,8 @@ async function bundleControllers() {
         .replace(/^import \{ Controller \} from "@hotwired\/stimulus";\s*/m, "")
         .replace(/import \{[^}]*\} from "\.\/_overlay\.js";\s*/, "")
         .replace(/import \{[^}]*\} from "\.\/_frame_overlay\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_presentation\.js";\s*/, "")
+        .replace(/import \{[^}]*\} from "\.\/_overlay_host\.js";\s*/, "")
         .replace("export default class ModalController extends Controller", "class ModalController extends Controller");
 
     const dropdown = (await readFile("resources/js/controllers/dropdown_controller.js", "utf8"))
@@ -943,6 +952,9 @@ async function bundleControllers() {
         ${presence}
         ${overlay}
         ${frameOverlay}
+        const { createOverlayPresentation } = (() => { ${presentation}; return { createOverlayPresentation }; })();
+        ${overlayReturn}
+        ${host}
         ${floating}
         ${modal}
         ${dropdown}

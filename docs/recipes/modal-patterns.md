@@ -65,9 +65,9 @@ makes sense (list rows, navigation, deep in a partial) — Stimulus picks it up 
 @endforeach
 ```
 
-The link click issues a frame-scoped request → the response lands in the `<turbo-frame id="modal">`
-rendered by `frame="modal"` → the modal's content observer opens it. The loading template is
-injected automatically because the controller listens globally for `a[data-turbo-frame="modal"]` clicks.
+The link creates an instance with a generated primary Frame id; `<hw:frame-or-page frame="modal">` returns the matching
+Frame for that request. The loading template or response opens the instance. The canonical host remains reusable for
+other openings, including a complementary form above an unsaved parent.
 
 **When to use:** CRUD lists, dashboards with multiple modal-driven actions, anywhere you want
 modals without duplicating markup.
@@ -125,13 +125,10 @@ No Turbo Frame, no dynamic content. The modal body is rendered server-side once 
 acceptance, embedded media).
 
 **Closing from the server:** if reusable static modal markup should remain available for another
-open, append the self-removing `modal-auto-close` marker to its root:
+open, close its explicitly named root through the common overlay macro:
 
 ```php
-return turbo_stream()->append(
-    'welcome-modal',
-    '<span data-controller="modal-auto-close"></span>',
-);
+return turbo_stream()->closeOverlay('welcome-modal');
 ```
 
 An empty update of the modal root removes its inner markup. Reserve that approach for disposable
@@ -163,4 +160,4 @@ component already exposes props or Stimulus values — no need to drop down.
 - [`modal` controller](../controllers/modal.md) — raw controller reference.
 - [Frame-or-page views](./frame-or-page.md) — render the same view as a page or as a modal.
 - [Server-driven modals](./server-driven-modals.md) — open and close from controller responses.
-- [Composing streams](./composing-streams.md) — chain `refresh + update + toast`.
+- [Composing streams](./composing-streams.md) — update content, close the requesting instance and show feedback.

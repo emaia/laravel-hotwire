@@ -734,6 +734,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"
                 },
                 {
+                    "name": "overlay-return",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\OverlayReturn"
+                },
+                {
                     "name": "pagination",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Pagination"

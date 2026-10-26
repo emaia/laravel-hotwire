@@ -2,36 +2,38 @@
     use Emaia\LaravelHotwire\Support\RevealItems;
     use Emaia\LaravelHotwire\Support\StimulusAttributes;
 
-    $slotHtml = $slot->toHtml();
-    $revealOwner = spl_object_id($revealCounter);
-    $hasExplicitItems = RevealItems::declaresItems($slotHtml, $revealOwner);
+    $reveal = $revealRoot;
+    $resolvedItems = RevealItems::resolve($slot->toHtml());
+    $slotHtml = $resolvedItems['html'];
+    $hasExplicitItems = $resolvedItems['declaresItems'];
+    foreach ($resolvedItems['warnings'] as $warning) {
+        logger()->warning($warning);
+    }
     $userStyle = trim((string) $attributes->get('style'));
     $style = collect([
-        $stagger !== null ? "--reveal-stagger: {$stagger}" : null,
-        $duration !== null ? "--reveal-duration: {$duration}" : null,
-        $delay !== null ? "--reveal-delay: {$delay}" : null,
-        $maxSteps !== null ? "--reveal-max-steps: {$maxSteps}" : null,
+        $reveal->stagger !== null ? "--reveal-stagger: {$reveal->stagger}" : null,
+        $reveal->duration !== null ? "--reveal-duration: {$reveal->duration}" : null,
+        $reveal->delay !== null ? "--reveal-delay: {$reveal->delay}" : null,
+        $reveal->maxSteps !== null ? "--reveal-max-steps: {$reveal->maxSteps}" : null,
         $userStyle !== '' ? $userStyle : null,
     ])->filter()->implode('; ');
     $style = $style !== '' ? $style.';' : null;
     $revealAttributes = StimulusAttributes::merge([
         'data-slot' => $slotName,
         'data-controller' => 'reveal',
-        'data-reveal-trigger-value' => $trigger,
-        'data-reveal-threshold-value' => $threshold,
-        'data-reveal-root-margin-value' => $rootMargin,
-        'data-reveal-once-value' => $once ? 'true' : 'false',
-        'data-reveal-scope' => $scope,
-        'data-reveal-owner' => $revealOwner,
-        'data-motion' => $motion,
+        'data-reveal-trigger-value' => $reveal->trigger,
+        'data-reveal-threshold-value' => $reveal->threshold,
+        'data-reveal-root-margin-value' => $reveal->rootMargin,
+        'data-reveal-once-value' => $reveal->once ? 'true' : 'false',
+        'data-reveal-scope' => $reveal->scope,
+        'data-motion' => $reveal->motion,
         'data-reveal-children' => $hasExplicitItems ? null : true,
         'style' => $style,
-    ], $attributes, $stimulus, except: ['as', 'style'], protectedPrefixes: [
+    ], $attributes, $reveal->stimulus, except: ['as', 'style'], protectedPrefixes: [
         'data-reveal-',
         'data-slot',
         'data-motion',
-        'data-reveal-owner',
     ]);
 @endphp
 
-<{{ $as }} {{ $revealAttributes }}>{!! $slotHtml !!}</{{ $as }}>
+<{{ $reveal->as }} {{ $revealAttributes }}>{!! $slotHtml !!}</{{ $reveal->as }}>
