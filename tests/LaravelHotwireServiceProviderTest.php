@@ -2,6 +2,8 @@
 
 use Emaia\LaravelHotwire\LaravelHotwireServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
 it('loads default rich text validation translations without publishing', function (string $key, array $replace, string $expected) {
@@ -12,6 +14,22 @@ it('loads default rich text validation translations without publishing', functio
     'maximum' => ['max', ['attribute' => 'content', 'max' => 10], 'The content field must not be greater than 10 characters.'],
     'invalid' => ['invalid', ['attribute' => 'content'], 'The content field must contain valid rich text.'],
 ]);
+
+it('keeps conventional application translation overrides working', function () {
+    $override = lang_path('vendor/hotwire/fixture/validation.php');
+    File::ensureDirectoryExists(dirname($override));
+    File::put($override, <<<'PHP'
+<?php
+
+return ['rich_text' => ['required' => 'Application translation']];
+PHP);
+
+    try {
+        expect(trans('hotwire::validation.rich_text.required', locale: 'fixture'))->toBe('Application translation');
+    } finally {
+        File::deleteDirectory(lang_path('vendor/hotwire/fixture'));
+    }
+});
 
 it('publishes package translations under the documented tag', function () {
     $paths = ServiceProvider::pathsToPublish(
@@ -35,15 +53,19 @@ it('publishes the package config under the documented tag', function () {
         ->and(array_values($paths))->toBe([config_path('hotwire.php')]);
 });
 
-it('publishes package views under the documented tag', function () {
+it('does not expose package views through vendor publish', function () {
     $paths = ServiceProvider::pathsToPublish(
         LaravelHotwireServiceProvider::class,
         'hotwire-views',
     );
+    $providerPaths = ServiceProvider::pathsToPublish(LaravelHotwireServiceProvider::class);
+    $allPaths = ServiceProvider::pathsToPublish();
 
-    expect($paths)->toHaveCount(1)
-        ->and(realpath((string) array_key_first($paths)))->toBe(realpath(dirname(__DIR__).'/resources/views'))
-        ->and(array_values($paths))->toBe([base_path('resources/views/vendor/hotwire')]);
+    expect($paths)->toBe([])
+        ->and(array_keys($providerPaths))->not->toContain(dirname(__DIR__).'/resources/views')
+        ->and(array_values($providerPaths))->not->toContain(base_path('resources/views/vendor/hotwire'))
+        ->and(array_keys($allPaths))->not->toContain(dirname(__DIR__).'/resources/views')
+        ->and(array_values($allPaths))->not->toContain(base_path('resources/views/vendor/hotwire'));
 });
 
 it('merges the package config so defaults resolve without publishing', function () {
@@ -52,6 +74,32 @@ it('merges the package config so defaults resolve without publishing', function 
 
 it('registers the package view namespace', function () {
     expect(view()->exists('hotwire::component-views.accordion'))->toBeTrue();
+});
+
+it('keeps conventional application view overrides working', function () {
+    $override = resource_path('views/vendor/hotwire/component-views/badge.blade.php');
+    File::ensureDirectoryExists(dirname($override));
+    File::put($override, 'application override');
+    config()->set('view.paths', [resource_path('views')]);
+    view()->getFinder()->replaceNamespace('hotwire', []);
+    $resources = new ReflectionMethod(LaravelHotwireServiceProvider::class, 'bootPackageResources');
+    $resources->invoke(new LaravelHotwireServiceProvider(app()));
+    view()->getFinder()->flush();
+
+    try {
+        expect(view()->getFinder()->find('hotwire::component-views.badge'))->toBe($override)
+            ->and(Blade::render('<x-hw::badge>Example</x-hw::badge>'))->toBe('application override');
+
+        File::delete($override);
+        view()->getFinder()->flush();
+
+        expect(Blade::render('<x-hw::badge>Example</x-hw::badge>'))
+            ->toContain('data-slot="badge"')
+            ->toContain('Example');
+    } finally {
+        File::deleteDirectory(resource_path('views/vendor/hotwire'));
+        view()->getFinder()->flush();
+    }
 });
 
 it('registers every package command', function () {

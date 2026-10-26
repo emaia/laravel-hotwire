@@ -223,10 +223,11 @@ Moving those preludes behind the imported sources could change encoding or casca
 in the ordered visual sources after their imports. These checks do not change the generated CSS of Nova or Bloom.
 
 A visual preset is CSS over the package's shared semantic tree. It does not require application PHP and does not require
-publishing package views. Publishing or overriding a component template is instead an application-owned fork of markup
-and behavior: the application must track package changes and preserve the documented slots, targets, lifecycle and
-accessibility relationships itself. Use that boundary only when the semantic component contract, rather than its visual
-treatment, must change.
+publishing package views. Copying or overriding a component template transfers only its Blade markup to the application;
+the PHP classes, controllers, shared helpers and preset CSS still follow the installed package. This is a partial fork,
+not a complete component eject. The application must track package changes and preserve the documented slots, targets,
+lifecycle and accessibility relationships itself. Use that boundary only when the semantic component contract, rather
+than its visual treatment, must change.
 
 Tailwind converts underscores to spaces only inside arbitrary values. Keep the underscore in a utility such as
 `bg-[color-mix(in_oklch,var(--background),transparent_20%)]`, but use a real space in raw CSS such as

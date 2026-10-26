@@ -121,7 +121,6 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         }
 
         $this->publishes([self::packagePath('config/hotwire.php') => config_path('hotwire.php')], 'hotwire-config');
-        $this->publishes([$views => base_path('resources/views/vendor/hotwire')], 'hotwire-views');
         $this->publishes([$translations => lang_path('vendor/hotwire')], 'hotwire-translations');
     }
 

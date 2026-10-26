@@ -117,6 +117,20 @@ it('links the command API from the main documentation index', function () {
         ->toContain('[**Artisan commands**](docs/commands.md)');
 });
 
+it('documents the legacy view override ownership boundary', function () {
+    expect(File::get(__DIR__.'/../../docs/commands.md'))
+        ->toContain('identical shadow')
+        ->toContain('modified soft fork')
+        ->toContain('orphaned override')
+        ->toContain('separate informational section')
+        ->toMatch('/Modified soft forks\s+remain part of application view scanning/')
+        ->toMatch('/`--fix` never\s+(deletes|moves|rewrites)[\s\S]*application-owned views/')
+        ->and(File::get(__DIR__.'/../../docs/upgrade.md'))
+        ->toContain('hotwire-views')
+        ->toContain('resources/views/vendor/hotwire')
+        ->toContain('byte for byte');
+});
+
 it('uses namespaced names in documented make-controller invocations', function () {
     foreach (File::allFiles(__DIR__.'/../../docs') as $file) {
         foreach (documentedControllerNames($file->getContents()) as $name) {
