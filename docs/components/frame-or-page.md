@@ -89,6 +89,8 @@ overlay response. A form using `track-frame-src` can redirect validation errors 
 nested Frame still closes and returns to the right overlay; its own `Turbo-Frame` id would not identify the instance.
 The origin is a correlation hint, not authorization.
 
+For controller-side presentation decisions, see [overlay detection with `wasFromOverlay()`](../recipes/overlay-responses.md#detect-an-overlay-for-rendering).
+
 #### Returning to the initiating form
 
 When a child creates a record for a parent form, wrap the destination field in

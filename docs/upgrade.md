@@ -40,6 +40,10 @@ Frame presentation is an overlay, use `closeOverlay($request->overlayOrigin())`;
 root id explicitly. Empty updates/replacements still work when targeting the requesting primary Frame rather than the
 canonical host. See [overlay responses](./recipes/overlay-responses.md) for conditional opening and contextual returns.
 
+Replace manual host-header fallbacks used for rendering with `request()->wasFromOverlay(host: 'modal')` (or your
+custom canonical host id); the argument matches a host, not a family. See
+[overlay detection](./recipes/overlay-responses.md#detect-an-overlay-for-rendering) for the full contract.
+
 Native `refresh` is no longer intercepted as an implicit close. An ignored refresh preserves the stack; an accepted page
 refresh may discard it. Prefer targeted updates plus explicit closing to retain parent drafts.
 

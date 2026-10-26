@@ -91,6 +91,23 @@ it('keeps a nested frame separate from its owning overlay while validating the o
         ->assertDontSee('data-test-layout', false);
 });
 
+it('selects the internal Frame branch even when its owning overlay host is also configured', function () {
+    request()->headers->set('Turbo-Frame', 'customer-details');
+    request()->headers->set('X-Hotwire-Overlay-Origin', 'modal--'.str_repeat('a', 32));
+
+    expect(request()->wasFromOverlay(host: 'modal'))->toBeTrue();
+
+    $this->blade(<<<'BLADE'
+        <x-hw::frame-or-page :frames="['modal', 'customer-details']" layout="dashboard-shell">
+            <x-hw::frame-or-page.frame target="modal">Outer content</x-hw::frame-or-page.frame>
+            <x-hw::frame-or-page.frame target="customer-details">Inner content</x-hw::frame-or-page.frame>
+        </x-hw::frame-or-page>
+    BLADE)
+        ->assertSee('<turbo-frame id="customer-details"', false)
+        ->assertSee('Inner content')
+        ->assertDontSee('Outer content');
+});
+
 it('rejects forged or inconsistent overlay origin headers', function (string $frame, string $origin, ?string $host, ?string $instance) {
     request()->headers->set('Turbo-Frame', $frame);
     request()->headers->set('X-Hotwire-Overlay-Origin', $origin);

@@ -117,10 +117,12 @@ public function destroy(Request $request, Task $task)
 
     $task->delete();
 
-    if ($request->wasFromTurboFrame() && $request->wantsTurboStream()) {
+    $origin = $request->overlayOrigin();
+
+    if ($origin !== null && $request->wantsTurboStream()) {
         return turbo_stream()
             ->remove(dom_id($task))
-            ->closeOverlay($request->overlayOrigin())
+            ->closeOverlay($origin)
             ->toast('success', 'Task deleted');
     }
 

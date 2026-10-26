@@ -86,9 +86,11 @@ public function update(UpdateUserRequest $request, User $user)
 {
     $user->update($request->validated());
 
-    if ($request->wasFromTurboFrame() && $request->wantsTurboStream()) {
+    $origin = $request->overlayOrigin();
+
+    if ($origin !== null && $request->wantsTurboStream()) {
         return turbo_stream()
-            ->closeOverlay($request->overlayOrigin())
+            ->closeOverlay($origin)
             ->toast('success', 'Password updated');
     }
 
@@ -111,6 +113,8 @@ its own concrete id, not the canonical `modal`. `<hw:frame-or-page>` validates t
 emits the matching concrete Frame; a direct page request renders the layout instead. Keeping this branch at the view
 boundary lets the controller remain independent of the presentation. Do not replace it with a comparison to the literal
 `modal` id, which would send a standalone layout to a generated instance.
+
+For controller-side rendering decisions, see [overlay detection with `wasFromOverlay()`](./overlay-responses.md#detect-an-overlay-for-rendering).
 
 ## Why this works well
 
