@@ -255,7 +255,7 @@ it('classifies symlinked view overrides without changing their target or ownersh
 
     expect(is_link($override))->toBeTrue()
         ->and(readlink($override))->toBe($originalTarget)
-        ->and(realpath($override))->toBe(realpath($target))
+        ->and(File::get($override))->toBe($content)
         ->and(File::get($target))->toBe($content)
         ->and(isset(readPackageJson()['devDependencies']['echarts']))->toBe($modified);
 })->with([
