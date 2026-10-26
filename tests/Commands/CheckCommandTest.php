@@ -246,6 +246,7 @@ it('classifies symlinked view overrides without changing their target or ownersh
     File::ensureDirectoryExists(dirname($override));
     File::put($target, $content);
     symlink($target, $override);
+    $originalTarget = readlink($override);
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
 
     $this->artisan('hotwire:check --fix --skip-install --no-interaction')
@@ -253,7 +254,8 @@ it('classifies symlinked view overrides without changing their target or ownersh
         ->assertSuccessful();
 
     expect(is_link($override))->toBeTrue()
-        ->and(readlink($override))->toBe($target)
+        ->and(readlink($override))->toBe($originalTarget)
+        ->and(realpath($override))->toBe(realpath($target))
         ->and(File::get($target))->toBe($content)
         ->and(isset(readPackageJson()['devDependencies']['echarts']))->toBe($modified);
 })->with([
