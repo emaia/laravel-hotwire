@@ -97,6 +97,7 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         $this->registerOverlayReturnMacro();
         $this->registerOverlayResponseMacros();
         $this->registerOverlayOriginMacro();
+        $this->registerOverlayRequestMacro();
         $this->registerRedirectToastMacro();
         $this->registerViteControllerPreloadsMacro();
     }
@@ -231,6 +232,18 @@ class LaravelHotwireServiceProvider extends ServiceProvider
         Request::macro('overlayOrigin', function (): ?string {
             /** @var Request $this */
             return OverlayFrameContext::origin($this);
+        });
+    }
+
+    private function registerOverlayRequestMacro(): void
+    {
+        if (Request::hasMacro('wasFromOverlay')) {
+            return;
+        }
+
+        Request::macro('wasFromOverlay', function (?string $host = null): bool {
+            /** @var Request $this */
+            return OverlayFrameContext::matches($this, $host);
         });
     }
 

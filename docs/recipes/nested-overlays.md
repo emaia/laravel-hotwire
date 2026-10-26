@@ -252,8 +252,9 @@ nested HTML forms are invalid.
 
 ## Controllers
 
-The GET actions render frame-or-page views. The write actions return streams only for the matching
-frame submission and use redirects for direct or non-JavaScript submissions.
+The GET actions render frame-or-page views. The write actions return streams for overlay submissions and use redirects
+for direct or non-JavaScript submissions. See [overlay detection](./overlay-responses.md#detect-an-overlay-for-rendering)
+for controller-side host checks.
 
 Because the validation-bearing update forms submit to mutation URLs different from the GET URLs
 that rendered each frame, their form requests extend `TurboFormRequest`. Together with
@@ -313,10 +314,12 @@ final class UserController
 
         $user->update($request->validated());
 
-        if ($request->wasFromTurboFrame('user-modal') && $request->wantsTurboStream()) {
+        $origin = $request->overlayOrigin();
+
+        if ($origin !== null && $request->wantsTurboStream()) {
             return turbo_stream()
                 ->replace(dom_id($user), view('users._row', ['user' => $user]))
-                ->update('user-modal')
+                ->closeOverlay($origin)
                 ->toast('success', 'User updated');
         }
 
@@ -350,10 +353,12 @@ final class UserRoleController
 
         $user->roles()->sync($validated['roles'] ?? []);
 
-        if ($request->wasFromTurboFrame('roles-modal') && $request->wantsTurboStream()) {
+        $origin = $request->overlayOrigin();
+
+        if ($origin !== null && $request->wantsTurboStream()) {
             return turbo_stream()
                 ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))
-                ->update('roles-modal')
+                ->closeOverlay($origin)
                 ->toast('success', 'Roles updated');
         }
 
@@ -368,7 +373,7 @@ final class UserRoleController
 
         $user->roles()->detach($role);
 
-        if ($request->wasFromTurboFrame('roles-modal') && $request->wantsTurboStream()) {
+        if ($request->wasFromOverlay(host: 'roles-modal') && $request->wantsTurboStream()) {
             return turbo_stream()
                 ->remove(dom_id($role, 'assignment'))
                 ->replace(dom_id($user), view('users._row', ['user' => $user->fresh('roles')]))

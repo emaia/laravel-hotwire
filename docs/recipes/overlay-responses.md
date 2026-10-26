@@ -112,6 +112,40 @@ Leaving out `closeOverlay()` keeps an overlay open for "Save and continue". A gl
 drafts; use it only when that is intentional. Stream order determines when actions start, not when CSS exit animations
 finish. Enable `view-transition` on the layout host when needed; response metadata cannot toggle it per opening.
 
+## Detect an overlay for rendering
+
+Use `request()->wasFromOverlay(?string $host = null): bool` when rendering only needs a yes/no decision:
+
+```php
+return view('customers.edit', [
+    'customer' => $customer,
+    'compact' => $request->wasFromOverlay(host: 'customer-editor'),
+]);
+```
+
+The named `host:` argument matches the **canonical host id**, exactly and case-sensitively, not the overlay family.
+For `<hw:modal frame="customer-editor" />`, use `host: 'customer-editor'`, not `host: 'modal'`. Family filtering is
+deliberately unsupported: requests do not carry the family, and adding it would require a separate client protocol
+change. Do not infer it from a host name.
+
+Without an argument (or with `host: null`), the predicate is equivalent to `overlayOrigin() !== null`, including requests
+from internal Frames. A page or ordinary Frame returns `false`, even if the Frame is named `modal`, `sheet` or `drawer`.
+An internal Frame retains its own `Turbo-Frame` id; detecting its owning overlay does not select the outer host's
+`frame-or-page` branch. For declarative page/Frame markup, prefer `frame-or-page.frame` and `frame-or-page.page`.
+
+Both request helpers validate the same context. Invalid or contradictory headers throw `InvalidArgumentException`,
+even when the host filter would not match. An empty or invalid host filter also throws; it must start with an ASCII
+letter or digit, contain only letters, digits, `_`, `.`, `:` or `-`, and be at most 100 characters long.
+In middleware or layouts, an old or forged inconsistent header can therefore cause HTTP 500 under default exception
+handling. This API does not translate those failures to HTTP 400. Neither helper authorizes access, authenticates the
+headers, nor proves that an instance is still open in the browser.
+
+The client already identifies the opening that owns the destination Frame, not the top of the stack. The server uses
+that validated origin without falling back to an ancestor. Static overlays without instance context cannot be inferred.
+For application-authored Frames inside static overlays only, an app may deliberately combine
+`wasFromOverlay(host: 'modal') || wasFromTurboFrame('modal')` for compatibility. This is not needed for
+`<hw:modal frame="modal" />`, which already creates instances and sends their context.
+
 ## Refresh is not a close action
 
 Prefer targeted `replace`/`update` operations plus `closeOverlay($origin)` when other overlays hold drafts. A native
@@ -166,13 +200,16 @@ actual loader configuration; lazy Frame content and lazy controller imports are 
   opening is top-level.
 - `request()->overlayOrigin(): ?string` resolves validated request context, returns `null` without overlay context and
   throws on contradictory headers; it is not an authorization check.
+- `request()->wasFromOverlay(?string $host = null): bool` detects validated overlay context; `host` matches the
+  canonical host id, not a family.
 - `turbo_stream()->closeOverlay(string $origin)` returns the builder and requires an explicit concrete Frame or static
   root id. There is no default host, stack-top fallback or family-specific close alias.
 - `turbo_stream()->returnFromOverlay(string $origin, string|Htmlable $content)` returns the builder and replaces the
   captured region's contents with the supplied HTML. It does not load a separate renderer or wait for nested Frames.
 - `<hw:button>` accepts `overlay-side`, `overlay-size` and `overlay-return`; `overlay` names the family only when `frame`
   is not `modal`, `sheet` or `drawer`. [`<hw:overlay-return>`](../components/overlay-return.md) marks the parent region.
-- Existing application macros and Stream actions are not overwritten by the package.
+- Macros the application registers before the package boots are kept; registration is idempotent. Existing Stream
+  actions are also preserved.
 
 Use `closeOverlay()` for all three families, including static roots. No marker controller or application-defined
 `closeModal`/`autoCloseOverlay` macro is needed.

@@ -25,10 +25,12 @@ public function update(UpdatePostRequest $request, Post $post)
 {
     $post->update($request->validated());
 
-    if ($request->wasFromTurboFrame() && $request->wantsTurboStream()) {
+    $origin = $request->overlayOrigin();
+
+    if ($origin !== null && $request->wantsTurboStream()) {
         return turbo_stream()
             ->replace(dom_id($post), view('posts._row', compact('post')))
-            ->closeOverlay($request->overlayOrigin())
+            ->closeOverlay($origin)
             ->toast('success', 'Post updated');
     }
 
