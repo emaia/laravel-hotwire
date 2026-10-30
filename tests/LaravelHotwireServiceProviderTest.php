@@ -87,7 +87,7 @@ it('keeps conventional application view overrides working', function () {
     view()->getFinder()->flush();
 
     try {
-        expect(view()->getFinder()->find('hotwire::component-views.badge'))->toBe($override)
+        expect(realpath(view()->getFinder()->find('hotwire::component-views.badge')))->toBe(realpath($override))
             ->and(Blade::render('<x-hw::badge>Example</x-hw::badge>'))->toBe('application override');
 
         File::delete($override);
