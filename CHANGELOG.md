@@ -2,6 +2,40 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.84.0 - 2026-10-30
+
+### Overlay request detection and explicit view ownership
+
+Detect overlay requests by their canonical host, review legacy Blade overrides safely, and restore native date/time picker alignment in Nova and Bloom.
+
+#### Detect overlay requests by canonical host
+
+Use `request()->wasFromOverlay()` to detect any overlay request, or `request()->wasFromOverlay(host: 'modal')` to match a specific canonical host without parsing generated instance ids. Detection also works for requests from internal Frames and shares context validation with `overlayOrigin()`.
+
+Host filters match ids, not overlay families. Invalid host filters and malformed or contradictory overlay context throw `InvalidArgumentException`. `FrameOrPage` continues to render the requested primary or internal Frame.
+
+See [overlay request detection](https://github.com/emaia/laravel-hotwire/blob/0.84.0/docs/recipes/overlay-responses.md#detect-an-overlay-for-rendering) for examples.
+
+#### Review legacy view overrides without overwriting them
+
+Package views are no longer bulk-publishable: the `hotwire-views` tag has been removed, and provider publishing or `vendor:publish --all` no longer copies component views and icons. Package views render directly from the installed package; existing Laravel overrides still take precedence.
+
+`hotwire:check` now reports identical shadows, modified soft forks and orphaned overrides in a separate informational section. Modified forks remain in dependency discovery, while identical and orphaned files are excluded. `--fix` preserves all legacy override files byte for byte.
+
+Remove identical shadows to resume package-managed template updates, and review modified or orphaned files before keeping them as intentional application forks. See the [upgrade guide](https://github.com/emaia/laravel-hotwire/blob/0.84.0/docs/upgrade.md#package-views-are-no-longer-publishable) and [command documentation](https://github.com/emaia/laravel-hotwire/blob/0.84.0/docs/commands.md).
+
+#### Restore native date and time picker alignment
+
+Nova and Bloom now use block layout for inputs and selects, allowing Chromium's native date/time editor to fill the field and keep its picker icon at the right edge. This fixes `date`, `datetime-local`, `month`, `time` and `week` inputs, including those inside Input Group.
+
+Rebuild your application's CSS after updating to receive the fix. See [Input](https://github.com/emaia/laravel-hotwire/blob/0.84.0/docs/components/input.md) and [presets](https://github.com/emaia/laravel-hotwire/blob/0.84.0/docs/presets.md).
+
+#### Development dependencies
+
+Update Vite from `8.3.4` to `8.3.5`.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.83.0...0.84.0
+
 ## 0.83.0 - 2026-10-21
 
 ### Reusable overlay hosts and composable responses
@@ -1447,6 +1481,7 @@ Laravel Hotwire now defaults to the `hw` prefix and supports the preferred short
 
 
 
+
 ```
 The configured `hotwire.prefix` remains customizable for apps that want another prefix.
 
@@ -1458,6 +1493,7 @@ Apps can also generate project-specific Stimulus helper metadata with:
 
 ```bash
 php artisan hotwire:ide-json
+
 
 
 
@@ -1712,6 +1748,7 @@ export default class extends CarouselController {
 
 
 
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -1721,6 +1758,7 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
 
 
 
@@ -1933,6 +1971,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -1956,6 +1995,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -2160,6 +2200,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -2226,6 +2267,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
 
 
 
@@ -2388,6 +2430,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -2397,6 +2440,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -2556,6 +2600,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -2569,6 +2614,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -2736,6 +2782,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -2748,6 +2795,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -2835,6 +2883,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -3008,6 +3057,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -3101,6 +3151,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -3110,6 +3161,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -3277,12 +3329,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -3453,12 +3507,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
