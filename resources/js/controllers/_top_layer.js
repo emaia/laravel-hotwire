@@ -1,4 +1,5 @@
 // @hotwire-package
+import { rememberSnapshotState } from "./_snapshot.js";
 
 const ORIGINAL_POPOVER_ATTRIBUTE = "data-hotwire-top-layer-popover";
 const ABSENT_POPOVER = "__hotwire_absent__";
@@ -16,6 +17,7 @@ export function createTopLayer(element, { enabled = true, suppressAutofocus = fa
         }
     }
 
+    rememberSnapshotState(element, { attributes: ["popover", "data-hotwire-top-layer", ORIGINAL_POPOVER_ATTRIBUTE] });
     const supported = Boolean(
         enabled &&
         element &&

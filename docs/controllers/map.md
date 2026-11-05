@@ -8,6 +8,10 @@ Wraps [Leaflet](https://leafletjs.com/) as an interactive map controller. Loads 
 
 ## Requirements
 
+History restoration recreates the map from configured values, not its runtime-only
+center, zoom, popups, or layers. See [Turbo snapshots](../turbo-snapshots.md) for
+restoration behavior and the published Turbo notification limitation.
+
 - `leaflet` (`bun add leaflet`)
 
 > If any component in your views pulls this controller in (via `<hw:map>`), `php artisan hotwire:check --fix` will add `leaflet` to your `package.json` `devDependencies` automatically.

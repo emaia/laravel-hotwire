@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readControllerSource as readFile } from "./support/controller_source.js";
 
 test("search clear button is tabbable and Space toggles focused options", async ({ page }) => {
     await page.setContent(`

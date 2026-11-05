@@ -5,6 +5,7 @@ import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { rememberSnapshotState } from "./_snapshot.js";
 
 const TRIGGER_KEY_ATTRIBUTE = "data-hotwire-hover-card-trigger-key";
 
@@ -24,6 +25,7 @@ export default class extends Controller {
     };
 
     initialize() {
+        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope"] });
         this.onKeydown = this.onKeydown.bind(this);
         this.closeForCache = this.closeForCache.bind(this);
         this.activeTrigger = null;
@@ -400,6 +402,7 @@ export default class extends Controller {
     syncTrigger(trigger) {
         trigger.setAttribute("aria-expanded", String(this.openValue));
         trigger.dataset.hoverCardState = this.openValue ? "open" : "closed";
+        rememberSnapshotState(trigger, { attributes: ["aria-expanded", "data-hover-card-state"] });
     }
 
     refreshTriggerAnchor() {

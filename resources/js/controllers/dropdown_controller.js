@@ -5,6 +5,7 @@ import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { rememberSnapshotState } from "./_snapshot.js";
 
 const MOBILE_QUERY = "(max-width: 767px)";
 const TRIGGER_KEY_ATTRIBUTE = "data-hotwire-dropdown-trigger-key";
@@ -30,6 +31,7 @@ export default class extends Controller {
     };
 
     initialize() {
+        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope"] });
         this.onOutsideClick = this.onOutsideClick.bind(this);
         this.onInternalClick = this.onInternalClick.bind(this);
         this.onTriggerClick = this.onTriggerClick.bind(this);
@@ -480,6 +482,7 @@ export default class extends Controller {
     syncTrigger(trigger) {
         trigger.setAttribute("aria-expanded", String(this.openValue));
         trigger.dataset.dropdownState = this.openValue ? "open" : "closed";
+        rememberSnapshotState(trigger, { attributes: ["aria-expanded", "data-dropdown-state"] });
     }
 
     refreshTriggerAnchor() {

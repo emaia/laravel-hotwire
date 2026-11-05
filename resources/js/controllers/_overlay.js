@@ -6,11 +6,13 @@ import { isComposing } from "./_composition.js";
 import { activateTopOverlay, registerOverlay, unregisterOverlay, isTopOverlay, overlayPosition } from "./_overlay_stack.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { rememberSnapshotState, forgetSnapshotState } from "./_snapshot.js";
 
 const ESCAPE_SCOPE_SELECTOR = "[data-hotwire-escape-scope]";
 const handledEscapeEvents = new WeakSet();
 
 const bodyScrollLock = {
+    body: null,
     count: 0,
     classes: new Map(),
     paddingInlineEnd: null,
@@ -341,6 +343,8 @@ function isNestedEscapeScopeEvent(event, dialogTarget) {
 
 function lockBodyScroll(classes) {
     if (bodyScrollLock.count === 0) {
+        bodyScrollLock.body = document.body;
+        rememberSnapshotState(document.body, { styles: ["padding-inline-end"] });
         const style = document.body.style;
         bodyScrollLock.paddingInlineEnd = style.paddingInlineEnd;
         bodyScrollLock.paddingInlineEndPriority = style.getPropertyPriority("padding-inline-end");
@@ -359,6 +363,7 @@ function lockBodyScroll(classes) {
     }
 
     for (const className of new Set(classes)) {
+        rememberSnapshotState(document.body, { classes: [className] });
         const entry = bodyScrollLock.classes.get(className) ?? {
             count: 0,
             preexisting: document.body.classList.contains(className),
@@ -373,6 +378,8 @@ function lockBodyScroll(classes) {
 
 function unlockBodyScroll(classes) {
     if (bodyScrollLock.count === 0) return;
+    // Stimulus can disconnect the old overlay after Turbo has replaced document.body.
+    const body = bodyScrollLock.body;
 
     bodyScrollLock.count--;
     for (const className of new Set(classes)) {
@@ -382,12 +389,13 @@ function unlockBodyScroll(classes) {
         entry.count--;
         if (entry.count > 0) continue;
 
-        if (!entry.preexisting) document.body.classList.remove(className);
+        if (!entry.preexisting) body.classList.remove(className);
+        forgetSnapshotState(body, { classes: [className] });
         bodyScrollLock.classes.delete(className);
     }
     if (bodyScrollLock.count > 0) return;
 
-    const style = document.body.style;
+    const style = body.style;
     if (bodyScrollLock.paddingInlineEnd) {
         style.setProperty("padding-inline-end", bodyScrollLock.paddingInlineEnd, bodyScrollLock.paddingInlineEndPriority ?? "");
     } else {
@@ -405,4 +413,6 @@ function unlockBodyScroll(classes) {
     bodyScrollLock.paddingInlineEnd = null;
     bodyScrollLock.paddingInlineEndPriority = null;
     bodyScrollLock.trailingPaddingProperties = [];
+    forgetSnapshotState(body, { styles: ["padding-inline-end"] });
+    bodyScrollLock.body = null;
 }

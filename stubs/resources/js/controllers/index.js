@@ -3,6 +3,9 @@
 // Re-run `php artisan hotwire:install` (or `hotwire:check --fix`) to regenerate.
 import { Stimulus } from "../hotwire/stimulus";
 import { registerControllers } from "@emaia/stimulus-lazy-loader";
+import { installSnapshotNormalization } from "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/_snapshot.js";
+
+installSnapshotNormalization(document);
 
 const packageControllers = import.meta.glob(
     "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/**/*_controller.js",
