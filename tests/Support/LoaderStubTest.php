@@ -19,6 +19,15 @@ afterEach(function () {
 
 // --- generate() ---
 
+it('installs snapshot normalization before registering any lazy controllers', function () {
+    $content = LoaderStub::generate($this->registry, []);
+
+    expect($content)->toContain('import { installSnapshotNormalization } from "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/_snapshot.js";')
+        ->toContain('installSnapshotNormalization(document);');
+    expect(strpos($content, 'installSnapshotNormalization(document);'))
+        ->toBeLessThan(strpos($content, 'registerControllers(Stimulus,'));
+});
+
 it('emits the auto-generated marker as the first line', function () {
     $content = LoaderStub::generate($this->registry);
 

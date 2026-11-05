@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readControllerSource as readFile } from "./support/controller_source.js";
 
 test("default initial focus selects Cancel", async ({ page }) => {
     await page.setContent(`

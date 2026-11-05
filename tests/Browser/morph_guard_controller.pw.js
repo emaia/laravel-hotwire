@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readControllerSource as readFile } from "./support/controller_source.js";
 
 test("preserves active frame state during an external morph and releases it afterward", async ({ page }) => {
     let revision = 1;

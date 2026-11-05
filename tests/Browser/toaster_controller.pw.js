@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readControllerSource as readFile } from "./support/controller_source.js";
 
 // Reduced motion is on by default in headless Chromium, and createPresence honours it by skipping
 // the animation entirely — which would make every motion assertion here vacuous.

@@ -3,6 +3,9 @@
 Reference for everything `hotwire:install` does and the flags that change its behaviour.
 The [README quick start](../README.md#installation) covers the greenfield case in one line; this page covers the rest.
 
+When upgrading an existing app, regenerate its loader and rebuild assets to install
+[Turbo snapshot preparation](turbo-snapshots.md).
+
 ## Contents
 
 - [What the command does](#what-the-command-does)

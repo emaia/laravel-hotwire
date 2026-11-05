@@ -1,6 +1,7 @@
 // @hotwire-package
 
 import { captureOverlayReturn, cleanupOverlayReturn, registerOverlayStreamActions } from "./_overlay_return.js";
+import { markSnapshotGenerated } from "./_snapshot.js";
 
 const instances = new Map();
 const hosts = new Map();
@@ -139,6 +140,7 @@ export function createOverlayHost(controller) {
         instanceRoot.removeAttribute("data-hotwire-overlay-host");
         instanceRoot.dataset.hotwireOverlayInstance = token;
         instanceRoot.setAttribute("data-turbo-temporary", "");
+        markSnapshotGenerated(instanceRoot, "overlay");
         const cloneFrame = instanceRoot.querySelector(`turbo-frame#${CSS.escape(hostId)}`);
         cloneFrame.replaceChildren();
         cloneFrame.removeAttribute("src");

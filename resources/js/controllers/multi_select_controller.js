@@ -7,6 +7,7 @@ import { formHasErrors } from "./_form_errors.js";
 import { frameEventAffects, submissionFrameId } from "./_frame_events.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { rememberSnapshotState } from "./_snapshot.js";
 
 export default class extends Controller {
     static targets = ["trigger", "content", "select", "list", "option", "value", "search", "selectAll", "empty", "validation"];
@@ -34,6 +35,7 @@ export default class extends Controller {
     };
 
     initialize() {
+        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope"] });
         this.onOutsideClick = this.onOutsideClick.bind(this);
         this.onDocumentKeydown = this.onDocumentKeydown.bind(this);
         this.onContentClick = this.onContentClick.bind(this);
@@ -913,6 +915,7 @@ export default class extends Controller {
     syncTrigger(trigger) {
         trigger.setAttribute("aria-expanded", String(this.openValue));
         trigger.dataset.multiSelectState = this.openValue ? "open" : "closed";
+        rememberSnapshotState(trigger, { attributes: ["aria-expanded", "data-multi-select-state"] });
     }
 
     refreshTriggerAnchor() {

@@ -1,5 +1,9 @@
 # Rich text
 
+History restoration preserves the synchronized HTML/JSON textarea draft and
+recreates one editor. Selection, undo history, and arbitrary plugin state are not
+serialized. See [Turbo snapshots](../turbo-snapshots.md) for the restoration contract.
+
 Tiptap-backed rich text editor. Mounts a Tiptap `Editor` on a target div, syncs serialized output
 into a hidden textarea on every change, and dispatches Stimulus events for ready/change/focus/blur
 plus a paired `state` event for toolbars to resync. The companion

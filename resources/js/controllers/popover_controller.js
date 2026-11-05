@@ -5,6 +5,7 @@ import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { rememberSnapshotState } from "./_snapshot.js";
 
 const POPOVER_FOCUSABLE_SELECTOR = [
     "a[href]",
@@ -30,6 +31,7 @@ export default class extends Controller {
     };
 
     initialize() {
+        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope"] });
         this.onOutsideClick = this.onOutsideClick.bind(this);
         this.onKeydown = this.onKeydown.bind(this);
         this.onDocumentFocusIn = this.onDocumentFocusIn.bind(this);
@@ -371,6 +373,7 @@ export default class extends Controller {
     syncTrigger(trigger) {
         trigger.setAttribute("aria-expanded", String(this.openValue));
         trigger.dataset.popoverState = this.openValue ? "open" : "closed";
+        rememberSnapshotState(trigger, { attributes: ["aria-expanded", "data-popover-state"] });
     }
 
     refreshTriggerAnchor() {

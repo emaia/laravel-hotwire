@@ -8,6 +8,7 @@ import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
 import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
+import { mountSnapshotWidget } from "./_snapshot.js";
 
 // Vite/Webpack don't resolve Leaflet's default icon paths.
 delete L.Icon.Default.prototype._getIconUrl;
@@ -57,11 +58,11 @@ export default class extends Controller {
         const center = this.centerValue ?? defaults.center ?? [0, 0];
         const zoom = this.zoomValue ?? defaults.zoom ?? 13;
 
-        this.map = L.map(this.element, {
+        this.map = mountSnapshotWidget(this.element, "map", () => L.map(this.element, {
             center,
             zoom,
             scrollWheelZoom: this.scrollWheelZoomValue,
-        });
+        }));
 
         const tileUrl = this.tileLayerUrl() ?? DEFAULT_TILE_URL;
         const tileOpts = { attribution: DEFAULT_ATTRIBUTION, ...this.tileLayerOptions() };
