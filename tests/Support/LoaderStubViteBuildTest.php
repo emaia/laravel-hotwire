@@ -25,6 +25,7 @@ it('keeps eager application and package controllers out of Vite dynamic entries'
     $files->put($controllers.'/eager_controller.js', 'export default class Eager {}');
     $files->put($vendorControllers.'/package_lazy_controller.js', 'export default class PackageLazy {}');
     $files->put($vendorControllers.'/package_eager_controller.js', 'export default class PackageEager {}');
+    $files->copy(__DIR__.'/../../resources/js/controllers/_snapshot.js', $vendorControllers.'/_snapshot.js');
     $files->put($directory.'/resources/js/hotwire/stimulus.js', 'export const Stimulus = { register() {} };');
     $files->put(
         $directory.'/node_modules/@emaia/stimulus-lazy-loader/package.json',

@@ -1758,6 +1758,67 @@ it('rejects an incompatible lazy loader even when no view uses Hotwire', functio
     expect(readPackageJson()['devDependencies']['@emaia/stimulus-lazy-loader'])->toBe('^1.1.0');
 });
 
+it('upgrades generated loader runtime without changing its loading policy', function (string $mode) {
+    writeView('page.blade.php', '<div data-controller="modal"></div>');
+    writePackageJson(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^2.0.0']]);
+    File::ensureDirectoryExists($this->targetDir);
+    config()->set('hotwire.controllers.preload', ['turbo--progress']);
+    config()->set('hotwire.controllers.eager', ['modal']);
+    $selection = match ($mode) {
+        'all' => null,
+        'core' => [],
+        'selective' => ['chart'],
+    };
+    $expected = LoaderStub::generate(
+        HotwireRegistry::make(),
+        $selection,
+        preloadControllers: ['turbo--progress'],
+        eagerControllers: ['modal'],
+        appControllersPath: $this->targetDir,
+    );
+    $original = str_replace([
+        'import { installSnapshotNormalization } from "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/_snapshot.js";',
+        'installSnapshotNormalization(document);',
+    ], '', $expected);
+    File::put($this->targetDir.'/index.js', $original);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('generated loader differs from current package')
+        ->assertFailed();
+    expect(File::get($this->targetDir.'/index.js'))->toBe($original);
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain('Rebuild your Vite assets')
+        ->assertSuccessful();
+
+    $updated = File::get($this->targetDir.'/index.js');
+    expect($updated)->toBe($expected)
+        ->and(LoaderStub::policyFromContent($updated)->toArray())
+        ->toBe(LoaderStub::policyFromContent($original)->toArray());
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')->assertSuccessful();
+    expect(File::get($this->targetDir.'/index.js'))->toBe($updated);
+})->with(['all', 'core', 'selective']);
+
+it('does not regenerate a current loader solely for Windows line endings', function (string $sourceLineEnding) {
+    writeView('page.blade.php', '<div data-controller="modal"></div>');
+    writePackageJson(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^2.0.0']]);
+    File::ensureDirectoryExists($this->targetDir);
+    $generated = LoaderStub::generate(
+        HotwireRegistry::make(),
+        appControllersPath: $this->targetDir,
+    );
+    $generated = str_replace("\n", $sourceLineEnding, str_replace(["\r\n", "\r"], "\n", $generated));
+    $original = str_replace("\n", "\r\n", str_replace(["\r\n", "\r"], "\n", $generated));
+    File::put($this->targetDir.'/index.js', $original);
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')->assertSuccessful();
+
+    expect(File::get($this->targetDir.'/index.js'))->toBe($original);
+})->with([
+    'LF source checkout' => ["\n"],
+    'CRLF source checkout' => ["\r\n"],
+]);
+
 it('regenerates the loading policy while preserving its dependency selection', function (bool $includeAll) {
     writePackageJson(['devDependencies' => ['@emaia/stimulus-lazy-loader' => '^2.0.0']]);
     File::ensureDirectoryExists($this->targetDir);

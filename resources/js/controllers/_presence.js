@@ -1,9 +1,11 @@
 // @hotwire-package
+import { forgetSnapshotState, rememberSnapshotState } from "./_snapshot.js";
 
 export function createPresence(element, options = {}) {
     const reducedMotion = options.reducedMotion ?? prefersReducedMotion;
     const maxWait = number(options.maxWait, 30_000);
     const stateAttribute = options.stateAttribute ?? "state";
+    rememberSnapshotState(element, { attributes: ["hidden", "inert", "data-presence", `data-${stateAttribute.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`] });
     const motionElements = uniqueElements(element, options.motionElements);
     let phase = element.hidden || state(element, stateAttribute) !== "open" ? "closed" : "open";
     let generation = 0;
@@ -163,6 +165,7 @@ export function createPresence(element, options = {}) {
     function suppressMotion(current) {
         restoreMotion();
         const properties = ["transition-property", "animation-name"];
+        motionElements.forEach((motionElement) => rememberSnapshotState(motionElement, { styles: properties }));
         const entries = motionElements.map((motionElement) => ({
             animations: new Set(ownAnimations(motionElement)),
             element: motionElement,
@@ -186,6 +189,7 @@ export function createPresence(element, options = {}) {
         const { entries } = motionSuppression;
         motionSuppression = null;
         entries.forEach(({ animations, element: motionElement, previous }) => {
+            forgetSnapshotState(motionElement, { styles: previous.map(({ property }) => property) });
             previous.forEach(({ property, value, priority }) => {
                 if (value) {
                     motionElement.style.setProperty(property, value, priority);

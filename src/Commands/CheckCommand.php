@@ -111,7 +111,7 @@ class CheckCommand extends Command
             $configuration = ControllerLoadConfiguration::fromConfig();
             $this->controllerResolver = new ControllerResolver($this->files, $registry, $targetBase);
             $this->validateLazyLoaderVersion();
-            $policyDrift = $this->detectControllerPolicyDrift($registry, $configuration);
+            $policyDrift = $this->detectControllerLoaderDrift($registry, $configuration);
             $configuredControllers = $this->configuredPackageControllers($registry, $configuration);
         } catch (RuntimeException $exception) {
             warning($exception->getMessage());
@@ -386,7 +386,7 @@ class CheckCommand extends Command
         };
     }
 
-    private function detectControllerPolicyDrift(
+    private function detectControllerLoaderDrift(
         HotwireRegistry $registry,
         ControllerLoadConfiguration $configuration,
     ): bool {
@@ -407,19 +407,23 @@ class CheckCommand extends Command
             return false;
         }
 
-        $expected = ControllerLoadPlan::make(
+        $plan = ControllerLoadPlan::make(
             $this->files,
             $registry,
             resource_path('js/controllers'),
             $policy->includeAllComDepControllers ? null : $policy->includedComDepControllers,
             $configuration->preload,
             $configuration->eager,
-        )->policy;
-
-        if ($policy->preloadControllers === $expected->preloadControllers
+        );
+        $expected = $plan->policy;
+        $expectedContent = LoaderStub::generateFromPlan($plan);
+        $contentMatches = str_replace(["\r\n", "\r"], "\n", $content)
+            === str_replace(["\r\n", "\r"], "\n", $expectedContent);
+        $policyMatches = $policy->preloadControllers === $expected->preloadControllers
             && $policy->eagerControllers === $expected->eagerControllers
-            && $policy->eagerControllerPaths === $expected->eagerControllerPaths
-        ) {
+            && $policy->eagerControllerPaths === $expected->eagerControllerPaths;
+
+        if ($policyMatches && $contentMatches) {
             return false;
         }
 
@@ -437,10 +441,13 @@ class CheckCommand extends Command
             $changes[] = 'eager paths: '.$this->identifierMap($policy->eagerControllerPaths).' -> '.$this->identifierMap($expected->eagerControllerPaths);
         }
 
-        $detail = implode('; ', $changes);
+        $reason = $policyMatches
+            ? 'generated loader differs from current package'
+            : 'controller loading policy differs from config';
+        $detail = $changes === [] ? $reason : $reason.'; '.implode('; ', $changes);
         $this->problemLines[] = [
             'key' => 'resources/js/controllers/index.js',
-            'line' => "  <comment>!</comment>  resources/js/controllers/index.js  outdated  <fg=gray>(controller loading policy differs from config; {$detail})</>",
+            'line' => "  <comment>!</comment>  resources/js/controllers/index.js  outdated  <fg=gray>({$detail})</>",
             'fix' => 'loader',
         ];
 

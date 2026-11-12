@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readControllerSource as readFile } from "./support/controller_source.js";
 import { createServer } from "node:http";
 
 test("opens when dynamic content is inserted and closes cleanly through the public API", async ({ page }) => {

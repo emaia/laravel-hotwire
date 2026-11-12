@@ -3,6 +3,7 @@ import { Controller } from "@hotwired/stimulus";
 
 import { RichTextEditor } from "./_rich_text_editor.js";
 import { attachMorphRecovery } from "./_turbo_morph_recovery.js";
+import { mountSnapshotWidget } from "./_snapshot.js";
 
 export default class extends Controller {
     static values = {
@@ -41,7 +42,7 @@ export default class extends Controller {
         const placeholder = this.placeholderValue || null;
         const initial = this.hasInputTarget ? this.inputTarget.value : "";
 
-        this.instance = new RichTextEditor(this.editorTarget, {
+        this.instance = mountSnapshotWidget(this.editorTarget, "rich-text", () => new RichTextEditor(this.editorTarget, {
             content: this.parseInitial(initial),
             editable: this.editableValue,
             placeholder,
@@ -53,7 +54,7 @@ export default class extends Controller {
             onBlur: () => this.dispatch("blur", { prefix: "rich-text" }),
             onSelectionUpdate: () => this.dispatch("state", { prefix: "rich-text", detail: { editor: this.editor } }),
             onImageDrop: this.imageUploadValue ? (file) => this.handleImageUpload(file) : null,
-        });
+        }));
 
         // Clear a leftover `<p></p>` from old()/database when Tiptap mounts an
         // effectively-empty doc, so the next submit ships "" not placeholder markup.

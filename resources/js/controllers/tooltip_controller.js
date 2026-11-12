@@ -5,6 +5,7 @@ import { isComposing } from "./_composition.js";
 import { createFloating } from "./_floating.js";
 import { createPresence } from "./_presence.js";
 import { createTopLayer } from "./_top_layer.js";
+import { markSnapshotGenerated, rememberSnapshotState, rememberSnapshotToken } from "./_snapshot.js";
 
 let tooltipId = 0;
 
@@ -334,6 +335,8 @@ export default class extends Controller {
         }
 
         this.tooltip = source.cloneNode(true);
+        markSnapshotGenerated(this.tooltip, "tooltip");
+        this.tooltip.setAttribute("data-turbo-temporary", "");
         this.arrow = this.tooltip.querySelector("[data-tooltip-arrow]");
         this.tooltip.id = this.id;
         this.tooltip.setAttribute("role", "tooltip");
@@ -376,6 +379,7 @@ export default class extends Controller {
 
     addDescribedBy() {
         const tokens = this.describedByTokens;
+        rememberSnapshotToken(this.element, "aria-describedby", this.id);
         if (!tokens.includes(this.id)) tokens.push(this.id);
 
         this.element.setAttribute("aria-describedby", tokens.join(" "));
@@ -432,6 +436,7 @@ export default class extends Controller {
     setEscapeScope(active) {
         if (active) {
             if (!this.element.hasAttribute("data-hotwire-escape-scope")) {
+                rememberSnapshotState(this.element, { attributes: ["data-hotwire-escape-scope"] });
                 this.element.setAttribute("data-hotwire-escape-scope", "");
                 this.ownsEscapeScope = true;
             }

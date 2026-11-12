@@ -1,5 +1,6 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+import { forgetSnapshotState, rememberSnapshotState } from "../_snapshot.js";
 
 const frameClaims = new WeakMap();
 
@@ -53,6 +54,7 @@ export default class extends Controller {
 
         claim.owners.add(this);
         if (!frame.hasAttribute("data-turbo-permanent")) {
+            rememberSnapshotState(frame, { attributes: ["data-turbo-permanent"] });
             frame.setAttribute("data-turbo-permanent", "");
         }
         this.claimedFrame = frame;
@@ -68,6 +70,7 @@ export default class extends Controller {
         if (claim && claim.owners.size === 0) {
             if (!claim.preexisting) {
                 frame.removeAttribute("data-turbo-permanent");
+                forgetSnapshotState(frame, { attributes: ["data-turbo-permanent"] });
             }
 
             frameClaims.delete(frame);
