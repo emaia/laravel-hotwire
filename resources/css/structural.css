@@ -71,6 +71,61 @@
  */
 
 @layer components {
+    [data-slot="input-otp"] {
+        position: relative;
+        display: inline-grid;
+        max-inline-size: 100%;
+        vertical-align: middle;
+    }
+
+    /* Field presets stretch direct children; keep the enhanced hit area and validation outline on the digit row. */
+    [data-slot="input-otp"][data-enhanced="true"],
+    [data-slot="field"] > [data-slot="input-otp"][data-enhanced="true"] {
+        inline-size: fit-content;
+    }
+
+    [data-slot="input-otp-slots"]:not([hidden]) {
+        display: flex;
+        min-inline-size: 0;
+        pointer-events: none;
+    }
+
+    [data-slot="input-otp-slot"] {
+        position: relative;
+        display: grid;
+        place-items: center;
+        flex-shrink: 1;
+        min-inline-size: 0;
+    }
+
+    [data-slot="input-otp"][data-enhanced="true"] > [data-slot="input-otp-input"] {
+        position: absolute;
+        inset: 0;
+        inline-size: 100%;
+        block-size: 100%;
+        z-index: 1;
+        opacity: 0;
+        cursor: text;
+    }
+
+    [data-slot="input-otp-slot"][data-active]:empty::after {
+        content: "";
+        inline-size: 1px;
+        block-size: 1em;
+        background: currentColor;
+    }
+
+    @media (forced-colors: active), print {
+        [data-slot="input-otp"][data-enhanced="true"] > [data-slot="input-otp-input"] {
+            position: static;
+            opacity: 1;
+        }
+
+        [data-slot="input-otp-slots"]:not([hidden]) {
+            display: none;
+        }
+    }
+
     [data-slot="attachment"] {
         position: relative;
     }

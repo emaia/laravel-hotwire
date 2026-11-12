@@ -39,6 +39,7 @@ use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\InputGroup;
+use Emaia\LaravelHotwire\Components\InputOtp;
 use Emaia\LaravelHotwire\Components\Item;
 use Emaia\LaravelHotwire\Components\Kbd;
 use Emaia\LaravelHotwire\Components\Map;
@@ -599,6 +600,15 @@ return [
                     ['class' => InputGroup::class],
                 ],
             ],
+        ],
+        'input-otp' => [
+            'class' => InputOtp::class,
+            'view' => 'hotwire::component-views.input-otp',
+            'docs' => 'docs/components/input-otp.md',
+            'category' => 'forms',
+            'description' => 'Numeric one-time code input with visual segments, native autofill, Laravel validation and opt-in submit on completion',
+            'controllers' => ['input-otp', 'auto-submit'],
+            'styling' => ['slots' => [['class' => InputOtp::class]]],
         ],
         'item' => [
             'class' => Item::class,
@@ -1432,6 +1442,12 @@ return [
             'category' => 'forms',
             'description' => 'Applies Maska static, dynamic, reverse and custom-token masks to text inputs',
             'npm' => ['maska' => '^3.2.0'],
+        ],
+        'input-otp' => [
+            'source' => 'resources/js/controllers/input_otp_controller.js',
+            'docs' => 'docs/controllers/input-otp.md',
+            'category' => 'forms',
+            'description' => 'One-time code editing with digit filtering, paste, visual selection and completion events on a native input',
         ],
         'lazy-image' => [
             'source' => 'resources/js/controllers/lazy_image_controller.js',

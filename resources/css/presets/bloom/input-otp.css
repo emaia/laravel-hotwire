@@ -1,0 +1,9 @@
+@layer components {
+    [data-slot="input-otp"] { @apply text-foreground has-disabled:cursor-not-allowed has-disabled:opacity-50; }
+    [data-slot="input-otp-input"] { @apply h-12 w-full min-w-0 rounded-lg border border-input bg-muted/40 px-4 font-mono text-base shadow-xs outline-none focus-visible:bg-background focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed aria-invalid:border-destructive; }
+    [data-slot="input-otp-slot"] { @apply size-12 border-y border-e border-input bg-muted/40 font-mono text-lg shadow-xs first:rounded-s-lg first:border-s last:rounded-e-lg; }
+    [data-slot="input-otp"]:has(input:focus-visible) [data-slot="input-otp-slot"][data-active] { @apply z-10 border-ring bg-background outline-solid outline-2 outline-offset-2 outline-ring; }
+    [data-slot="input-otp"]:has(input[aria-invalid="true"]) [data-slot="input-otp-slot"] { @apply border-destructive; }
+    [data-slot="input-otp-slot"][data-selected] { @apply bg-accent text-accent-foreground; }
+    [data-slot="input-otp"]:has(input:read-only) [data-slot="input-otp-slot"] { @apply bg-muted; }
+}

@@ -549,6 +549,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\InputGroup\\Addon"
                 },
                 {
+                    "name": "input-otp",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\InputOtp"
+                },
+                {
                     "name": "item",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Item"

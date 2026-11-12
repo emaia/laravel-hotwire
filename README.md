@@ -94,7 +94,7 @@ Laravel Hotwire ships composable Blade components for common server-rendered UI 
 | [Sticky](docs/components/sticky.md)                           | [Switch](docs/components/switch.md)                     | [Table](docs/components/table.md)                      | [Tabs](docs/components/tabs.md)                           |
 | [Textarea](docs/components/textarea.md)                       | [Timeago](docs/components/timeago.md)                   | [Toast](docs/components/toast.md)                      | [Toaster](docs/components/toaster.md)                     |
 | [Toggle](docs/components/toggle.md)                           | [Toggle Group](docs/components/toggle-group.md)         | [Toggle Group Item](docs/components/toggle-group.md)   | [Tooltip](docs/components/tooltip.md)                     |
-| [Video Embed](docs/components/video-embed.md)                 |                                                         |                                                        |                                                           |
+| [Video Embed](docs/components/video-embed.md)                 | [Input OTP](docs/components/input-otp.md)                 |                                                        |                                                           |
 
 List everything available in your installed version:
 
@@ -129,7 +129,7 @@ Standalone controllers include:
 | [Timeago](docs/controllers/timeago.md)                           | [Toast](docs/controllers/toast.md)                           | [Toaster](docs/controllers/toaster.md)                             | [Toggle](docs/controllers/toggle.md)                       |
 | [Toggle Group](docs/controllers/toggle-group.md)                   | [Tooltip](docs/controllers/tooltip.md)                       | [Turbo Frame Src](docs/controllers/turbo/frame-src.md)               | [Turbo Morph Guard](docs/controllers/turbo/morph-guard.md) |
 | [Turbo Polling](docs/controllers/turbo/polling.md)                 | [Turbo Preserve Scroll](docs/controllers/turbo/preserve-scroll.md) | [Turbo Progress](docs/controllers/turbo/progress.md)             | [Turbo View Transition](docs/controllers/turbo/view-transition.md) |
-| [Unsaved Changes](docs/controllers/unsaved-changes.md)             |                                                              |                                                                    |                                                            |
+| [Unsaved Changes](docs/controllers/unsaved-changes.md)             | [Input OTP](docs/controllers/input-otp.md)                      |                                                                    |                                                            |
 
 Publish a package controller only when you want to customize its source:
 

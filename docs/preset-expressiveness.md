@@ -191,7 +191,9 @@ The counts below add up to the full 425:
   `data-focus-visible`, `data-placeholder` or `peer-data-disabled`, depending on the part — none of which the package
   DOM carries. Another 81 belong to components the package does not ship: Menubar, Command palette, Context Menu,
   Calendar, chat Bubble and Message, input OTP, Navigation Menu and Resizable. The remaining 17 are the
-  application-specific questionnaire block the study already declined to port.
+  application-specific questionnaire block the study already declined to port. These counts describe the original study;
+  Input OTP has since gained a native component, and the executable corpus map records its segments, fallback input and
+  deliberate omission of composed groups/separators.
 - **Deliberate divergence — 56.** Decisions, not gaps: native `<select>`, `<input type=range>`, checkbox and radio
   instead of custom listboxes and indicator children; one `input-group-control` hook instead of one class per nested
   control type; resolved physical `data-side` instead of logical `inline-start`/`inline-end` motion; a single Dropdown
