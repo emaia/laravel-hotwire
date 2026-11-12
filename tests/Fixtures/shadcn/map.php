@@ -823,24 +823,26 @@ return [
                 .' control type.',
         ],
         'cn-input-otp' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no one-time-password input, so this anatomy has no registry counterpart.',
+            'decision' => 'equivalent',
+            'slot' => 'input-otp',
         ],
         'cn-input-otp-caret-line' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no one-time-password input, so this anatomy has no registry counterpart.',
+            'decision' => 'divergent',
+            'slot' => 'input-otp-slot',
+            'note' => 'The decorative caret is a pseudo-element of the active empty segment, not a separate Blade part.',
         ],
         'cn-input-otp-group' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no one-time-password input, so this anatomy has no registry counterpart.',
+            'decision' => 'divergent',
+            'slot' => 'input-otp-slots',
+            'note' => 'One structural row groups all decorative digits; independently composed visual groups are not exposed.',
         ],
         'cn-input-otp-separator' => [
             'decision' => 'not-applicable',
-            'note' => 'The package ships no one-time-password input, so this anatomy has no registry counterpart.',
+            'note' => 'The initial numeric OTP component has one row without visual separator parts.',
         ],
         'cn-input-otp-slot' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no one-time-password input, so this anatomy has no registry counterpart.',
+            'decision' => 'equivalent',
+            'slot' => 'input-otp-slot',
         ],
         'cn-item' => ['decision' => 'equivalent', 'slot' => 'item'],
         'cn-item-actions' => ['decision' => 'equivalent', 'slot' => 'item-actions'],
@@ -1843,6 +1845,12 @@ return [
             'note' => 'Upstream declares one class per nested control type (`input`, `textarea`, `button`); the package'
                 .' exposes a single control hook, which upstream also emits as a `data-slot`.',
         ],
+        'input-otp' => ['decision' => 'equivalent', 'class' => 'cn-input-otp'],
+        'input-otp-input' => [
+            'decision' => 'hotwire-only',
+            'note' => 'The real input is also the visible no-JavaScript and forced-colors fallback, with its own styling hook.',
+        ],
+        'input-otp-slot' => ['decision' => 'equivalent', 'class' => 'cn-input-otp-slot'],
         'input-wrapper' => [
             'decision' => 'divergent',
             'note' => 'Upstream styles the bare control; the package wraps it so adornments such as the clear button and'
