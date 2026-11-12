@@ -180,7 +180,7 @@ test("Escape closes a tooltip before its mobile Sidebar", async ({ page }) => {
 
     const sidebar = page.locator('[data-sidebar-target="modal"]');
     const help = page.locator("#help");
-    await page.locator("#sidebar-trigger").click();
+    await page.locator("#sidebar-trigger").press("Enter");
     await help.focus();
     await expect(page.locator('[data-slot="tooltip"]')).toContainText("Sidebar help");
 
