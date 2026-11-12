@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { installSnapshotNormalization, markSnapshotGenerated, mountSnapshotWidget, normalizeSnapshot, normalizeWidget, rememberSnapshotState, rememberSnapshotToken } from "../../resources/js/controllers/_snapshot.js";
+import { forgetSnapshotState, installSnapshotNormalization, markSnapshotGenerated, mountSnapshotWidget, normalizeSnapshot, normalizeWidget, rememberSnapshotState, rememberSnapshotToken } from "../../resources/js/controllers/_snapshot.js";
 
 let window;
 let document;
@@ -82,4 +82,14 @@ test("explicit initial open state and application permanent attributes survive n
     expect(body.firstElementChild.dataset.state).toBe("open");
     expect(body.firstElementChild.hidden).toBe(false);
     expect(body.firstElementChild.hasAttribute("data-turbo-permanent")).toBe(true);
+});
+
+test("releases style ordering metadata after the final owned style is forgotten", () => {
+    const element = document.createElement("div");
+    element.style.cssText = "padding-inline-end: 10px; padding-right: 30px;";
+    rememberSnapshotState(element, { styles: ["padding-inline-end"] });
+
+    forgetSnapshotState(element, { styles: ["padding-inline-end"] });
+
+    expect(element.hasAttribute("data-hotwire-snapshot")).toBe(false);
 });

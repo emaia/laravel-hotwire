@@ -36,6 +36,7 @@ export function rememberSnapshotState(element, { attributes = [], styles = [], c
     state.attributes ??= {};
     state.styles ??= {};
     state.classes ??= {};
+    if (styles.length) state.styleOrder ??= styleNames(element);
     for (const name of attributes) {
         if (!(name in state.attributes)) state.attributes[name] = element.getAttribute(name);
     }
@@ -63,6 +64,7 @@ export function forgetSnapshotState(element, { attributes = [], styles = [], cla
         for (const name of names) delete state[key]?.[name];
         if (state[key] && !Object.keys(state[key]).length) delete state[key];
     }
+    if (!state.styles) delete state.styleOrder;
     Object.keys(state).length ? element.setAttribute(STATE, JSON.stringify(state)) : element.removeAttribute(STATE);
 }
 
@@ -101,6 +103,7 @@ export function mountSnapshotWidget(element, owner, mount) {
         const original = styles.get(name) ?? ["", ""];
         if (!(name in state.styles) && (original[0] !== element.style.getPropertyValue(name) || original[1] !== element.style.getPropertyPriority(name))) state.styles[name] = original;
     }
+    if (Object.keys(state.styles).length) state.styleOrder ??= [...styles.keys()];
     element.setAttribute(STATE, JSON.stringify(state));
     for (const child of element.children) {
         if (!children.has(child)) markSnapshotGenerated(child, owner);
@@ -117,12 +120,24 @@ function restoreSnapshotState(element) {
     for (const [name, [value, priority]] of Object.entries(state.styles ?? {})) {
         value === "" ? element.style.removeProperty(name) : element.style.setProperty(name, value, priority);
     }
+    if (state.styleOrder) restoreStyleOrder(element, state.styleOrder);
     for (const [name, present] of Object.entries(state.classes ?? {})) element.classList.toggle(name, present);
     for (const [name, tokens] of Object.entries(state.tokens ?? {})) {
         const remaining = (element.getAttribute(name) ?? "").split(/\s+/).filter((token) => token && !tokens.includes(token));
         remaining.length ? element.setAttribute(name, remaining.join(" ")) : element.removeAttribute(name);
     }
     element.removeAttribute(STATE);
+}
+
+function restoreStyleOrder(element, order) {
+    const style = element.style;
+    // CSSOM setters can move logical properties past physical declarations; retain current application-owned values.
+    const declarations = new Map(styleNames(element).map(name => [name, [style.getPropertyValue(name), style.getPropertyPriority(name)]]));
+    style.cssText = "";
+    for (const name of new Set([...order, ...declarations.keys()])) {
+        const declaration = declarations.get(name);
+        if (declaration) style.setProperty(name, ...declaration);
+    }
 }
 
 function readState(element) {

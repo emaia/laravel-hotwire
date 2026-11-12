@@ -104,6 +104,34 @@ test("restores transient overlays closed and releases only package-owned body ef
     await expect(page.locator("#modal-surface")).toBeHidden();
 });
 
+for (const [direction, side, priority] of [["ltr", "right", ""], ["rtl", "left", "important"]]) {
+    test(`restores ${direction} body padding precedence after caching an open overlay`, async ({ page }) => {
+        await start(page, { upstream: true });
+        await page.evaluate(({ direction, side, priority }) => {
+            document.documentElement.dir = direction;
+            Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: innerWidth - 20 });
+            document.body.style.setProperty("padding-inline-end", "10px", priority);
+            document.body.style.setProperty(`padding-${side}`, "30px", priority);
+            document.body.style.setProperty("--application-state", "initial");
+        }, { direction, side, priority });
+        await expect(page.locator("body")).toHaveCSS(`padding-${side}`, "30px");
+        await page.evaluate(async () => {
+            await window.widget("modal", "modal").overlay.open();
+            document.body.style.setProperty("--application-state", "preserved");
+        });
+        await page.evaluate(() => document.querySelector("#next").click());
+        await expect.poll(() => page.evaluate(() => window.loadedPaths.at(-1))).toBe("/two");
+        await cached(page);
+
+        await page.goBack();
+        await restored(page);
+
+        await expect(page.locator("body")).toHaveCSS(`padding-${side}`, "30px");
+        expect(await page.locator("body").evaluate(body => body.style.getPropertyPriority("padding-inline-end"))).toBe(priority);
+        expect(await page.locator("body").evaluate(body => body.style.getPropertyValue("--application-state"))).toBe("preserved");
+    });
+}
+
 test("reconstructs ECharts and Embla without duplicate generated UI", async ({ page }) => {
     await start(page);
     await promote(page);

@@ -28,8 +28,10 @@ This prepares HTML for consumption; it is not a cache-writing event or a univers
 JavaScript serializer.
 
 Existing apps must regenerate their loader with `php artisan hotwire:check --fix`
-or `php artisan hotwire:install` and rebuild assets. In a manually maintained
-loader, install the integration before lazy controller registration:
+or `php artisan hotwire:install` and rebuild assets. The check detects older generated
+loader content even when its controller selection, preload and eager policy are unchanged;
+regeneration preserves that policy. In a manually maintained loader, install the
+integration before lazy controller registration:
 
 ```js
 import { installSnapshotNormalization } from "../../../vendor/emaia/laravel-hotwire/resources/js/controllers/_snapshot.js";
@@ -54,7 +56,7 @@ installSnapshotNormalization(document);
   covers Modal, Alert Dialog, Sheet, Drawer, Sidebar, Dropdown, Popover, Hover Card,
   and Multi Select. Reusable-host opening clones are discarded rather than
   restored as ownerless dialogs. Scroll-lock cleanup preserves preexisting
-  application classes and unrelated body styles. Morph preservation and
+  application classes, unrelated body styles and inline padding declaration precedence. Morph preservation and
   Sidebar's desktop state policy remain unchanged.
 - **Uploads:** reuse `hydrateItems()`: discard unfinished operations and preserve
   completed attachments/hidden values. A cloned snapshot cannot resume an XHR,
