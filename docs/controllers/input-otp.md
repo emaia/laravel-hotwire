@@ -18,8 +18,9 @@ accessible markup.
   complete value.
 - `paste`: normalize clipboard text before the native length limit, replacing the whole value for a full code or the
   selection for a shorter fragment, then emit a bubbling input event.
-- `navigate`: move between replacement digits with unmodified arrow keys in a full code; leave shortcuts and range
-  selection native.
+- `navigate`: move between replacement digits in a full code; extend or shrink the selection with Shift+Left/Right/Home/End,
+  keeping the anchor digit selected even when reversing direction. Leave other shortcuts and incomplete-code selection
+  native.
 - `render`: synchronize digits, focus and selection without changing the native value.
 - `placeCaret`: select the pressed segment before native pointer focus can expose the transparent input's caret position.
 - `extendSelection` / `endSelection`: extend a pointer selection across segments and release pointer capture.

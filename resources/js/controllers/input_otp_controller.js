@@ -103,12 +103,27 @@ export default class extends Controller {
 
     navigate(event) {
         const input = this.inputTarget;
-        if (event.defaultPrevented || isComposing(event) || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
-        if (input.value.length !== this.length || input.selectionEnd - input.selectionStart > 1) return;
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        if (event.defaultPrevented || isComposing(event) || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (input.value.length !== this.length) return;
+        const arrow = event.key === "ArrowLeft" || event.key === "ArrowRight";
+        if (!arrow && !(event.shiftKey && (event.key === "Home" || event.key === "End"))) return;
+
+        const step = event.key === "ArrowLeft" ? -1 : 1;
+        if (event.shiftKey) {
+            event.preventDefault();
+            const backward = input.selectionDirection === "backward";
+            const last = Math.max(input.selectionStart, input.selectionEnd - 1);
+            const anchor = backward ? last : input.selectionStart;
+            const focus = backward ? input.selectionStart : last;
+            const index = event.key === "Home" ? 0 : event.key === "End" ? input.value.length : focus + step;
+            this.selectRange(anchor, Math.max(0, Math.min(index, input.value.length)));
+            this.render();
+            return;
+        }
+        if (input.selectionEnd - input.selectionStart > 1) return;
 
         event.preventDefault();
-        const index = Math.max(0, Math.min(input.selectionStart + (event.key === "ArrowLeft" ? -1 : 1), input.value.length));
+        const index = Math.max(0, Math.min(input.selectionStart + step, input.value.length));
         input.setSelectionRange(index, index);
         this.render();
     }

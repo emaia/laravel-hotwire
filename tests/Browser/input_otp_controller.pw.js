@@ -208,6 +208,80 @@ test("arrows select full-code digits for replacement without trapping navigation
     await expect(input).toHaveValue("123958");
 });
 
+test("Shift-arrows extend and reverse a full-code selection around its anchor digit", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    const box = await page.locator('[data-slot="input-otp-slot"]').nth(4).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([4, 5]);
+
+    for (const [key, start, end, direction] of [
+        ["ArrowLeft", 3, 5, "backward"],
+        ["ArrowLeft", 2, 5, "backward"],
+        ["ArrowRight", 3, 5, "backward"],
+        ["ArrowRight", 4, 5, "forward"],
+        ["ArrowRight", 4, 6, "forward"],
+        ["ArrowRight", 4, 6, "forward"],
+        ["ArrowLeft", 4, 5, "forward"],
+        ["ArrowLeft", 3, 5, "backward"],
+        ["ArrowLeft", 2, 5, "backward"],
+        ["ArrowLeft", 1, 5, "backward"],
+        ["ArrowLeft", 0, 5, "backward"],
+        ["ArrowLeft", 0, 5, "backward"],
+        ["ArrowRight", 1, 5, "backward"],
+        ["ArrowRight", 2, 5, "backward"],
+        ["ArrowRight", 3, 5, "backward"],
+    ]) {
+        await page.keyboard.press(`Shift+${key}`);
+        expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd, node.selectionDirection])).toEqual([start, end, direction]);
+        await expect(page.locator('[data-selected]')).toHaveCount(end - start);
+    }
+    await expect(input).toHaveValue("123456");
+    expect(await page.evaluate(() => window.completions)).toBe(1);
+    await page.keyboard.type("9");
+    await expect(input).toHaveValue("12396");
+});
+
+test("Shift-arrows from the end of a full code stay within the digit row", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    await page.keyboard.press("Shift+ArrowRight");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([6, 6]);
+    await page.keyboard.press("Shift+ArrowLeft");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([5, 6]);
+    await page.keyboard.press("Shift+ArrowLeft");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([4, 6]);
+    await page.keyboard.press("Shift+ArrowRight");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([5, 6]);
+    await page.keyboard.press("Shift+ArrowRight");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([5, 6]);
+});
+
+for (const { selection, key, expected, reverse } of [
+    { selection: [5, 6, "forward"], key: "Home", expected: [0, 6], reverse: [5, 6] },
+    { selection: [4, 6, "backward"], key: "Home", expected: [0, 6], reverse: [5, 6] },
+    { selection: [0, 1, "backward"], key: "End", expected: [0, 6], reverse: [0, 1] },
+    { selection: [0, 2, "forward"], key: "End", expected: [0, 6], reverse: [0, 1] },
+]) {
+    test(`Shift+${key} preserves the anchor digit from ${selection.join(",")}`, async ({ page }) => {
+        await mount(page);
+        const input = page.getByRole("textbox");
+        await input.fill("123456");
+        await input.evaluate((node, selection) => node.setSelectionRange(...selection), selection);
+        for (let repeat = 0; repeat < 2; repeat++) {
+            await page.keyboard.press(`Shift+${key}`);
+            expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual(expected);
+            await expect(page.locator('[data-selected]')).toHaveCount(expected[1] - expected[0]);
+        }
+        await page.keyboard.press(`Shift+${key === "Home" ? "End" : "Home"}`);
+        expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual(reverse);
+        await expect(input).toHaveValue("123456");
+        expect(await page.evaluate(() => window.completions)).toBe(1);
+    });
+}
+
 test("reverse drag then Shift-click preserves the original anchor digit", async ({ page }) => {
     await mount(page);
     const input = page.getByRole("textbox");

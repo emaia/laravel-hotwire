@@ -47,6 +47,8 @@ compose behavior through an additional controller or the completion event.
   segment selects its digit for replacement without an intermediate focus jump. In a full code, typing advances the
   replacement selection to the next digit, and unmodified arrows select the previous/next digit. Pointer drag and
   Shift-click extend the selection across segments, using the active digit as the anchor for a collapsed caret.
+  Shift+Left/Right/Home/End in a full code extends or shrinks the selection around its anchor digit, including when
+  reversing direction. Home/End without Shift remain native.
 - Form reset and Turbo morph/reconnection update the display without triggering completion.
 - Forced-colors and print use the visible native input rather than the decorative presentation.
 
