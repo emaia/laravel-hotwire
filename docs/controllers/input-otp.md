@@ -8,23 +8,29 @@ accessible markup.
 
 | Target | Purpose |
 | --- | --- |
-| `input` | One native text input with a positive `maxlength` matching the segment count |
+| `input` | One native text input with a positive `maxlength` matching the segment count; defaults to the segment count if omitted |
 | `slots` | Decorative row with `aria-hidden="true"` and initial `hidden` |
 | `slot` | One server-rendered segment for each digit |
 
 ## Actions
 
-- `input`: normalize typed digits and dispatch completion after a changed complete value.
-- `paste`: normalize clipboard text before the native length limit, then emit a bubbling input event.
+- `input`: convert Unicode decimal digits to ASCII, remove other characters and dispatch completion after a changed
+  complete value.
+- `paste`: normalize clipboard text before the native length limit, replacing the whole value for a full code or the
+  selection for a shorter fragment, then emit a bubbling input event.
+- `navigate`: move between replacement digits with unmodified arrow keys in a full code; leave shortcuts and range
+  selection native.
 - `render`: synchronize digits, focus and selection without changing the native value.
 - `placeCaret`: select the pressed segment before native pointer focus can expose the transparent input's caret position.
 - `extendSelection` / `endSelection`: extend a pointer selection across segments and release pointer capture.
 - `refresh`: resynchronize after a Turbo morph or reset without completion.
 
-Wire `input`, `change` and `compositionend` to `input`; `paste` to `paste`; focus, blur, select and keyup to `render`;
-pointerdown to `placeCaret`, pointermove to `extendSelection`, pointerup/pointercancel to `endSelection`; and
+Wire `input`, `change` and `compositionend` to `input`; `paste` to `paste`; keydown to `navigate`; focus, blur, select
+and keyup to `render`; pointerdown to `placeCaret`, pointermove to `extendSelection`,
+pointerup/pointercancel to `endSelection`; and
 `turbo:morph-element` on the root to `refresh`. Composition input is left untouched until
-composition ends. Form reset and document selection listeners are attached and cleaned up by the controller.
+composition ends. Descendant morph events are ignored. Form reset and document selection listeners are attached and
+cleaned up by the controller; unfocused instances skip unrelated selection changes once their highlight is cleared.
 
 ## Events
 

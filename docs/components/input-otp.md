@@ -40,10 +40,13 @@ compose behavior through an additional controller or the completion event.
 
 - There is one form value and one tab stop, not one input per digit or a duplicate hidden input.
 - Segments are decorative and hidden from assistive technology; Field labels, descriptions and errors name the real input.
-- Typing filters non-ASCII digits. Paste strips formatting before applying the length limit, so `001 234` becomes `001234`.
+- With JavaScript, Unicode decimal digits (including Arabic-Indic, Persian and full-width digits) are converted to ASCII;
+  other characters are removed. Paste strips formatting, so `001 234` becomes `001234`. A pasted full code replaces the
+  entire value regardless of the selection; shorter fragments replace only the selection.
 - Arrow keys, Home/End, Backspace/Delete, keyboard selection and copying use the native input. Clicking a populated
-  segment selects its digit for replacement without an intermediate focus jump. Pointer drag and Shift-click extend the
-  selection across segments.
+  segment selects its digit for replacement without an intermediate focus jump. In a full code, typing advances the
+  replacement selection to the next digit, and unmodified arrows select the previous/next digit. Pointer drag and
+  Shift-click extend the selection across segments, using the active digit as the anchor for a collapsed caret.
 - Form reset and Turbo morph/reconnection update the display without triggering completion.
 - Forced-colors and print use the visible native input rather than the decorative presentation.
 

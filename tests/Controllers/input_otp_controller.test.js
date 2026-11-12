@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, spyOn, test } from "bun:test";
 import InputOtpController from "../../resources/js/controllers/input_otp_controller.js";
 import { mountController } from "../../resources/js/helpers/test_stimulus.js";
 
@@ -84,4 +84,67 @@ test("restores the usable native presentation on disconnect", async () => {
     expect(mounted.root.hasAttribute("data-enhanced")).toBe(false);
     expect(mounted.controller.slotsTarget.hidden).toBe(true);
     expect(mounted.controller.slotTargets.every(slot => slot.textContent === "")).toBe(true);
+});
+
+test("uses the slot count when maxlength is missing", async () => {
+    const input = await mount();
+    input.removeAttribute("maxlength");
+    let completions = 0;
+    mounted.root.addEventListener("input-otp:complete", () => completions++);
+    input.value = "01234567";
+    mounted.controller.input({ target: input });
+    expect(input.value).toBe("012345");
+    expect(completions).toBe(1);
+});
+
+test.each(["٠١٢٣٤٥", "۰۱۲۳۴۵", "０１２３４５", "𝟢𝟣𝟤𝟥𝟦𝟧", "𞥐𞥑𞥒𞥓𞥔𞥕"])("normalizes decimal digits %s to ASCII", async value => {
+    const input = await mount();
+    input.value = value;
+    mounted.controller.input({ target: input });
+    expect(input.value).toBe("012345");
+});
+
+test("keeps selection offsets when normalizing supplementary-plane digits", async () => {
+    const input = await mount();
+    input.value = "a𝟢 𝟣𝟤";
+    input.setSelectionRange(3, 6);
+    mounted.controller.input({ target: input });
+    expect(input.value).toBe("012");
+    expect([input.selectionStart, input.selectionEnd]).toEqual([1, 2]);
+});
+
+test("uses the shared composition guard for legacy IME events", async () => {
+    const input = await mount();
+    input.value = "12345a";
+    mounted.controller.input({ target: input, keyCode: 229 });
+    expect(input.value).toBe("12345a");
+});
+
+test("ignores morph events bubbling from descendants", async () => {
+    const input = await mount("123");
+    input.value = "456";
+    mounted.controller.refresh({ target: input });
+    expect(mounted.controller.slotTargets.map(slot => slot.textContent).join("")).toBe("123");
+    mounted.controller.refresh({ target: mounted.root });
+    expect(mounted.controller.slotTargets.map(slot => slot.textContent).join("")).toBe("456");
+});
+
+test("does not render unrelated document selection changes while inactive", async () => {
+    const input = await mount();
+    const render = spyOn(mounted.controller, "render");
+    try {
+        mounted.controller.onSelectionChange();
+        expect(render).not.toHaveBeenCalled();
+        input.focus();
+        mounted.controller.onSelectionChange();
+        expect(render).toHaveBeenCalledTimes(1);
+        input.blur();
+        mounted.controller.onSelectionChange();
+        expect(render).toHaveBeenCalledTimes(2);
+        mounted.controller.onSelectionChange();
+        expect(render).toHaveBeenCalledTimes(2);
+        expect(mounted.controller.slotTargets.every(slot => !slot.hasAttribute("data-active") && !slot.hasAttribute("data-selected"))).toBe(true);
+    } finally {
+        render.mockRestore();
+    }
 });

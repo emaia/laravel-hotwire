@@ -28,7 +28,7 @@
     $inputAttributes = \Emaia\LaravelHotwire\Support\StimulusAttributes::merge([
         'data-slot' => $slotNames['input'],
         'data-input-otp-target' => 'input',
-        'data-action' => 'input->input-otp#input change->input-otp#input compositionend->input-otp#input paste->input-otp#paste focus->input-otp#render blur->input-otp#render pointerdown->input-otp#placeCaret pointermove->input-otp#extendSelection pointerup->input-otp#endSelection pointercancel->input-otp#endSelection keyup->input-otp#render select->input-otp#render',
+        'data-action' => 'input->input-otp#input change->input-otp#input compositionend->input-otp#input paste->input-otp#paste focus->input-otp#render blur->input-otp#render pointerdown->input-otp#placeCaret pointermove->input-otp#extendSelection pointerup->input-otp#endSelection pointercancel->input-otp#endSelection keydown->input-otp#navigate keyup->input-otp#render select->input-otp#render',
         'type' => 'text',
         'inputmode' => 'numeric',
         'autocomplete' => 'one-time-code',

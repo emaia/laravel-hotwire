@@ -28,6 +28,8 @@ it('renders one native OTP control and decorative server-rendered slots', functi
         ->assertSee('pattern="[0-9]{6}"', false)
         ->assertSee('minlength="6"', false)
         ->assertSee('maxlength="6"', false)
+        ->assertSee('change->input-otp#input', false)
+        ->assertSee('keydown->input-otp#navigate', false)
         ->assertSee('aria-hidden="true" hidden', false)
         ->assertDontSee('type="hidden"', false);
 });

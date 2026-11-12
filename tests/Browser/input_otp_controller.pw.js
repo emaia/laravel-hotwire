@@ -18,7 +18,7 @@ async function mount(page, preset = "nova", enhance = true) {
                 <input id="code" name="code" type="text" maxlength="6" minlength="6" pattern="[0-9]{6}"
                     required autocomplete="one-time-code" inputmode="numeric" data-slot="input-otp-input"
                     data-input-otp-target="input"
-                    data-action="input->input-otp#input compositionend->input-otp#input paste->input-otp#paste focus->input-otp#render blur->input-otp#render pointerdown->input-otp#placeCaret pointermove->input-otp#extendSelection pointerup->input-otp#endSelection pointercancel->input-otp#endSelection keyup->input-otp#render select->input-otp#render">
+                    data-action="input->input-otp#input change->input-otp#input compositionend->input-otp#input paste->input-otp#paste focus->input-otp#render blur->input-otp#render pointerdown->input-otp#placeCaret pointermove->input-otp#extendSelection pointerup->input-otp#endSelection pointercancel->input-otp#endSelection keydown->input-otp#navigate keyup->input-otp#render select->input-otp#render">
                 <span data-slot="input-otp-slots" data-input-otp-target="slots" aria-hidden="true" hidden dir="ltr">
                     ${Array.from({ length: 6 }, () => '<span data-slot="input-otp-slot" data-input-otp-target="slot"></span>').join("")}
                 </span>
@@ -30,8 +30,11 @@ async function mount(page, preset = "nova", enhance = true) {
     if (!enhance) return;
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     const source = await readFile("resources/js/controllers/input_otp_controller.js", "utf8");
+    const composition = await readFile("resources/js/controllers/_composition.js", "utf8");
+    await page.addScriptTag({ content: composition.replace("export function", "function") });
     await page.addScriptTag({ content: source
         .replace('import { Controller } from "@hotwired/stimulus";', "const { Controller } = window.Stimulus;")
+        .replace('import { isComposing } from "./_composition.js";', "")
         .replace("export default class extends Controller", "window.InputOtpController = class extends Controller") });
     await page.evaluate(() => {
         window.app = window.Stimulus.Application.start();
@@ -119,11 +122,11 @@ test("native editing, formatted paste, selection and reset keep slots synchroniz
     await page.keyboard.press("Home");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Shift+ArrowRight");
-    await expect(page.locator('[data-selected]')).toHaveCount(1);
+    await expect(page.locator('[data-selected]')).toHaveCount(2);
     await page.keyboard.type("9");
-    await expect(input).toHaveValue("091234");
+    await expect(input).toHaveValue("09234");
     await page.keyboard.press("Backspace");
-    await expect(input).toHaveValue("01234");
+    await expect(input).toHaveValue("0234");
 
     await input.selectText();
     await input.evaluate(node => {
@@ -176,6 +179,111 @@ test("clicking a visible digit replaces that digit rather than the hidden input 
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await page.keyboard.type("9");
     await expect(input).toHaveValue("001934");
+});
+
+test("typing continues replacing subsequent digits in a full code", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    const box = await page.locator('[data-slot="input-otp-slot"]').nth(2).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.keyboard.type("9876");
+    await expect(input).toHaveValue("129876");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([6, 6]);
+});
+
+test("arrows select full-code digits for replacement without trapping navigation", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    for (const index of [5, 4, 3]) {
+        await page.keyboard.press("ArrowLeft");
+        expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([index, index + 1]);
+    }
+    await page.keyboard.type("9");
+    await expect(input).toHaveValue("123956");
+    await page.keyboard.press("ArrowRight");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([5, 6]);
+    await page.keyboard.type("8");
+    await expect(input).toHaveValue("123958");
+});
+
+test("reverse drag then Shift-click preserves the original anchor digit", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    const slots = page.locator('[data-slot="input-otp-slot"]');
+    const from = await slots.nth(3).boundingBox();
+    const to = await slots.nth(1).boundingBox();
+    const first = await slots.first().boundingBox();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 6 });
+    await page.mouse.up();
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd, node.selectionDirection])).toEqual([1, 4, "backward"]);
+    await page.keyboard.down("Shift");
+    await page.mouse.click(first.x + first.width / 2, first.y + first.height / 2);
+    await page.keyboard.up("Shift");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([0, 4]);
+});
+
+test("Shift-click from a collapsed caret includes its active digit", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("1234");
+    await page.keyboard.press("ArrowLeft");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([3, 3]);
+    const first = await page.locator('[data-slot="input-otp-slot"]').first().boundingBox();
+    await page.keyboard.down("Shift");
+    await page.mouse.click(first.x + first.width / 2, first.y + first.height / 2);
+    await page.keyboard.up("Shift");
+    expect(await input.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([0, 4]);
+});
+
+for (const value of ["222222", "222 222 999", "٢۲２٢۲２"]) {
+    test(`full-code paste ${value} replaces all old digits before completion`, async ({ page }) => {
+        await mount(page);
+        const input = page.getByRole("textbox");
+        await input.fill("111111");
+        const box = await page.locator('[data-slot="input-otp-slot"]').nth(3).boundingBox();
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        await input.evaluate((node, value) => {
+            window.completedCodes = [];
+            node.closest('[data-slot="input-otp"]').addEventListener("input-otp:complete", () => window.completedCodes.push(new FormData(node.form).get("code")));
+            const clipboardData = new DataTransfer();
+            clipboardData.setData("text/plain", value);
+            node.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData }));
+        }, value);
+        await expect(input).toHaveValue("222222");
+        expect(await page.evaluate(() => window.completions)).toBe(2);
+        expect(await page.evaluate(() => window.completedCodes)).toEqual(["222222"]);
+    });
+}
+
+test("short paste only replaces the native selection", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.fill("123456");
+    await input.evaluate(node => {
+        node.setSelectionRange(2, 4);
+        const clipboardData = new DataTransfer();
+        clipboardData.setData("text/plain", "９８");
+        node.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData }));
+    });
+    await expect(input).toHaveValue("129856");
+});
+
+test("change-only autofill normalizes and completes once", async ({ page }) => {
+    await mount(page);
+    const input = page.getByRole("textbox");
+    await input.evaluate(node => {
+        node.value = "٠١٢٣٤٥";
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await expect(input).toHaveValue("012345");
+    await expect(page.locator('[data-slot="input-otp-slots"]')).toHaveText("012345");
+    expect(await page.evaluate(() => window.completions)).toBe(1);
 });
 
 test("pointer focus highlights only the intended digit before the click completes", async ({ page }) => {
