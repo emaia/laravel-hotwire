@@ -18,7 +18,7 @@ class Input extends Component
     use StripsNullProps;
 
     public const array SLOTS = [
-        'wrapper' => ['name' => 'input-wrapper', 'kind' => 'visual'],
+        'wrapper' => ['name' => 'input-wrapper', 'kind' => 'structural'],
         'root' => ['name' => 'input', 'kind' => 'visual'],
         'clear-button' => ['name' => 'clear-input-button', 'kind' => 'visual'],
     ];
@@ -31,16 +31,17 @@ class Input extends Component
         public bool|string|null $checked = false,
         public ?string $errorKey = null,
         public bool $old = true,
-        public bool $clearable = false,
+        public ?bool $clearable = null,
         public bool $autoSelect = false,
         public ?string $mask = null,
         public bool|string $autoSubmit = false,
         public int|string|null $autoSubmitDelay = null,
         public string $class = '',
-        public string $wrapperClass = '',
+        public string $inputClass = '',
         public ?Htmlable $stimulus = null,
     ) {}
 
+    /** Render the native control and its stable text-input root. */
     public function render()
     {
         return view('hotwire::component-views.input', [
@@ -50,18 +51,22 @@ class Input extends Component
         ]);
     }
 
+    /** Resolve type-dependent integrations before exposing component data. */
     public function data(): array
     {
         $isCheckable = $this->isCheckable();
+        $hasWrapper = $this->isTextLike();
 
         if ($isCheckable) {
             $this->autoSelect = false;
             $this->mask = null;
-            $this->clearable = false;
         }
+
+        $this->clearable = $hasWrapper && ($this->clearable ?? strtolower($this->type) === 'search');
 
         $data = parent::data();
         $data['isCheckable'] = $isCheckable;
+        $data['hasWrapper'] = $hasWrapper;
         $data['resolvedMask'] = $this->mask !== null ? MaskPresets::resolve($this->mask) : null;
         $data['internalPrefixes'] = array_values(array_filter([
             $this->clearable ? 'data-clear-input-' : null,
@@ -75,8 +80,7 @@ class Input extends Component
     }
 
     /**
-     * Computes values that depend on @aware-resolved props and the template-scoped
-     * attribute bag. Called from the template via the $compute closure.
+     * Resolve Field context and template attributes after @aware has run.
      *
      * @return array<string, mixed>
      */
@@ -167,6 +171,13 @@ class Input extends Component
     private function isCheckable(): bool
     {
         return in_array($this->type, ['checkbox', 'radio'], true);
+    }
+
+    private function isTextLike(): bool
+    {
+        return ! in_array(strtolower($this->type), [
+            'hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image',
+        ], true);
     }
 
     private function isCheckedPropTruthy(): bool

@@ -42,17 +42,15 @@
         'data-auto-submit-delay-param' => $autoSubmitDelayParam,
         'data-input-mask-mask-value' => $mask !== null ? e($resolvedMask) : null,
         'data-clear-input-target' => $clearable ? 'input' : null,
-        'class' => $class ?: null,
+        'class' => trim(($hasWrapper ? '' : $class).' '.$inputClass) ?: null,
     ], $attributes, $stimulus, except: ['required', 'checked', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
-
-    $hasWrapper = $clearable;
 @endphp
 
 @if ($hasWrapper)
 <span
     data-slot="{{ $wrapperSlotName }}"
     data-clearable="{{ $clearable ? 'true' : 'false' }}"
-    @if ($wrapperClass !== '') class="{{ $wrapperClass }}" @endif
+    @if ($class !== '') class="{{ $class }}" @endif
     @if ($clearable) data-controller="clear-input" @endif
 >
 @endif

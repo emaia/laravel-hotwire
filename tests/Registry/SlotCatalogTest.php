@@ -195,6 +195,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'file-upload-announcer',
         'form',
         'input-otp-slots',
+        'input-wrapper',
         'map',
         'modal',
         'optimistic',

@@ -5,6 +5,9 @@ Adds an "X" button to clear an input value. The button appears automatically whe
 **Identifier:** `clear-input`
 **Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers clear-input`.
 
+For Blade usage, prefer [`<hw:input type="search">`](../components/input.md#search), which activates this controller by
+default, or `<hw:input clearable>` for another text-like type. The component's root is stable with or without clearing.
+
 ## Requirements
 
 - No external dependencies.
@@ -98,6 +101,11 @@ Set `--clear-input-button-display` when the visible button needs a specific disp
 ## Behavior
 
 The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `<hw:meta refresh />` (or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML, which does not contain the runtime-added class, so the clear button would no longer appear over `old()`-restored values. The listener re-applies or removes the class based on the current input value after the morph completes.
+
+Listeners are delegated from the controller root, so replacing a target or reconnecting the controller does not retain
+listeners on old targets or duplicate clear events. Disabled and readonly inputs cannot be cleared, including disabled
+state inherited from a fieldset. The foundation hides their clear button without duplicating immutable state onto it,
+so clearing becomes available again when the native control becomes editable.
 
 ## Targets
 

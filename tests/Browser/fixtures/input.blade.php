@@ -1,0 +1,40 @@
+<hw:input id="plain-input" aria-label="Plain text" />
+<div id="flex-layout" class="fixture-flex">
+    <hw:input id="flex-input" aria-label="Flexible" class="flex-1" />
+    <button class="fixture-sibling">Next</button>
+</div>
+<div id="grid-layout" class="fixture-grid">
+    <hw:input id="grid-input" type="search" aria-label="Grid search" class="col-span-2" value="Trees" />
+    <button>Next</button>
+</div>
+<hw:form id="filters" method="get" auto-submit auto-submit-delay="150">
+    <hw:field name="q" id="query" label="Search parks">
+        <hw:input type="search" value="Trees" auto-submit />
+    </hw:field>
+    <button id="after-query" type="button">After search</button>
+</hw:form>
+<hw:input id="native-search" type="search" :clearable="false" aria-label="Native search" value="Trees" />
+<hw:input id="disabled-search" type="search" disabled aria-label="Disabled search" value="Trees" />
+<hw:input id="readonly-search" type="search" readonly aria-label="Readonly search" value="Trees" />
+<fieldset id="disabled-fieldset" disabled>
+    <hw:input id="fieldset-search" type="search" aria-label="Fieldset search" value="Trees" />
+</fieldset>
+<hw:input-group id="group">
+    <hw:input id="group-search" type="search" aria-label="Grouped search" value="Trees" />
+    <hw:input-group.addon align="inline-start">Find</hw:input-group.addon>
+    <hw:input-group.addon align="inline-end"><hw:button type="button">Go</hw:button></hw:input-group.addon>
+</hw:input-group>
+<hw:multi-select id="species" :options="['oak' => 'Oak', 'pine' => 'Pine']" />
+<hw:modal id="search-modal" motion="none">
+    <hw:modal.content>
+        <hw:modal.header><hw:modal.title>Search dialog</hw:modal.title></hw:modal.header>
+        <hw:input id="modal-search" type="search" aria-label="Modal search" value="Trees" />
+    </hw:modal.content>
+</hw:modal>
+<hw:dropdown id="search-dropdown" :close-on-select="false" motion="none">
+    <hw:dropdown.trigger>Search menu</hw:dropdown.trigger>
+    <hw:dropdown.content><hw:input id="dropdown-search" type="search" aria-label="Dropdown search" value="Trees" /></hw:dropdown.content>
+</hw:dropdown>
+<turbo-frame id="search-frame">
+    <hw:input id="frame-search" type="search" aria-label="Frame search" value="Trees" />
+</turbo-frame>

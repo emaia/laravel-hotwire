@@ -104,7 +104,7 @@ it('scaffolds no rule the structural stylesheet owns', function () {
         ->not->toContain('::details-content')
         ->not->toContain('data-carousel-container')
         ->not->toContain('[data-slot="color-scheme-icon"]')
-        ->toContain('[data-slot="input-wrapper"]');
+        ->not->toContain('[data-slot="input-wrapper"]');
 });
 
 it('templates every token declared by the package, in both colour schemes', function () {

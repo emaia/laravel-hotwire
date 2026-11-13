@@ -101,13 +101,11 @@
                     id="{{ $resolvedId }}-search"
                     error-key=""
                     :old="false"
-                    type="text"
-                    clearable
+                    type="search"
                     data-slot="{{ $searchSlotName }}"
                     data-multi-select-target="search"
                     placeholder="{{ $searchPlaceholder }}"
                     aria-label="{{ $searchPlaceholder }}"
-                    wrapper-class="relative"
                 />
 
                 <x-hw::input-group.addon align="inline-start">

@@ -4,9 +4,10 @@ Multi-value select control for forms. It renders a native hidden `<select multip
 `multi-select` Stimulus controller for the custom trigger, searchable listbox, selection state and Floating UI
 positioning.
 
-The list search uses `<hw:input-group>` with a clearable `<hw:input>`, so the search icon is composed through the same
+The list search uses `<hw:input-group>` with `<hw:input type="search">`, so the search icon is composed through the same
 addon primitive available to applications and the clear button is an actual tabbable control instead of the
-browser-native `type="search"` clear affordance, which is not consistently reachable by keyboard tab order.
+browser-native clear affordance, which is not consistently reachable by keyboard tab order. The native cancel button is
+suppressed while the package owns clearing; the input retains native search semantics.
 
 The popup keeps action/status controls outside the listbox semantics: `select-all` is a button action, while the empty
 message is a status message shown next to the list rather than a listbox option.

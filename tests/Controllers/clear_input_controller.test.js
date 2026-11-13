@@ -193,6 +193,28 @@ test.serial("dispatches native input before inputCleared when cleared", async ()
     expect(events).toEqual(["input:", "inputCleared:"]);
 });
 
+for (const attribute of ["disabled", "readonly"]) {
+    test.serial(`does not clear or emit events when the input becomes ${attribute}`, async () => {
+        await mount(`
+            <span data-controller="clear-input">
+                <input data-clear-input-target="input" value="hello" />
+                <button data-clear-input-target="clearButton"></button>
+            </span>
+        `);
+
+        const input = document.querySelector("input");
+        const events = [];
+        input.setAttribute(attribute, "");
+        input.addEventListener("input", () => events.push("input"));
+        input.addEventListener("inputCleared", () => events.push("inputCleared"));
+
+        document.querySelector("button").click();
+
+        expect(input.value).toBe("hello");
+        expect(events).toEqual([]);
+    });
+}
+
 async function mount(html) {
     mounted = await mountController("clear-input", ClearInputController, html);
 }

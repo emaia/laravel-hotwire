@@ -4,18 +4,19 @@ import { Controller } from "@hotwired/stimulus";
 export default class extends Controller {
     static targets = ["clearButton", "input"];
 
-    connect() {
+    initialize() {
         this.handleButtonClick = this.handleButtonClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
         this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
         this.handleFocusIn = this.handleFocusIn.bind(this);
         this.handleFocusOut = this.handleFocusOut.bind(this);
+    }
 
+    connect() {
         this.resyncAfterMorph();
 
-        this.clearButtonTarget.addEventListener("click", this.handleButtonClick);
-        this.inputTarget.addEventListener("input", this.handleInputChange);
-        this.inputTarget.addEventListener("focus", this.handleInputChange);
+        this.element.addEventListener("click", this.handleButtonClick);
+        this.element.addEventListener("input", this.handleInputChange);
         this.element.addEventListener("focusin", this.handleFocusIn);
         this.element.addEventListener("focusout", this.handleFocusOut);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
@@ -34,6 +35,8 @@ export default class extends Controller {
     }
 
     handleInputChange(event) {
+        if (!this.hasInputTarget || event.target !== this.inputTarget) return;
+
         if (event.target.value && !this.inputTarget.classList.contains("clear-input--touched")) {
             this.inputTarget.classList.add("clear-input--touched");
         } else if (!event.target.value && this.inputTarget.classList.contains("clear-input--touched")) {
@@ -44,6 +47,9 @@ export default class extends Controller {
     }
 
     handleButtonClick(event) {
+        if (!this.hasClearButtonTarget || !this.clearButtonTarget.contains(event.target)) return;
+        if (this.inputTarget.matches(":disabled") || this.inputTarget.readOnly) return;
+
         this.inputTarget.value = "";
         this.inputTarget.focus();
         this.inputTarget.classList.remove("clear-input--touched");
@@ -54,7 +60,7 @@ export default class extends Controller {
     }
 
     handleFocusIn() {
-        this.#syncButtonVisibility();
+        this.resyncAfterMorph();
     }
 
     handleFocusOut(event) {
@@ -74,13 +80,8 @@ export default class extends Controller {
     }
 
     disconnect() {
-        this.clearButtonTarget.removeEventListener("click", this.handleButtonClick);
-
-        if (this.hasInputTarget) {
-            this.inputTarget.removeEventListener("input", this.handleInputChange);
-            this.inputTarget.removeEventListener("focus", this.handleInputChange);
-        }
-
+        this.element.removeEventListener("click", this.handleButtonClick);
+        this.element.removeEventListener("input", this.handleInputChange);
         this.element.removeEventListener("focusin", this.handleFocusIn);
         this.element.removeEventListener("focusout", this.handleFocusOut);
 

@@ -382,7 +382,7 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->toContain('[data-slot="video-embed"]')
         ->toContain('aspect-ratio: var(--video-embed-aspect-ratio, 16 / 9)')
         ->toContain('[data-slot="video-embed-frame"]')
-        ->toContain('[data-slot="input-wrapper"][data-clearable="true"]')
+        ->toContain('[data-slot="input-wrapper"]')
         ->and($visual)
         ->not->toContain('[data-slot="aspect-ratio"]')
         ->not->toContain('@keyframes hotwire-reveal-')
@@ -573,7 +573,7 @@ it('keeps the toaster viewport eligible for top-layer stacking from the structur
 it('keeps clear input visibility in the foundation without prescribing its visual geometry', function (string $preset) {
     $declaration = presetDeclaration(presetVisualCss($preset), '[data-slot="clear-input-button"]');
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
-    $wrapper = presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"]');
+    $wrapper = presetDeclaration($structural, '[data-slot="input-wrapper"]');
 
     expect($declaration)->not->toMatch('/\bhidden\b/');
     expect($structural)
@@ -585,6 +585,13 @@ it('keeps clear input visibility in the foundation without prescribing its visua
         ->not->toContain('padding-inline-end')
         ->not->toContain('inset-inline-end');
 })->with('design presets');
+
+it('replaces native search clearing only when the custom control is present', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect(presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"] > input[type="search"]::-webkit-search-cancel-button'))
+        ->toContain('display: none');
+});
 
 it('styles generated rich text DOM through granular hooks', function (string $preset) {
     $css = presetVisualCss($preset);

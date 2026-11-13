@@ -6,6 +6,40 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Input roots and native search clearing
+
+Text-like `<hw:input>` controls now always render an `input-wrapper` root, with or without `clearable`. `class` belongs to
+that root; use the new `input-class` prop for styling the native control. `wrapper-class` has been removed without an
+alias. Separate layout from control appearance explicitly:
+
+```blade
+{{-- Before --}}
+<hw:input name="q" type="search" clearable wrapper-class="flex-1" class="font-mono h-10" />
+
+{{-- After --}}
+<hw:input name="q" type="search" class="flex-1" input-class="font-mono h-10" />
+```
+
+Move width, flex/grid placement, margins and outer positioning to `class`. Move typography, control height, border,
+background and native-state variants such as `disabled:*`, `focus-visible:*` and `aria-invalid:*` to `input-class`.
+Classes are not inspected, forwarded to both elements or automatically split. `style`, `id`, `name`, HTML, ARIA and
+Stimulus attributes continue to target the native input, not the root; existing controller targets remain on the control.
+Review direct-child selectors and peer relationships that assumed the input itself was the component root.
+
+`hidden`, checkbox/radio, range, color, file and button-like types remain unwrapped; both class props target their native
+input and `clearable` has no effect. This change does not redesign Textarea, File, Input OTP or their class props.
+
+`type="search"` now enables the package's keyboard-accessible clear button by default. Keep the native browser UI instead
+with `:clearable="false"`; the text-control root remains stable. `auto-submit` is still opt-in. With auto-submit enabled,
+custom clearing submits immediately and cancels pending typing debounce. The native search cancel button is suppressed
+only when the package supplies custom clearing. The Multi Select popup search uses this same composition.
+
+Rebuild application CSS after upgrading. `input-wrapper` is now structural: remove preset rules that supplied its
+conditional display/positioning and inherit these mechanics from the current foundation. Keep visual input and clear
+button styling in the preset. Regenerate selective bundles; application-owned preset clones must be reviewed manually.
+Review view forks against the new Input/Multi Select markup and update published `clear_input_controller.js` copies for
+delegated, reconnect-safe listeners and immutable-input handling.
+
 ### Package views are no longer publishable
 
 The `hotwire-views` publish tag has been removed. Publishing by provider or through `vendor:publish --all` no longer

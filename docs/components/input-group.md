@@ -6,7 +6,7 @@ Composable shell for adding icons, text, shortcuts, buttons and helper content a
 
 ```blade
 <hw:input-group>
-    <hw:input name="search" placeholder="Search..." clearable />
+    <hw:input name="search" type="search" placeholder="Search..." />
 
     <hw:input-group.addon align="inline-start">
         <x-lucide-search class="size-4" />
@@ -16,6 +16,9 @@ Composable shell for adding icons, text, shortcuts, buttons and helper content a
 
 `InputGroup` does not replace `<hw:input>`, `<hw:textarea>` or `<hw:button>`. Compose those existing components inside
 the group so their validation, `old()` restoration, Stimulus wiring and accessibility behavior stay intact.
+
+Text-like `Input` controls always provide a stable root inside the group. Their `class` configures that root and
+`input-class` configures the native input; clearing does not change the group's child structure.
 
 ## Addons
 

@@ -1851,11 +1851,6 @@ return [
             'note' => 'The real input is also the visible no-JavaScript and forced-colors fallback, with its own styling hook.',
         ],
         'input-otp-slot' => ['decision' => 'equivalent', 'class' => 'cn-input-otp-slot'],
-        'input-wrapper' => [
-            'decision' => 'divergent',
-            'note' => 'Upstream styles the bare control; the package wraps it so adornments such as the clear button and'
-                .' the counter can be positioned against it.',
-        ],
         'item' => ['decision' => 'equivalent', 'class' => 'cn-item'],
         'item-actions' => ['decision' => 'equivalent', 'class' => 'cn-item-actions'],
         'item-content' => ['decision' => 'equivalent', 'class' => 'cn-item-content'],
