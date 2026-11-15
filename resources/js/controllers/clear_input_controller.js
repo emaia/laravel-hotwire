@@ -8,6 +8,8 @@ const CONNECTION_ATTRIBUTE = "data-clear-input-connected";
 export default class extends Controller {
     static targets = ["clearButton", "input"];
 
+    #snapshotTargets = new WeakSet();
+
     initialize() {
         this.handleButtonClick = this.handleButtonClick.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
@@ -34,9 +36,9 @@ export default class extends Controller {
     }
 
     resyncAfterMorph() {
-        if (this.hasInputTarget) rememberSnapshotState(this.inputTarget, { classes: ["clear-input--touched"] });
-        if (this.hasClearButtonTarget) rememberSnapshotState(this.clearButtonTarget, { classes: ["hidden"] });
         if (!this.hasInputTarget || !this.hasClearButtonTarget) return;
+        // Target callbacks can see siblings before their snapshot baselines have been recorded.
+        if (!this.#snapshotTargets.has(this.inputTarget) || !this.#snapshotTargets.has(this.clearButtonTarget)) return;
 
         if (this.inputTarget.value.length > 0) {
             this.inputTarget.classList.add("clear-input--touched");
@@ -95,20 +97,26 @@ export default class extends Controller {
         }
     }
 
-    inputTargetConnected() {
+    inputTargetConnected(input) {
+        rememberSnapshotState(input, { classes: ["clear-input--touched"] });
+        this.#snapshotTargets.add(input);
         this.resyncAfterMorph();
     }
 
     inputTargetDisconnected(input) {
+        this.#snapshotTargets.delete(input);
         input.classList.remove("clear-input--touched");
         if (this.hasClearButtonTarget) this.clearButtonTarget.classList.add("hidden");
     }
 
-    clearButtonTargetConnected() {
+    clearButtonTargetConnected(button) {
+        rememberSnapshotState(button, { classes: ["hidden"] });
+        this.#snapshotTargets.add(button);
         this.resyncAfterMorph();
     }
 
     clearButtonTargetDisconnected(button) {
+        this.#snapshotTargets.delete(button);
         button.classList.add("hidden");
         if (this.hasInputTarget) this.inputTarget.classList.remove("clear-input--touched");
     }

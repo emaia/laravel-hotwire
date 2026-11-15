@@ -211,12 +211,16 @@ for (const preset of ["nova", "bloom"]) {
         await expect(page.locator("#modal-search")).toBeHidden();
 
         await page.getByRole("button", { name: "Search menu" }).click();
-        await page.locator("#dropdown-search").focus();
+        const search = page.locator("#dropdown-search");
+        await expect(search).toBeVisible();
+        await expect(search.locator("xpath=ancestor-or-self::*[@inert]")).toHaveCount(0);
+        await search.focus();
+        await expect(search).toBeFocused();
         await page.keyboard.press("Escape");
-        await expect(page.locator("#dropdown-search")).toHaveValue("");
-        await expect(page.locator("#dropdown-search")).toBeVisible();
+        await expect(search).toHaveValue("");
+        await expect(search).toBeVisible();
         await page.keyboard.press("Escape");
-        await expect(page.locator("#dropdown-search")).toBeHidden();
+        await expect(search).toBeHidden();
     });
 
     test(`${preset}: disabled, readonly and disabled fieldsets cannot expose or activate clearing`, async ({
@@ -323,7 +327,10 @@ for (const preset of ["nova", "bloom"]) {
 
 async function clearWithin(page, id) {
     const input = page.locator(`#${id}`);
+    await expect(input).toBeVisible();
+    await expect(input.locator("xpath=ancestor-or-self::*[@inert]")).toHaveCount(0);
     await input.focus();
+    await expect(input).toBeFocused();
     await page.keyboard.press("Tab");
     const clear = page.locator(`[data-slot="input-wrapper"]:has(> #${id}) > button`);
     await expect(clear).toBeFocused();
@@ -382,7 +389,12 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
     await expect(root).toHaveAttribute("data-clear-input-connected", "");
     await clearWithin(page, "frame-search");
     expect(await page.evaluate(() => window.clearEvents)).toBe(1);
-    await page.locator("#frame-search").evaluate((input) => input.replaceWith(input.cloneNode(true)));
+    await page.locator("#frame-search").evaluate((input) => {
+        const replacement = input.cloneNode(true);
+        replacement.removeAttribute("data-hotwire-snapshot");
+        input.replaceWith(replacement);
+    });
+    await expect(page.locator("#frame-search")).toHaveAttribute("data-hotwire-snapshot");
     await page.locator("#frame-search").fill("Pine");
     await clearWithin(page, "frame-search");
     expect(await page.evaluate(() => window.clearEvents)).toBe(2);

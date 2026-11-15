@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, spyOn, test } from "bun:test";
 
 import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
 import ClearInputController from "../../resources/js/controllers/clear_input_controller.js";
@@ -9,6 +9,61 @@ let mounted;
 afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
+});
+
+test.serial("does not rewrite snapshot metadata while handling keyboard input and focus", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input type="search" data-clear-input-target="input" value="Trees" />
+            <button data-clear-input-target="clearButton" class="hidden"></button>
+        </span>
+    `);
+    const input = document.querySelector("input");
+    const button = document.querySelector("button");
+    const inputWrites = spyOn(input, "setAttribute");
+    const buttonWrites = spyOn(button, "setAttribute");
+    try {
+        input.focus();
+        for (let index = 0; index < 5; index++) {
+            input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+            input.value = `Trees ${index}`;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        window.dispatchEvent(new Event("pageshow"));
+        document.dispatchEvent(new Event("turbo:render"));
+
+        expect(inputWrites.mock.calls.filter(([name]) => name === "data-hotwire-snapshot")).toHaveLength(0);
+        expect(buttonWrites.mock.calls.filter(([name]) => name === "data-hotwire-snapshot")).toHaveLength(0);
+        expect(input.classList.contains("clear-input--touched")).toBe(true);
+        expect(button.classList.contains("hidden")).toBe(false);
+    } finally {
+        inputWrites.mockRestore();
+        buttonWrites.mockRestore();
+    }
+});
+
+test.serial("records both target baselines before synchronizing a search focused before lazy connection", async () => {
+    class FocusedSearch extends ClearInputController {
+        initialize() {
+            super.initialize();
+            this.inputTarget.focus();
+        }
+    }
+    mounted = await mountController(
+        "clear-input",
+        FocusedSearch,
+        `
+        <span data-controller="clear-input">
+            <input type="search" data-clear-input-target="input" value="Trees" />
+            <button data-clear-input-target="clearButton" class="hidden"></button>
+        </span>
+    `,
+    );
+    expect(document.querySelector("button").classList.contains("hidden")).toBe(false);
+    const copy = mounted.root.cloneNode(true);
+    normalizeSnapshot(copy);
+    expect(copy.querySelector("button").classList.contains("hidden")).toBe(true);
+    expect(copy.querySelector("input").classList.contains("clear-input--touched")).toBe(false);
 });
 
 test.serial(

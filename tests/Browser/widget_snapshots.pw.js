@@ -319,8 +319,8 @@ async function start(page, { output = "html", upstream = false, inside = false, 
             </section>`;
         return route.fulfill({ contentType: "text/html", body: `<!doctype html><html><head>
             <meta name="turbo-prefetch" content="false"><title>Snapshots</title>
-             <style>${readFileSync("node_modules/leaflet/dist/leaflet.css", "utf8")}</style>
-             ${search ? `<style>${searchCss}</style>` : ""}
+            <style>${readFileSync("node_modules/leaflet/dist/leaflet.css", "utf8")}</style>
+            ${search ? `<style>${searchCss}</style>` : ""}
             </head><body class="app-lock" style="color:red">
             ${inside ? "" : editor}
             <div id="map" data-controller="custom-map" style="width:300px;height:200px"><span id="app-map-content">Application content</span></div>
@@ -351,16 +351,16 @@ async function start(page, { output = "html", upstream = false, inside = false, 
                     <div data-modal-target="dialog"><turbo-frame id="dialogs" data-modal-target="dynamicContent"></turbo-frame></div>
                 </div>
             </div>
-             <div id="upload" data-controller="file-upload" data-file-upload-url-value="/upload" data-file-upload-hidden-name-value="files[]" data-file-upload-multiple-value="true">
+            <div id="upload" data-controller="file-upload" data-file-upload-url-value="/upload" data-file-upload-hidden-name-value="files[]" data-file-upload-multiple-value="true">
                 <input type="file" data-file-upload-target="input" data-action="change->file-upload#select">
                 <input type="hidden" data-hw-upload data-file-upload-id="1" name="files[]" value="existing-token">
                 <div data-file-upload-target="list"><div data-file-upload-attachment data-file-upload-id="1" data-state="done"><span data-file-upload-name>Existing</span></div></div>
                 <template data-file-upload-target="template"><div data-file-upload-attachment data-state="idle"><span data-file-upload-name></span><span data-file-upload-description></span></div></template>
-             </div>
-             ${search ? `<span id="search" data-slot="input-wrapper" data-clearable="true" data-controller="clear-input" class="app-search">
-                 <input id="search-input" type="search" data-slot="input" data-clear-input-target="input" class="app-input" value="Server query">
-                 <button id="search-clear" type="button" data-slot="clear-input-button" data-clear-input-target="clearButton" class="hidden app-clear">Clear</button>
-             </span>` : ""}
+            </div>
+            ${search ? `<span id="search" data-slot="input-wrapper" data-clearable="true" data-controller="clear-input" class="app-search">
+                <input id="search-input" type="search" data-slot="input" data-clear-input-target="input" class="app-input" value="Server query">
+                <button id="search-clear" type="button" data-slot="clear-input-button" data-clear-input-target="clearButton" class="hidden app-clear">Clear</button>
+            </span>` : ""}
             <turbo-frame id="results"><a id="next" href="/two" ${action ? `data-turbo-action="${action}"` : ""}>Next</a><span>${route.request().url().endsWith("/two") ? "Two" : "One"}</span>${inside ? editor : ""}</turbo-frame>
             </body></html>` });
     });
