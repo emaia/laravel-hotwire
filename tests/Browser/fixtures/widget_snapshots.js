@@ -9,6 +9,7 @@ import Chart from "../../../resources/js/controllers/chart_controller.js";
 import Carousel from "../../../resources/js/controllers/carousel_controller.js";
 import MorphGuard from "../../../resources/js/controllers/turbo/morph_guard_controller.js";
 import FileUpload from "../../../resources/js/controllers/file_upload_controller.js";
+import ClearInput from "../../../resources/js/controllers/clear_input_controller.js";
 
 installSnapshotNormalization(document);
 window.normalizeSnapshot = normalizeSnapshot;
@@ -25,4 +26,6 @@ window.widgets.register("chart", Chart);
 window.widgets.register("carousel", Carousel);
 window.widgets.register("turbo--morph-guard", MorphGuard);
 window.widgets.register("file-upload", FileUpload);
+window.registerSearch = () => window.widgets.register("clear-input", ClearInput);
+window.registerSearch();
 window.widget = (id, identifier) => window.widgets.getControllerForElementAndIdentifier(document.getElementById(id), identifier);

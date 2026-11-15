@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 
 import { mountController, wait } from "../../resources/js/helpers/test_stimulus.js";
 import ClearInputController from "../../resources/js/controllers/clear_input_controller.js";
+import { normalizeSnapshot } from "../../resources/js/controllers/_snapshot.js";
 
 let mounted;
 
@@ -9,6 +10,31 @@ afterEach(async () => {
     await mounted?.cleanup();
     mounted = null;
 });
+
+test.serial(
+    "normalizes detached search snapshots without changing the live control or application classes",
+    async () => {
+        await mount(`
+        <span data-controller="clear-input" class="app-root">
+            <input type="search" data-clear-input-target="input" class="app-input" value="Trees" />
+            <button data-clear-input-target="clearButton" class="hidden app-button"></button>
+        </span>
+    `);
+        const input = document.querySelector("input");
+        input.focus();
+        const copy = mounted.root.cloneNode(true);
+        normalizeSnapshot(copy);
+
+        expect(copy.hasAttribute("data-clear-input-connected")).toBe(false);
+        expect(copy.className).toBe("app-root");
+        expect(copy.querySelector("input").className).toBe("app-input");
+        expect(copy.querySelector("input").value).toBe("Trees");
+        expect([...copy.querySelector("button").classList].sort()).toEqual(["app-button", "hidden"]);
+        expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(true);
+        expect(input.classList.contains("clear-input--touched")).toBe(true);
+        expect(document.querySelector("button").classList.contains("hidden")).toBe(false);
+    },
+);
 
 test.serial("tracks connection independently of the input's visual touched state", async () => {
     await mount(`

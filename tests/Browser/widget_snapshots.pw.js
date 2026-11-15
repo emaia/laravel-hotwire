@@ -1,11 +1,65 @@
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { compileCssFixture, packageSourceEntrypoint } from "../../scripts/css_build_contract.js";
 
 let bundle;
 test.beforeAll(() => {
     bundle = execFileSync("bun", ["tests/Browser/fixtures/build_widget_snapshots.js"], { maxBuffer: 15 * 1024 * 1024 }).toString();
 });
+
+for (const upstream of [false, true]) {
+    test(`normalizes cached search state before lazy reconnection (${upstream ? "1555" : "published"})`, async ({ page }) => {
+        const requests = await start(page, { upstream, search: true });
+        const root = page.locator("#search");
+        const input = page.locator("#search-input");
+        const clear = page.locator("#search-clear");
+        await input.fill("Local search");
+        await expect(root).toHaveAttribute("data-clear-input-connected", "");
+        await expect(clear).toBeVisible();
+        // Keep focus inside the search so the cached copy also contains the visible custom button.
+        await page.evaluate(() => document.querySelector("#next").click());
+        await expect(page).toHaveURL(/\/two$/);
+        await expect.poll(() => page.evaluate(() => window.loadedPaths.at(-1))).toBe("/two");
+        await cached(page);
+        expect(await page.evaluate(() => {
+            const copy = window.Turbo.session.view.getCachedSnapshotForLocation(new URL("/one", location.href)).element;
+            return {
+                connected: copy.querySelector("#search").hasAttribute("data-clear-input-connected"),
+                touched: copy.querySelector("#search-input").classList.contains("clear-input--touched"),
+                buttonHidden: copy.querySelector("#search-clear").classList.contains("hidden"),
+            };
+        })).toEqual({ connected: true, touched: true, buttonHidden: false });
+
+        await page.evaluate(() => window.widgets.unload("clear-input"));
+        await page.goBack();
+        await restored(page);
+        await expect(page.locator("#client-marker")).toHaveCount(1);
+        await expect(root).not.toHaveAttribute("data-clear-input-connected");
+        await expect(input).toHaveClass("app-input");
+        await expect(input).toHaveValue("Local search");
+        await expect(clear).toBeHidden();
+        await input.scrollIntoViewIfNeeded();
+        await input.focus();
+        const box = await input.boundingBox();
+        const padding = await input.evaluate(node => parseFloat(getComputedStyle(node).paddingRight));
+        await page.mouse.click(box.x + box.width - padding - 8, box.y + box.height / 2);
+        await expect(input).toHaveValue("");
+
+        await input.fill("Search again");
+        await page.evaluate(() => {
+            window.clearEvents = 0;
+            document.addEventListener("inputCleared", () => window.clearEvents++);
+            window.registerSearch();
+        });
+        await expect(root).toHaveAttribute("data-clear-input-connected", "");
+        await expect(clear).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(input).toHaveValue("");
+        expect(await page.evaluate(() => window.clearEvents)).toBe(1);
+        expect(requests()).toBe(2);
+    });
+}
 
 for (const output of ["html", "json"]) for (const upstream of [false, true]) for (const inside of [false, true]) {
     test(`restores ${output} draft ${inside ? "inside" : "outside"} frame (${upstream ? "1555" : "published"})`, async ({ page }) => {
@@ -253,7 +307,8 @@ test("replace keeps the draft when returning Forward to the replacement entry", 
     await expect(page.locator(".ProseMirror")).toContainText("Replace draft");
 });
 
-async function start(page, { output = "html", upstream = false, inside = false, action = "advance", previous = false } = {}) {
+async function start(page, { output = "html", upstream = false, inside = false, action = "advance", previous = false, search = false } = {}) {
+    const searchCss = search ? await compileCssFixture(packageSourceEntrypoint("../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css")) : "";
     let requests = 0;
     await page.route("http://snapshots.test/**", (route) => {
         requests++;
@@ -264,7 +319,8 @@ async function start(page, { output = "html", upstream = false, inside = false, 
             </section>`;
         return route.fulfill({ contentType: "text/html", body: `<!doctype html><html><head>
             <meta name="turbo-prefetch" content="false"><title>Snapshots</title>
-            <style>${readFileSync("node_modules/leaflet/dist/leaflet.css", "utf8")}</style>
+             <style>${readFileSync("node_modules/leaflet/dist/leaflet.css", "utf8")}</style>
+             ${search ? `<style>${searchCss}</style>` : ""}
             </head><body class="app-lock" style="color:red">
             ${inside ? "" : editor}
             <div id="map" data-controller="custom-map" style="width:300px;height:200px"><span id="app-map-content">Application content</span></div>
@@ -295,12 +351,16 @@ async function start(page, { output = "html", upstream = false, inside = false, 
                     <div data-modal-target="dialog"><turbo-frame id="dialogs" data-modal-target="dynamicContent"></turbo-frame></div>
                 </div>
             </div>
-            <div id="upload" data-controller="file-upload" data-file-upload-url-value="/upload" data-file-upload-hidden-name-value="files[]" data-file-upload-multiple-value="true">
+             <div id="upload" data-controller="file-upload" data-file-upload-url-value="/upload" data-file-upload-hidden-name-value="files[]" data-file-upload-multiple-value="true">
                 <input type="file" data-file-upload-target="input" data-action="change->file-upload#select">
                 <input type="hidden" data-hw-upload data-file-upload-id="1" name="files[]" value="existing-token">
                 <div data-file-upload-target="list"><div data-file-upload-attachment data-file-upload-id="1" data-state="done"><span data-file-upload-name>Existing</span></div></div>
                 <template data-file-upload-target="template"><div data-file-upload-attachment data-state="idle"><span data-file-upload-name></span><span data-file-upload-description></span></div></template>
-            </div>
+             </div>
+             ${search ? `<span id="search" data-slot="input-wrapper" data-clearable="true" data-controller="clear-input" class="app-search">
+                 <input id="search-input" type="search" data-slot="input" data-clear-input-target="input" class="app-input" value="Server query">
+                 <button id="search-clear" type="button" data-slot="clear-input-button" data-clear-input-target="clearButton" class="hidden app-clear">Clear</button>
+             </span>` : ""}
             <turbo-frame id="results"><a id="next" href="/two" ${action ? `data-turbo-action="${action}"` : ""}>Next</a><span>${route.request().url().endsWith("/two") ? "Two" : "One"}</span>${inside ? editor : ""}</turbo-frame>
             </body></html>` });
     });

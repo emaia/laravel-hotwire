@@ -120,6 +120,10 @@ input's current value. Programmatic value changes without an `input` event there
 Keyboard events and `pageshow` resynchronize the visual state, including after browser history restoration; a Turbo morph
 that retains the controller also retains its connection state.
 
+Connection, touched and clear-button visibility state are registered with the package's
+[snapshot normalizer](../turbo-snapshots.md). Restored HTML does not claim an active controller or hide native search
+clearing while waiting for lazy reconnection; the input value and unrelated application classes are preserved.
+
 Missing targets are tolerated during DOM replacement. Disconnecting or removing a target retires its enhancement state;
 the native search cancel button remains available before enhancement or when the custom clear control is absent.
 

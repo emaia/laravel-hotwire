@@ -7,7 +7,9 @@ import MultiSelectController from "../../../resources/js/controllers/multi_selec
 import DrawerController from "../../../resources/js/controllers/drawer_controller.js";
 import AlertDialogController from "../../../resources/js/controllers/alert_dialog_controller.js";
 import SidebarController from "../../../resources/js/controllers/sidebar_controller.js";
+import { installSnapshotNormalization } from "../../../resources/js/controllers/_snapshot.js";
 
+installSnapshotNormalization(document);
 window.app = Application.start();
 for (const [name, controller] of Object.entries({
     "clear-input": ClearInputController,

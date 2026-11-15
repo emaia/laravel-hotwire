@@ -356,6 +356,8 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
     await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
     await page.locator("#search-frame").evaluate((frame) => {
         const next = frame.cloneNode(true);
+        for (const node of next.querySelectorAll("[data-hotwire-snapshot]"))
+            node.removeAttribute("data-hotwire-snapshot");
         next.querySelector('[data-controller="clear-input"]').removeAttribute("data-clear-input-connected");
         next.querySelector("input").className = "";
         next.querySelector("input").setAttribute("value", "Oak");

@@ -1,6 +1,7 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
 import { isComposing } from "./_composition.js";
+import { rememberSnapshotState } from "./_snapshot.js";
 
 const CONNECTION_ATTRIBUTE = "data-clear-input-connected";
 
@@ -18,6 +19,7 @@ export default class extends Controller {
     }
 
     connect() {
+        rememberSnapshotState(this.element, { attributes: [CONNECTION_ATTRIBUTE] });
         this.resyncAfterMorph();
 
         this.element.addEventListener("click", this.handleButtonClick);
@@ -32,6 +34,8 @@ export default class extends Controller {
     }
 
     resyncAfterMorph() {
+        if (this.hasInputTarget) rememberSnapshotState(this.inputTarget, { classes: ["clear-input--touched"] });
+        if (this.hasClearButtonTarget) rememberSnapshotState(this.clearButtonTarget, { classes: ["hidden"] });
         if (!this.hasInputTarget || !this.hasClearButtonTarget) return;
 
         if (this.inputTarget.value.length > 0) {
