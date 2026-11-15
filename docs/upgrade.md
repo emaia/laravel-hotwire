@@ -32,7 +32,11 @@ input and `clearable` has no effect. This change does not redesign Textarea, Fil
 `type="search"` now enables the package's keyboard-accessible clear button by default. Keep the native browser UI instead
 with `:clearable="false"`; the text-control root remains stable. `auto-submit` is still opt-in. With auto-submit enabled,
 custom clearing submits immediately and cancels pending typing debounce. The native search cancel button is suppressed
-only when the package supplies custom clearing. The Multi Select popup search uses this same composition.
+only while the nonempty input is enhanced; it remains usable before JavaScript loads and returns after disconnect.
+Escape on an enhanced nonempty search input now emits the same immediate clear event and consumes that keypress;
+Escape on an empty input remains available to its parent. Existing Escape handlers that prevent the default or stop
+propagation, including Multi Select's popup handler, keep their priority. The Multi Select popup search uses the same
+clear-button composition.
 
 Rebuild application CSS after upgrading. `input-wrapper` is now structural: remove preset rules that supplied its
 conditional display/positioning and inherit these mechanics from the current foundation. Keep visual input and clear

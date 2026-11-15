@@ -176,9 +176,10 @@
         display: block;
         position: relative;
         min-inline-size: 0;
+        inline-size: 100%;
     }
 
-    [data-slot="input-wrapper"][data-clearable="true"] > input[type="search"]::-webkit-search-cancel-button {
+    [data-slot="input-wrapper"][data-clearable="true"] > input[type="search"].clear-input--touched::-webkit-search-cancel-button {
         display: none;
     }
 

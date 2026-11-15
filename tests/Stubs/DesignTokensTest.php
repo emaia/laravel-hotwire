@@ -382,11 +382,20 @@ it('keeps preset-independent component mechanics in the structural stylesheet', 
         ->toContain('[data-slot="video-embed"]')
         ->toContain('aspect-ratio: var(--video-embed-aspect-ratio, 16 / 9)')
         ->toContain('[data-slot="video-embed-frame"]')
-        ->toContain('[data-slot="input-wrapper"]')
         ->and($visual)
         ->not->toContain('[data-slot="aspect-ratio"]')
         ->not->toContain('@keyframes hotwire-reveal-')
         ->not->toContain('[data-hotwire-top-layer]');
+});
+
+it('provides the stable input root box independently of search cancel rules', function () {
+    $structural = File::get(__DIR__.'/../../resources/css/structural.css');
+
+    expect(presetDeclaration($structural, '[data-slot="input-wrapper"]'))
+        ->toContain('display: block')
+        ->toContain('position: relative')
+        ->toContain('min-inline-size: 0')
+        ->toContain('inline-size: 100%');
 });
 
 it('renders Turbo Frames as block-level containers from the structural stylesheet', function () {
@@ -589,7 +598,7 @@ it('keeps clear input visibility in the foundation without prescribing its visua
 it('replaces native search clearing only when the custom control is present', function () {
     $structural = File::get(__DIR__.'/../../resources/css/structural.css');
 
-    expect(presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"] > input[type="search"]::-webkit-search-cancel-button'))
+    expect(presetDeclaration($structural, '[data-slot="input-wrapper"][data-clearable="true"] > input[type="search"].clear-input--touched::-webkit-search-cancel-button'))
         ->toContain('display: none');
 });
 

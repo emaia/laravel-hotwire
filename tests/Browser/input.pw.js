@@ -17,7 +17,7 @@ test.beforeAll(async () => {
     for (const preset of ["nova", "bloom"]) {
         styles[preset] = await compileCssFixture(
             packageSourceEntrypoint(`../../vendor/emaia/laravel-hotwire/resources/css/presets/${preset}.css`) +
-                '\n@source inline("flex-1 col-span-2");',
+                '\n@source inline("flex-1 col-span-2 w-40");',
         );
     }
 });
@@ -26,6 +26,8 @@ async function mount(page, preset, enhance = true) {
     await page.setContent(`<style>${styles[preset]}</style>
         <style>
             .fixture-flex { display: flex; width: 140px; }
+            .fixture-wide-flex { display: flex; width: 500px; }
+            .fixture-horizontal { width: 500px; }
             .fixture-sibling { flex: 0 0 100px; }
             .fixture-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 300px; }
         </style>${html}`);
@@ -46,6 +48,31 @@ async function mount(page, preset, enhance = true) {
 }
 
 for (const preset of ["nova", "bloom"]) {
+    test(`${preset}: default inputs fill flex rows and horizontal Fields without layout classes`, async ({ page }) => {
+        await mount(page, preset, false);
+        expect((await page.locator("#default-flex-input").boundingBox()).width).toBeCloseTo(400, 0);
+        expect((await page.locator("#horizontal-input").boundingBox()).width).toBeGreaterThan(300);
+        expect((await page.locator("#fixed-width-input").boundingBox()).width).toBeCloseTo(160, 0);
+    });
+
+    test(`${preset}: native clearing remains available before enhancement and after disconnect`, async ({ page }) => {
+        await mount(page, preset, false);
+        const input = page.locator("#query");
+        const clear = page.locator('#filters [data-slot="clear-input-button"]');
+        await input.focus();
+        await expect(clear).toBeHidden();
+        await clickNativeCancel(page, input);
+        await expect(input).toHaveValue("");
+        await input.fill("Trees");
+        await page.addScriptTag({ content: bundle });
+        await expect(clear).toBeVisible();
+        await input.locator("..").evaluate((node) => node.removeAttribute("data-controller"));
+        await expect(input).not.toHaveClass(/clear-input--touched/);
+        await expect(clear).toBeHidden();
+        await clickNativeCancel(page, input);
+        await expect(input).toHaveValue("");
+    });
+
     test(`${preset}: stable roots participate in flex and grid on first paint`, async ({ page }) => {
         await mount(page, preset, false);
         const metrics = await page.evaluate(() => {
@@ -53,7 +80,7 @@ for (const preset of ["nova", "bloom"]) {
             return {
                 flex: rect("#flex-layout"),
                 input: rect("#flex-input"),
-                sibling: rect(".fixture-sibling"),
+                sibling: rect("#flex-layout .fixture-sibling"),
                 grid: rect("#grid-input"),
                 root: rect('#grid-layout > [data-slot="input-wrapper"]'),
             };
@@ -63,12 +90,10 @@ for (const preset of ["nova", "bloom"]) {
         expect(metrics.sibling.right).toBeLessThanOrEqual(metrics.flex.right);
         expect(metrics.grid.width).toBeCloseTo(200, 0);
         expect(metrics.grid.width).toBe(metrics.root.width);
-        const plain = await page
-            .locator("#plain-input")
-            .evaluate((input) => ({
-                input: input.getBoundingClientRect().height,
-                root: input.parentElement.getBoundingClientRect().height,
-            }));
+        const plain = await page.locator("#plain-input").evaluate((input) => ({
+            input: input.getBoundingClientRect().height,
+            root: input.parentElement.getBoundingClientRect().height,
+        }));
         expect(plain.root).toBe(plain.input);
         await expect(page.locator('[data-slot="input-wrapper"]:has(> #plain-input)')).toHaveCSS("display", "block");
         await expect(page.locator("#query")).toBeVisible();
@@ -97,6 +122,35 @@ for (const preset of ["nova", "bloom"]) {
         // A second submission would be the stale typing debounce firing after the clear.
         await page.waitForTimeout(220);
         expect(await page.evaluate(() => window.submissions)).toEqual([""]);
+    });
+
+    test(`${preset}: Escape clears immediately before an enclosing overlay can close`, async ({ page }) => {
+        await mount(page, preset);
+        const input = page.locator("#query");
+        await input.fill("Oak");
+        await page.keyboard.press("Escape");
+        await expect(input).toHaveValue("");
+        expect(await page.evaluate(() => window.submissions)).toEqual([""]);
+        await page.waitForTimeout(220);
+        expect(await page.evaluate(() => window.submissions)).toEqual([""]);
+
+        await page.evaluate(() =>
+            window.app.getControllerForElementAndIdentifier(document.querySelector("#search-modal"), "modal").open(),
+        );
+        await page.locator("#modal-search").focus();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#modal-search")).toHaveValue("");
+        await expect(page.locator("#modal-search")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#modal-search")).toBeHidden();
+
+        await page.getByRole("button", { name: "Search menu" }).click();
+        await page.locator("#dropdown-search").focus();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#dropdown-search")).toHaveValue("");
+        await expect(page.locator("#dropdown-search")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#dropdown-search")).toBeHidden();
     });
 
     test(`${preset}: disabled, readonly and disabled fieldsets cannot expose or activate clearing`, async ({
@@ -189,6 +243,15 @@ for (const preset of ["nova", "bloom"]) {
         await expect(search).toBeFocused();
         await expect(search).toHaveValue("");
         await expect(page.getByRole("option", { name: "Pine", exact: true })).toBeVisible();
+        await search.fill("Pine");
+        await search.evaluate((node) => {
+            window.searchClearEvents = 0;
+            node.addEventListener("inputCleared", () => window.searchClearEvents++);
+        });
+        await page.keyboard.press("Escape");
+        await expect(page.locator('[data-slot="multi-select-content"]')).toBeHidden();
+        await expect(page.locator("#species")).toBeFocused();
+        expect(await page.evaluate(() => window.searchClearEvents)).toBe(0);
     });
 }
 
@@ -202,6 +265,25 @@ async function clearWithin(page, id) {
     await expect(input).toHaveValue("");
     await expect(input).toBeFocused();
 }
+
+async function clickNativeCancel(page, input) {
+    const box = await input.boundingBox();
+    const padding = await input.evaluate((node) => parseFloat(getComputedStyle(node).paddingRight));
+    await page.mouse.click(box.x + box.width - padding - 8, box.y + box.height / 2);
+}
+
+test("partial clear-input markup tolerates missing targets without errors", async ({ page }) => {
+    await mount(page, "nova");
+    await page.evaluate(() => {
+        window.controllerErrors = [];
+        window.addEventListener("error", (event) => window.controllerErrors.push(event.message));
+        const input = document.querySelector("#missing-button input");
+        input.focus();
+        input.blur();
+        document.querySelector("#missing-input button").click();
+    });
+    expect(await page.evaluate(() => window.controllerErrors)).toEqual([]);
+});
 
 test("Turbo morph and controller reconnect retain clearing without duplicate events", async ({ page }) => {
     await mount(page, "nova");

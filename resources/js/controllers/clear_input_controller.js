@@ -1,5 +1,6 @@
 // @hotwire-package
 import { Controller } from "@hotwired/stimulus";
+import { isComposing } from "./_composition.js";
 
 export default class extends Controller {
     static targets = ["clearButton", "input"];
@@ -10,6 +11,7 @@ export default class extends Controller {
         this.resyncAfterMorph = this.resyncAfterMorph.bind(this);
         this.handleFocusIn = this.handleFocusIn.bind(this);
         this.handleFocusOut = this.handleFocusOut.bind(this);
+        this.handleKeydown = this.handleKeydown.bind(this);
     }
 
     connect() {
@@ -19,11 +21,12 @@ export default class extends Controller {
         this.element.addEventListener("input", this.handleInputChange);
         this.element.addEventListener("focusin", this.handleFocusIn);
         this.element.addEventListener("focusout", this.handleFocusOut);
+        this.element.addEventListener("keydown", this.handleKeydown);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
     }
 
     resyncAfterMorph() {
-        if (!this.hasInputTarget) return;
+        if (!this.hasInputTarget || !this.hasClearButtonTarget) return;
 
         if (this.inputTarget.value.length > 0) {
             this.inputTarget.classList.add("clear-input--touched");
@@ -35,20 +38,31 @@ export default class extends Controller {
     }
 
     handleInputChange(event) {
-        if (!this.hasInputTarget || event.target !== this.inputTarget) return;
-
-        if (event.target.value && !this.inputTarget.classList.contains("clear-input--touched")) {
-            this.inputTarget.classList.add("clear-input--touched");
-        } else if (!event.target.value && this.inputTarget.classList.contains("clear-input--touched")) {
-            this.inputTarget.classList.remove("clear-input--touched");
+        if (this.hasInputTarget && event.target === this.inputTarget) {
+            this.resyncAfterMorph();
         }
-
-        this.#syncButtonVisibility();
     }
 
     handleButtonClick(event) {
         if (!this.hasClearButtonTarget || !this.clearButtonTarget.contains(event.target)) return;
-        if (this.inputTarget.matches(":disabled") || this.inputTarget.readOnly) return;
+
+        this.#clear(event);
+    }
+
+    handleKeydown(event) {
+        if (event.key !== "Escape" || event.defaultPrevented || isComposing(event)) return;
+        if (!this.hasInputTarget || event.target !== this.inputTarget) return;
+        if (this.inputTarget.type !== "search" || this.inputTarget.value === "") return;
+
+        if (this.#clear(event)) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }
+
+    #clear(event) {
+        if (!this.hasInputTarget || !this.hasClearButtonTarget) return false;
+        if (this.inputTarget.matches(":disabled") || this.inputTarget.readOnly) return false;
 
         this.inputTarget.value = "";
         this.inputTarget.focus();
@@ -57,6 +71,7 @@ export default class extends Controller {
 
         this.inputTarget.dispatchEvent(new Event("input", { bubbles: true }));
         this.inputTarget.dispatchEvent(new CustomEvent("inputCleared", { detail: event.detail, bubbles: true }));
+        return true;
     }
 
     handleFocusIn() {
@@ -64,9 +79,27 @@ export default class extends Controller {
     }
 
     handleFocusOut(event) {
-        if (!this.element.contains(event.relatedTarget)) {
+        if (this.hasClearButtonTarget && !this.element.contains(event.relatedTarget)) {
             this.clearButtonTarget.classList.add("hidden");
         }
+    }
+
+    inputTargetConnected() {
+        this.resyncAfterMorph();
+    }
+
+    inputTargetDisconnected(input) {
+        input.classList.remove("clear-input--touched");
+        if (this.hasClearButtonTarget) this.clearButtonTarget.classList.add("hidden");
+    }
+
+    clearButtonTargetConnected() {
+        this.resyncAfterMorph();
+    }
+
+    clearButtonTargetDisconnected(button) {
+        button.classList.add("hidden");
+        if (this.hasInputTarget) this.inputTarget.classList.remove("clear-input--touched");
     }
 
     #syncButtonVisibility() {
@@ -84,6 +117,7 @@ export default class extends Controller {
         this.element.removeEventListener("input", this.handleInputChange);
         this.element.removeEventListener("focusin", this.handleFocusIn);
         this.element.removeEventListener("focusout", this.handleFocusOut);
+        this.element.removeEventListener("keydown", this.handleKeydown);
 
         document.removeEventListener("turbo:render", this.resyncAfterMorph);
     }

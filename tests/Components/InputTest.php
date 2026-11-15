@@ -50,6 +50,23 @@ it('passes through type prop', function () {
     $view->assertSee('type="email"', false);
 });
 
+it('normalizes native input types before resolving checkable behavior', function (string $type) {
+    session()->put('_old_input', ['plan' => 'pro']);
+    $html = (string) $this->blade('<x-hw::input name="plan" :type="$type" value="pro" mask="cpf" auto-select clearable auto-submit />', compact('type'));
+    $xpath = new DOMXPath(dom($html));
+    $input = $xpath->query('//input')->item(0);
+
+    expect($input->getAttribute('type'))->toBe(strtolower($type))
+        ->and($input->getAttribute('data-checkable'))->toBe('true')
+        ->and($input->getAttribute('data-action'))->toBe('change->auto-submit#submit')
+        ->and($input->hasAttribute('checked'))->toBeTrue()
+        ->and($html)->not->toContain('input-wrapper', 'input-mask', 'auto-select', 'clear-input');
+
+    if (strtolower($type) === 'radio') {
+        expect($input->getAttribute('id'))->toBe('plan-pro');
+    }
+})->with(['Checkbox', 'RADIO']);
+
 // --- Id derivation ---
 
 it('derives id from name', function () {
@@ -242,7 +259,7 @@ it('enhances native search inputs with clearing without opting into submission',
     $html = (string) $this->blade('<x-hw::input name="q" :type="$type" />', compact('type'));
     $xpath = new DOMXPath(dom($html));
 
-    expect($xpath->query('//input')->item(0)->getAttribute('type'))->toBe($type)
+    expect($xpath->query('//input')->item(0)->getAttribute('type'))->toBe(strtolower($type))
         ->and($xpath->query('//*[@data-slot="input-wrapper"]')->item(0)->getAttribute('data-clearable'))->toBe('true')
         ->and($xpath->query('//button[@type="button"]'))->toHaveCount(1)
         ->and($html)->toContain('data-controller="clear-input"')

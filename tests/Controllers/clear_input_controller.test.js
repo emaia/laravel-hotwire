@@ -215,6 +215,53 @@ for (const attribute of ["disabled", "readonly"]) {
     });
 }
 
+test.serial("Escape emits the clear contract for search inputs and consumes only that key", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input type="search" data-clear-input-target="input" value="hello" />
+            <button data-clear-input-target="clearButton"></button>
+        </span>
+    `);
+    const input = document.querySelector("input");
+    const events = [];
+    input.addEventListener("input", () => events.push("input"));
+    input.addEventListener("inputCleared", () => events.push("inputCleared"));
+    const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    input.dispatchEvent(escape);
+
+    expect(input.value).toBe("");
+    expect(events).toEqual(["input", "inputCleared"]);
+    expect(escape.defaultPrevented).toBe(true);
+    const emptyEscape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    input.dispatchEvent(emptyEscape);
+    expect(emptyEscape.defaultPrevented).toBe(false);
+    expect(events).toHaveLength(2);
+});
+
+for (const scenario of ["text", "readonly", "disabled", "composing", "legacy-composing", "prevented"]) {
+    test.serial(`does not consume Escape when ${scenario}`, async () => {
+        await mount(`
+            <span data-controller="clear-input">
+                <input type="${scenario === "text" ? "text" : "search"}" data-clear-input-target="input" value="hello" />
+                <button data-clear-input-target="clearButton"></button>
+            </span>
+        `);
+        const input = document.querySelector("input");
+        if (["disabled", "readonly"].includes(scenario)) input.setAttribute(scenario, "");
+        const event = new KeyboardEvent("keydown", {
+            key: "Escape",
+            bubbles: true,
+            cancelable: true,
+            isComposing: scenario === "composing",
+            keyCode: scenario === "legacy-composing" ? 229 : 0,
+        });
+        if (scenario === "prevented") event.preventDefault();
+        input.dispatchEvent(event);
+        expect(input.value).toBe("hello");
+        expect(event.defaultPrevented).toBe(scenario === "prevented");
+    });
+}
+
 async function mount(html) {
     mounted = await mountController("clear-input", ClearInputController, html);
 }

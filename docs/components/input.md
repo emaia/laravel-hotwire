@@ -22,7 +22,7 @@ Renders an `<input>` with:
 |---------------------|---------------------|---------------------|--------------------------------------------------------------|
 | `name`              | `string\|null`      | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
 | `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                 |
-| `type`              | `string`            | `"text"`            | Pass-through                                                 |
+| `type`              | `string`            | `"text"`            | Native input type, normalized to lowercase                   |
 | `value`             | `mixed`             | `null`              | Merged with `old($errorKey, $value)` unless `:old="false"`   |
 | `checked`           | `bool`              | `false`             | Initial checked state for `type="checkbox"` / `type="radio"` |
 | `errorKey`          | `string\|null`      | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
@@ -39,8 +39,9 @@ Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-
 
 ## Layout and native control
 
-Text-like inputs always render a `data-slot="input-wrapper"` root, whether or not clearing is enabled. Use `class` for
-outer layout and `input-class` for control appearance, height and native states:
+Text-like inputs always render a full-width `data-slot="input-wrapper"` root, whether or not clearing is enabled. It
+fills flex rows and horizontal Fields without an extra layout class; explicit width utilities on `class` still win.
+Use `class` for outer layout and `input-class` for control appearance, height and native states:
 
 ```blade
 <div class="flex gap-2">
@@ -65,8 +66,14 @@ and `clearable` is ignored. Prefer the dedicated components where available.
 ```
 
 `type="search"` keeps the native search semantics and adds the package's tabbable clear button. The foundation suppresses
-the browser's search cancel button only for this custom-clear composition, avoiding duplicate controls. Disabled and
+the browser's search cancel button only once the controller has enhanced the nonempty control, avoiding duplicate
+controls without removing native clearing before JavaScript loads. Disconnecting restores the native UI. Disabled and
 readonly inputs do not expose or perform custom clearing, including controls inside a disabled fieldset.
+
+With the controller active, Escape on a nonempty search input uses the same clear event as the button. It consumes that
+keypress so an enclosing Modal or Dropdown does not close as well; Escape on an empty input is left to the parent.
+IME composition and keys already handled by another control are left alone. Multi Select retains its own Escape-to-close
+behavior rather than adopting Escape-to-clear inside its popup.
 
 Use `:clearable="false"` to keep only the browser's native search UI. The component root stays unchanged:
 
@@ -139,7 +146,7 @@ Use `auto-submit="immediate"` to submit a text input without debounce. Checkable
 default.
 
 When `clearable` and `auto-submit` are both enabled, clearing the field submits immediately so pending debounced typing is
-cancelled and the empty result set is shown right away.
+cancelled and the empty result set is shown right away. This includes Escape clearing on enhanced search inputs.
 
 ## Checkbox and radio
 

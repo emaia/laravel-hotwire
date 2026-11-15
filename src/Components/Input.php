@@ -39,7 +39,9 @@ class Input extends Component
         public string $class = '',
         public string $inputClass = '',
         public ?Htmlable $stimulus = null,
-    ) {}
+    ) {
+        $this->type = strtolower($type);
+    }
 
     /** Render the native control and its stable text-input root. */
     public function render()
@@ -62,7 +64,7 @@ class Input extends Component
             $this->mask = null;
         }
 
-        $this->clearable = $hasWrapper && ($this->clearable ?? strtolower($this->type) === 'search');
+        $this->clearable = $hasWrapper && ($this->clearable ?? $this->type === 'search');
 
         $data = parent::data();
         $data['isCheckable'] = $isCheckable;
@@ -175,7 +177,7 @@ class Input extends Component
 
     private function isTextLike(): bool
     {
-        return ! in_array(strtolower($this->type), [
+        return ! in_array($this->type, [
             'hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image',
         ], true);
     }

@@ -1,4 +1,14 @@
 <hw:input id="plain-input" aria-label="Plain text" />
+<div id="default-flex-layout" class="fixture-wide-flex">
+    <hw:input id="default-flex-input" aria-label="Default flexible" />
+    <button class="fixture-sibling">Next</button>
+</div>
+<hw:field name="horizontal" label="Name" orientation="horizontal" class="fixture-horizontal">
+    <hw:input id="horizontal-input" />
+</hw:field>
+<div class="fixture-wide-flex">
+    <hw:input id="fixed-width-input" aria-label="Fixed width" class="w-40" />
+</div>
 <div id="flex-layout" class="fixture-flex">
     <hw:input id="flex-input" aria-label="Flexible" class="flex-1" />
     <button class="fixture-sibling">Next</button>
@@ -38,3 +48,9 @@
 <turbo-frame id="search-frame">
     <hw:input id="frame-search" type="search" aria-label="Frame search" value="Trees" />
 </turbo-frame>
+<span id="missing-button" data-controller="clear-input">
+    <input data-clear-input-target="input" value="Trees" />
+</span>
+<span id="missing-input" data-controller="clear-input">
+    <button type="button" data-clear-input-target="clearButton">Clear missing input</button>
+</span>

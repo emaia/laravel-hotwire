@@ -107,6 +107,14 @@ listeners on old targets or duplicate clear events. Disabled and readonly inputs
 state inherited from a fieldset. The foundation hides their clear button without duplicating immutable state onto it,
 so clearing becomes available again when the native control becomes editable.
 
+Escape clears a nonempty `type="search"` input through the same `input` / `inputCleared` event sequence as clicking the
+button and stops that keypress from also closing an enclosing overlay. Empty inputs, composing input and keys already
+prevented by another controller are left alone. A control such as Multi Select can keep its own Escape handling on the
+search input before the event bubbles to this controller.
+
+Missing targets are tolerated during DOM replacement. Disconnecting or removing a target retires its enhancement state;
+the native search cancel button remains available before enhancement or when the custom clear control is absent.
+
 ## Targets
 
 | Target        | Description                        |
