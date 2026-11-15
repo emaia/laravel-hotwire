@@ -112,6 +112,9 @@ button and stops that keypress from also closing an enclosing overlay. Empty inp
 prevented by another controller are left alone. A control such as Multi Select can keep its own Escape handling on the
 search input before the event bubbles to this controller.
 
+Drawer, Alert Dialog and the mobile Sidebar also defer their earlier Escape dismissal to an enhanced, nonempty and
+editable search inside their own panel. Empty, readonly, disabled or unenhanced fields retain normal overlay dismissal.
+
 Missing targets are tolerated during DOM replacement. Disconnecting or removing a target retires its enhancement state;
 the native search cancel button remains available before enhancement or when the custom clear control is absent.
 

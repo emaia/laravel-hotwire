@@ -71,7 +71,8 @@ controls without removing native clearing before JavaScript loads. Disconnecting
 readonly inputs do not expose or perform custom clearing, including controls inside a disabled fieldset.
 
 With the controller active, Escape on a nonempty search input uses the same clear event as the button. It consumes that
-keypress so an enclosing Modal or Dropdown does not close as well; Escape on an empty input is left to the parent.
+keypress so an enclosing overlay does not close as well; Escape on an empty input is left to the parent. This also
+applies to Drawer, Alert Dialog and the mobile Sidebar, whose earlier Escape listeners yield to the enhanced search.
 IME composition and keys already handled by another control are left alone. Multi Select retains its own Escape-to-close
 behavior rather than adopting Escape-to-clear inside its popup.
 

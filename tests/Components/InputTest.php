@@ -60,7 +60,10 @@ it('normalizes native input types before resolving checkable behavior', function
         ->and($input->getAttribute('data-checkable'))->toBe('true')
         ->and($input->getAttribute('data-action'))->toBe('change->auto-submit#submit')
         ->and($input->hasAttribute('checked'))->toBeTrue()
-        ->and($html)->not->toContain('input-wrapper', 'input-mask', 'auto-select', 'clear-input');
+        ->and($html)->not->toContain('input-wrapper')
+        ->not->toContain('input-mask')
+        ->not->toContain('auto-select')
+        ->not->toContain('clear-input');
 
     if (strtolower($type) === 'radio') {
         expect($input->getAttribute('id'))->toBe('plan-pro');

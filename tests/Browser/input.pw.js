@@ -17,7 +17,7 @@ test.beforeAll(async () => {
     for (const preset of ["nova", "bloom"]) {
         styles[preset] = await compileCssFixture(
             packageSourceEntrypoint(`../../vendor/emaia/laravel-hotwire/resources/css/presets/${preset}.css`) +
-                '\n@source inline("flex-1 col-span-2 w-40");',
+                '\n@source inline("flex-1 col-span-2 w-40 md:hidden");',
         );
     }
 });
@@ -48,6 +48,58 @@ async function mount(page, preset, enhance = true) {
 }
 
 for (const preset of ["nova", "bloom"]) {
+    test(`${preset}: capture-phase overlays defer Escape only to a live editable search`, async ({ page }) => {
+        await page.setViewportSize({ width: 600, height: 900 });
+        await mount(page, preset);
+        for (const [root, identifier, id] of [
+            ["search-drawer", "drawer", "drawer-search"],
+            ["search-alert", "alert-dialog", "alert-search"],
+            ["search-sidebar", "sidebar", "sidebar-search"],
+        ]) {
+            const open = async () => {
+                if (identifier === "alert-dialog") await page.locator("#search-alert-trigger").click();
+                else
+                    await page.evaluate(
+                        ({ root, identifier }) => {
+                            const controller = window.app.getControllerForElementAndIdentifier(
+                                document.getElementById(root),
+                                identifier,
+                            );
+                            return identifier === "sidebar" ? controller.openMobile() : controller.open();
+                        },
+                        { root, identifier },
+                    );
+            };
+            const input = page.locator(`#${id}`);
+            await open();
+            await input.fill("Trees");
+            await page.keyboard.press("Escape");
+            await expect(input).toHaveValue("");
+            await expect(input).toBeVisible();
+            await page.keyboard.press("Escape");
+            await expect(input).toBeHidden();
+
+            for (const state of ["readonly", "disabled", "unmanaged"]) {
+                await open();
+                await input.fill("Trees");
+                await input.evaluate((input, state) => {
+                    if (state === "unmanaged") input.parentElement.removeAttribute("data-controller");
+                    else input.setAttribute(state, "");
+                }, state);
+                if (state === "unmanaged") await expect(input).not.toHaveClass(/clear-input--touched/);
+                if (state !== "disabled") await input.focus();
+                // Dispatch on disabled controls too: capture handlers must not mistake them for a pending clear.
+                await input.dispatchEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+                await expect(input).toHaveValue("Trees");
+                await expect(input).toBeHidden();
+                await input.evaluate((input, state) => {
+                    input.removeAttribute(state);
+                    if (state === "unmanaged") input.parentElement.setAttribute("data-controller", "clear-input");
+                }, state);
+            }
+        }
+    });
+
     test(`${preset}: default inputs fill flex rows and horizontal Fields without layout classes`, async ({ page }) => {
         await mount(page, preset, false);
         expect((await page.locator("#default-flex-input").boundingBox()).width).toBeCloseTo(400, 0);

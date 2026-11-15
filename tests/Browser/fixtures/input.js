@@ -4,6 +4,9 @@ import AutoSubmitController from "../../../resources/js/controllers/auto_submit_
 import ModalController from "../../../resources/js/controllers/modal_controller.js";
 import DropdownController from "../../../resources/js/controllers/dropdown_controller.js";
 import MultiSelectController from "../../../resources/js/controllers/multi_select_controller.js";
+import DrawerController from "../../../resources/js/controllers/drawer_controller.js";
+import AlertDialogController from "../../../resources/js/controllers/alert_dialog_controller.js";
+import SidebarController from "../../../resources/js/controllers/sidebar_controller.js";
 
 window.app = Application.start();
 for (const [name, controller] of Object.entries({
@@ -12,6 +15,9 @@ for (const [name, controller] of Object.entries({
     modal: ModalController,
     dropdown: DropdownController,
     "multi-select": MultiSelectController,
+    drawer: DrawerController,
+    "alert-dialog": AlertDialogController,
+    sidebar: SidebarController,
 }))
     window.app.register(name, controller);
 

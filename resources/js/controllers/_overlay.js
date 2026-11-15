@@ -89,6 +89,7 @@ export function createOverlay(
         if (handledEscapeEvents.has(event)) return;
         if (!isTop()) return;
         if (isNestedEscapeScopeEvent(event, dialogTarget)) return;
+        if (hasPendingSearchClear(event, dialogTarget)) return;
 
         handledEscapeEvents.add(event);
 
@@ -331,6 +332,20 @@ export function createOverlay(
         restoreAfterReconnect,
         cleanup,
     };
+}
+
+// Capture-phase dismissal must leave an enhanced search's own Escape handler a chance to clear.
+function hasPendingSearchClear(event, dialogTarget) {
+    const input = event.target;
+    if (!input?.matches?.('input[type="search"][data-clear-input-target~="input"].clear-input--touched')) return false;
+    if (!dialogTarget?.contains(input) || input.value === "" || input.matches(":disabled") || input.readOnly) return false;
+
+    const owner = input.closest('[data-controller~="clear-input"]');
+    if (!owner) return false;
+
+    return [...owner.querySelectorAll('[data-clear-input-target~="clearButton"]')].some(
+        (button) => button.closest('[data-controller~="clear-input"]') === owner,
+    );
 }
 
 function isNestedEscapeScopeEvent(event, dialogTarget) {

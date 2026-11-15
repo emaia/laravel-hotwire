@@ -111,6 +111,44 @@ test("composing Escape does not close the overlay", async () => {
     expect(overlay.isOpen).toBe(true);
 });
 
+test("capture-phase Escape yields to an enhanced nonempty search without consuming the key", async () => {
+    const { modal, backdrop, dialog } = elements();
+    dialog.innerHTML = `<span data-controller="clear-input">
+        <input type="search" class="clear-input--touched" data-clear-input-target="input" value="Trees">
+        <button data-clear-input-target="clearButton">Clear</button>
+    </span>`;
+    overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
+    await overlay.open();
+    const input = dialog.querySelector("input");
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+
+    expect(overlay.isOpen).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+});
+
+for (const state of ["empty", "readonly", "disabled", "not-enhanced", "no-button", "no-controller", "outside"]) {
+    test(`capture-phase Escape still closes when the search is ${state}`, async () => {
+        const { modal, backdrop, dialog } = elements();
+        dialog.innerHTML = `<span data-controller="clear-input">
+            <input type="search" class="clear-input--touched" data-clear-input-target="input" value="Trees">
+            <button data-clear-input-target="clearButton">Clear</button>
+        </span>`;
+        const input = dialog.querySelector("input");
+        if (state === "empty") input.value = "";
+        if (["readonly", "disabled"].includes(state)) input.setAttribute(state, "");
+        if (state === "not-enhanced") input.classList.remove("clear-input--touched");
+        if (state === "no-button") dialog.querySelector("button").remove();
+        if (state === "no-controller") input.parentElement.removeAttribute("data-controller");
+        if (state === "outside") document.body.append(input.parentElement);
+        overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
+        await overlay.open();
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+
+        expect(overlay.isOpen).toBe(false);
+    });
+}
+
 test("an overlay that has never opened is not the top overlay", () => {
     const { modal, backdrop, dialog } = elements();
     overlay = createOverlay(null, options({ modal, backdrop, dialog }));

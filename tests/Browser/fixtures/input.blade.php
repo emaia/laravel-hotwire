@@ -41,6 +41,25 @@
         <hw:input id="modal-search" type="search" aria-label="Modal search" value="Trees" />
     </hw:modal.content>
 </hw:modal>
+<hw:drawer id="search-drawer" motion="none">
+    <hw:drawer.content>
+        <hw:drawer.header><hw:drawer.title>Search drawer</hw:drawer.title></hw:drawer.header>
+        <hw:input id="drawer-search" type="search" aria-label="Drawer search" value="Trees" />
+    </hw:drawer.content>
+</hw:drawer>
+<hw:alert-dialog id="search-alert" title="Search confirmation" motion="none">
+    <button type="button" id="search-alert-trigger">Open search confirmation</button>
+    <x-slot:content>
+        <hw:input id="alert-search" type="search" aria-label="Alert search" value="Trees" />
+    </x-slot:content>
+</hw:alert-dialog>
+<hw:sidebar.provider id="search-sidebar" class="md:hidden">
+    <hw:sidebar aria-label="Search navigation" motion="none">
+        <hw:sidebar.content>
+            <hw:input id="sidebar-search" type="search" aria-label="Sidebar search" value="Trees" />
+        </hw:sidebar.content>
+    </hw:sidebar>
+</hw:sidebar.provider>
 <hw:dropdown id="search-dropdown" :close-on-select="false" motion="none">
     <hw:dropdown.trigger>Search menu</hw:dropdown.trigger>
     <hw:dropdown.content><hw:input id="dropdown-search" type="search" aria-label="Dropdown search" value="Trees" /></hw:dropdown.content>
