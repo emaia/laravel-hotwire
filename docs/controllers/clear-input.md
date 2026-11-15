@@ -115,6 +115,11 @@ search input before the event bubbles to this controller.
 Drawer, Alert Dialog and the mobile Sidebar also defer their earlier Escape dismissal to an enhanced, nonempty and
 editable search inside their own panel. Empty, readonly, disabled or unenhanced fields retain normal overlay dismissal.
 
+Overlay coordination tracks the controller's connection separately from the visual touched class and reads the native
+input's current value. Programmatic value changes without an `input` event therefore keep the same Escape behavior.
+Keyboard events and `pageshow` resynchronize the visual state, including after browser history restoration; a Turbo morph
+that retains the controller also retains its connection state.
+
 Missing targets are tolerated during DOM replacement. Disconnecting or removing a target retires its enhancement state;
 the native search cancel button remains available before enhancement or when the custom clear control is absent.
 

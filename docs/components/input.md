@@ -73,6 +73,8 @@ readonly inputs do not expose or perform custom clearing, including controls ins
 With the controller active, Escape on a nonempty search input uses the same clear event as the button. It consumes that
 keypress so an enclosing overlay does not close as well; Escape on an empty input is left to the parent. This also
 applies to Drawer, Alert Dialog and the mobile Sidebar, whose earlier Escape listeners yield to the enhanced search.
+Escape reads the current value even if application code changed it without an `input` event. Visual state is refreshed
+on keyboard interaction and browser `pageshow`, rather than being used to decide whether the controller is connected.
 IME composition and keys already handled by another control are left alone. Multi Select retains its own Escape-to-close
 behavior rather than adopting Escape-to-clear inside its popup.
 

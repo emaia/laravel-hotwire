@@ -2,6 +2,8 @@
 import { Controller } from "@hotwired/stimulus";
 import { isComposing } from "./_composition.js";
 
+const CONNECTION_ATTRIBUTE = "data-clear-input-connected";
+
 export default class extends Controller {
     static targets = ["clearButton", "input"];
 
@@ -12,6 +14,7 @@ export default class extends Controller {
         this.handleFocusIn = this.handleFocusIn.bind(this);
         this.handleFocusOut = this.handleFocusOut.bind(this);
         this.handleKeydown = this.handleKeydown.bind(this);
+        this.preserveConnection = this.preserveConnection.bind(this);
     }
 
     connect() {
@@ -22,7 +25,10 @@ export default class extends Controller {
         this.element.addEventListener("focusin", this.handleFocusIn);
         this.element.addEventListener("focusout", this.handleFocusOut);
         this.element.addEventListener("keydown", this.handleKeydown);
+        this.element.addEventListener("turbo:before-morph-attribute", this.preserveConnection);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
+        window.addEventListener("pageshow", this.resyncAfterMorph);
+        this.element.setAttribute(CONNECTION_ATTRIBUTE, "");
     }
 
     resyncAfterMorph() {
@@ -50,8 +56,9 @@ export default class extends Controller {
     }
 
     handleKeydown(event) {
-        if (event.key !== "Escape" || event.defaultPrevented || isComposing(event)) return;
         if (!this.hasInputTarget || event.target !== this.inputTarget) return;
+        this.resyncAfterMorph();
+        if (event.key !== "Escape" || event.defaultPrevented || isComposing(event)) return;
         if (this.inputTarget.type !== "search" || this.inputTarget.value === "") return;
 
         if (this.#clear(event)) {
@@ -102,6 +109,16 @@ export default class extends Controller {
         if (this.hasInputTarget) this.inputTarget.classList.remove("clear-input--touched");
     }
 
+    preserveConnection(event) {
+        if (
+            event.target === this.element &&
+            event.detail?.attributeName === CONNECTION_ATTRIBUTE &&
+            event.detail.mutationType === "remove"
+        ) {
+            event.preventDefault();
+        }
+    }
+
     #syncButtonVisibility() {
         if (!this.hasInputTarget || !this.hasClearButtonTarget) return;
 
@@ -113,12 +130,15 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.element.removeAttribute(CONNECTION_ATTRIBUTE);
         this.element.removeEventListener("click", this.handleButtonClick);
         this.element.removeEventListener("input", this.handleInputChange);
         this.element.removeEventListener("focusin", this.handleFocusIn);
         this.element.removeEventListener("focusout", this.handleFocusOut);
         this.element.removeEventListener("keydown", this.handleKeydown);
+        this.element.removeEventListener("turbo:before-morph-attribute", this.preserveConnection);
 
         document.removeEventListener("turbo:render", this.resyncAfterMorph);
+        window.removeEventListener("pageshow", this.resyncAfterMorph);
     }
 }

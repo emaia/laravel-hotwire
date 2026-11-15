@@ -113,8 +113,8 @@ test("composing Escape does not close the overlay", async () => {
 
 test("capture-phase Escape yields to an enhanced nonempty search without consuming the key", async () => {
     const { modal, backdrop, dialog } = elements();
-    dialog.innerHTML = `<span data-controller="clear-input">
-        <input type="search" class="clear-input--touched" data-clear-input-target="input" value="Trees">
+    dialog.innerHTML = `<span data-controller="clear-input" data-clear-input-connected>
+        <input type="search" data-clear-input-target="input" value="Trees">
         <button data-clear-input-target="clearButton">Clear</button>
     </span>`;
     overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
@@ -127,17 +127,17 @@ test("capture-phase Escape yields to an enhanced nonempty search without consumi
     expect(event.defaultPrevented).toBe(false);
 });
 
-for (const state of ["empty", "readonly", "disabled", "not-enhanced", "no-button", "no-controller", "outside"]) {
+for (const state of ["empty", "readonly", "disabled", "not-connected", "no-button", "no-controller", "outside"]) {
     test(`capture-phase Escape still closes when the search is ${state}`, async () => {
         const { modal, backdrop, dialog } = elements();
-        dialog.innerHTML = `<span data-controller="clear-input">
+        dialog.innerHTML = `<span data-controller="clear-input" data-clear-input-connected>
             <input type="search" class="clear-input--touched" data-clear-input-target="input" value="Trees">
             <button data-clear-input-target="clearButton">Clear</button>
         </span>`;
         const input = dialog.querySelector("input");
         if (state === "empty") input.value = "";
         if (["readonly", "disabled"].includes(state)) input.setAttribute(state, "");
-        if (state === "not-enhanced") input.classList.remove("clear-input--touched");
+        if (state === "not-connected") input.parentElement.removeAttribute("data-clear-input-connected");
         if (state === "no-button") dialog.querySelector("button").remove();
         if (state === "no-controller") input.parentElement.removeAttribute("data-controller");
         if (state === "outside") document.body.append(input.parentElement);

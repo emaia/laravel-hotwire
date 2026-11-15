@@ -337,11 +337,11 @@ export function createOverlay(
 // Capture-phase dismissal must leave an enhanced search's own Escape handler a chance to clear.
 function hasPendingSearchClear(event, dialogTarget) {
     const input = event.target;
-    if (!input?.matches?.('input[type="search"][data-clear-input-target~="input"].clear-input--touched')) return false;
+    if (!input?.matches?.('input[type="search"][data-clear-input-target~="input"]')) return false;
     if (!dialogTarget?.contains(input) || input.value === "" || input.matches(":disabled") || input.readOnly) return false;
 
     const owner = input.closest('[data-controller~="clear-input"]');
-    if (!owner) return false;
+    if (!owner?.hasAttribute("data-clear-input-connected")) return false;
 
     return [...owner.querySelectorAll('[data-clear-input-target~="clearButton"]')].some(
         (button) => button.closest('[data-controller~="clear-input"]') === owner,

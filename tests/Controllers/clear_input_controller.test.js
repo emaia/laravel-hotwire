@@ -10,6 +10,44 @@ afterEach(async () => {
     mounted = null;
 });
 
+test.serial("tracks connection independently of the input's visual touched state", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input type="search" data-clear-input-target="input" />
+            <button data-clear-input-target="clearButton"></button>
+        </span>
+    `);
+
+    expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(true);
+    expect(document.querySelector("input").classList.contains("clear-input--touched")).toBe(false);
+    mounted.application.unload("clear-input");
+    expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(false);
+    const input = document.querySelector("input");
+    input.value = "Trees";
+    window.dispatchEvent(new Event("pageshow"));
+    expect(input.classList.contains("clear-input--touched")).toBe(false);
+});
+
+test.serial("resynchronizes programmatic values on keydown without consuming normal keys", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input type="search" data-clear-input-target="input" />
+            <button data-clear-input-target="clearButton" class="hidden"></button>
+        </span>
+    `);
+
+    const input = document.querySelector("input");
+    input.focus();
+    input.value = "Trees";
+    const event = new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+
+    expect(input.classList.contains("clear-input--touched")).toBe(true);
+    expect(document.querySelector("button").classList.contains("hidden")).toBe(false);
+    expect(input.value).toBe("Trees");
+    expect(event.defaultPrevented).toBe(false);
+});
+
 test.serial("adds touched class on connect when input has a value", async () => {
     await mount(`
         <span data-controller="clear-input">

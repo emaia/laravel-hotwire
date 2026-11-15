@@ -52,6 +52,7 @@ for (const preset of ["nova", "bloom"]) {
         await page.setViewportSize({ width: 600, height: 900 });
         await mount(page, preset);
         for (const [root, identifier, id] of [
+            ["search-modal", "modal", "modal-search"],
             ["search-drawer", "drawer", "drawer-search"],
             ["search-alert", "alert-dialog", "alert-search"],
             ["search-sidebar", "sidebar", "sidebar-search"],
@@ -76,6 +77,19 @@ for (const preset of ["nova", "bloom"]) {
             await page.keyboard.press("Escape");
             await expect(input).toHaveValue("");
             await expect(input).toBeVisible();
+            for (const restored of [false, true]) {
+                await input.evaluate((input) => (input.value = "Restored without input"));
+                await expect(input).not.toHaveClass(/clear-input--touched/);
+                if (restored) {
+                    await page.evaluate(() =>
+                        window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })),
+                    );
+                    await expect(input).toHaveClass(/clear-input--touched/);
+                }
+                await page.keyboard.press("Escape");
+                await expect(input).toHaveValue("");
+                await expect(input).toBeVisible();
+            }
             await page.keyboard.press("Escape");
             await expect(input).toBeHidden();
 
@@ -342,6 +356,7 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
     await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
     await page.locator("#search-frame").evaluate((frame) => {
         const next = frame.cloneNode(true);
+        next.querySelector('[data-controller="clear-input"]').removeAttribute("data-clear-input-connected");
         next.querySelector("input").className = "";
         next.querySelector("input").setAttribute("value", "Oak");
         next.querySelector("button").classList.add("hidden");
@@ -352,14 +367,17 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
     });
     await expect(page.locator("#frame-search")).toHaveValue("Oak");
     const root = page.locator('[data-slot="input-wrapper"]:has(> #frame-search)');
+    await expect(root).toHaveAttribute("data-clear-input-connected", "");
     await root.evaluate((node) => node.removeAttribute("data-controller"));
     await expect
         .poll(() => root.evaluate((node) => window.app.getControllerForElementAndIdentifier(node, "clear-input")))
         .toBeNull();
+    await expect(root).not.toHaveAttribute("data-clear-input-connected");
     await root.evaluate((node) => node.setAttribute("data-controller", "clear-input"));
     await expect
         .poll(() => root.evaluate((node) => !!window.app.getControllerForElementAndIdentifier(node, "clear-input")))
         .toBe(true);
+    await expect(root).toHaveAttribute("data-clear-input-connected", "");
     await clearWithin(page, "frame-search");
     expect(await page.evaluate(() => window.clearEvents)).toBe(1);
     await page.locator("#frame-search").evaluate((input) => input.replaceWith(input.cloneNode(true)));
