@@ -29,13 +29,14 @@ it('keeps a stable root around text-like controls regardless of clearing', funct
     ->with([false, true]);
 
 it('keeps non-textual controls unwrapped even when clearing is requested', function (string $type) {
-    $html = (string) $this->blade('<x-hw::input name="value" :type="$type" clearable class="outer" input-class="control" />', compact('type'));
+    $html = (string) $this->blade('<x-hw::input name="value" :type="$type" clearable wrapper-class="outer" class="control" />', compact('type'));
     $xpath = new DOMXPath(dom($html));
     $input = $xpath->query('//input')->item(0);
 
     expect($xpath->query('//*[@data-slot="input-wrapper"]'))->toHaveCount(0)
         ->and($xpath->query('//button'))->toHaveCount(0)
-        ->and($input->getAttribute('class'))->toBe('outer control');
+        ->and($input->getAttribute('class'))->toBe('control')
+        ->and($input->hasAttribute('wrapper-class'))->toBeFalse();
 })->with(['hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image']);
 
 it('uses default type=text', function () {
@@ -339,11 +340,12 @@ it('combines element + wrapper controllers correctly', function () {
 // --- Class merge ---
 
 it('separates root layout classes from native control classes', function (bool $clearable) {
-    $html = (string) $this->blade('<x-hw::input name="email" :clearable="$clearable" class="flex-1 col-span-2" input-class="font-mono" />', compact('clearable'));
+    $html = (string) $this->blade('<x-hw::input name="email" :clearable="$clearable" wrapper-class="flex-1 col-span-2" class="font-mono h-10" />', compact('clearable'));
     $xpath = new DOMXPath(dom($html));
 
     expect($xpath->query('//*[@data-slot="input-wrapper"]')->item(0)->getAttribute('class'))->toBe('flex-1 col-span-2')
-        ->and($xpath->query('//input')->item(0)->getAttribute('class'))->toBe('font-mono');
+        ->and($xpath->query('//input')->item(0)->getAttribute('class'))->toBe('font-mono h-10')
+        ->and($xpath->query('//input')->item(0)->hasAttribute('wrapper-class'))->toBeFalse();
 })->with([false, true]);
 
 it('keeps HTML ARIA and Stimulus attributes on the native control', function () {

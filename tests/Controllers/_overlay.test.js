@@ -113,9 +113,8 @@ test("composing Escape does not close the overlay", async () => {
 
 test("capture-phase Escape yields to an enhanced nonempty search without consuming the key", async () => {
     const { modal, backdrop, dialog } = elements();
-    dialog.innerHTML = `<span data-controller="clear-input" data-clear-input-connected>
-        <input type="search" data-clear-input-target="input" value="Trees">
-        <button data-clear-input-target="clearButton">Clear</button>
+    dialog.innerHTML = `<span data-controller="application-search">
+        <input type="search" data-hotwire-escape-clear value="Trees">
     </span>`;
     overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
     await overlay.open();
@@ -127,19 +126,17 @@ test("capture-phase Escape yields to an enhanced nonempty search without consumi
     expect(event.defaultPrevented).toBe(false);
 });
 
-for (const state of ["empty", "readonly", "disabled", "not-connected", "no-button", "no-controller", "outside"]) {
+for (const state of ["empty", "readonly", "disabled", "no-capability", "text", "textarea", "outside"]) {
     test(`capture-phase Escape still closes when the search is ${state}`, async () => {
         const { modal, backdrop, dialog } = elements();
-        dialog.innerHTML = `<span data-controller="clear-input" data-clear-input-connected>
-            <input type="search" class="clear-input--touched" data-clear-input-target="input" value="Trees">
-            <button data-clear-input-target="clearButton">Clear</button>
+        dialog.innerHTML = `<span>
+            ${state === "textarea" ? '<textarea data-hotwire-escape-clear>Trees</textarea>' : '<input type="search" class="clear-input--touched" data-hotwire-escape-clear value="Trees">'}
         </span>`;
-        const input = dialog.querySelector("input");
+        const input = dialog.querySelector("input, textarea");
         if (state === "empty") input.value = "";
         if (["readonly", "disabled"].includes(state)) input.setAttribute(state, "");
-        if (state === "not-connected") input.parentElement.removeAttribute("data-clear-input-connected");
-        if (state === "no-button") dialog.querySelector("button").remove();
-        if (state === "no-controller") input.parentElement.removeAttribute("data-controller");
+        if (state === "no-capability") input.removeAttribute("data-hotwire-escape-clear");
+        if (state === "text") input.type = "text";
         if (state === "outside") document.body.append(input.parentElement);
         overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
         await overlay.open();

@@ -8,26 +8,28 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ### Input roots and native search clearing
 
-Text-like `<hw:input>` controls now always render an `input-wrapper` root, with or without `clearable`. `class` belongs to
-that root; use the new `input-class` prop for styling the native control. `wrapper-class` has been removed without an
-alias. Separate layout from control appearance explicitly:
+Text-like `<hw:input>` controls now always render an `input-wrapper` root, with or without `clearable`. The class contract
+stays consistent with the other native fields: `class` styles the input, and `wrapper-class` styles its root. Existing
+clearable inputs keep their current class destinations. Inputs that previously had no wrapper may need outer-layout
+utilities moved to `wrapper-class`:
 
 ```blade
 {{-- Before --}}
-<hw:input name="q" type="search" clearable wrapper-class="flex-1" class="font-mono h-10" />
+<hw:input name="title" class="col-span-2 font-mono h-10" />
 
 {{-- After --}}
-<hw:input name="q" type="search" class="flex-1" input-class="font-mono h-10" />
+<hw:input name="title" wrapper-class="col-span-2" class="font-mono h-10" />
 ```
 
-Move width, flex/grid placement, margins and outer positioning to `class`. Move typography, control height, border,
-background and native-state variants such as `disabled:*`, `focus-visible:*` and `aria-invalid:*` to `input-class`.
+Review width, flex/grid placement, margins and outer positioning that assumed the input itself was the outer layout item;
+use `wrapper-class` when those utilities belong on the root. Typography, control height, border, background and native-state
+variants such as `disabled:*`, `focus-visible:*` and `aria-invalid:*` stay in `class`, without a new input-specific class prop.
 Classes are not inspected, forwarded to both elements or automatically split. `style`, `id`, `name`, HTML, ARIA and
 Stimulus attributes continue to target the native input, not the root; existing controller targets remain on the control.
 Review direct-child selectors and peer relationships that assumed the input itself was the component root.
 
-`hidden`, checkbox/radio, range, color, file and button-like types remain unwrapped; both class props target their native
-input and `clearable` has no effect. This change does not redesign Textarea, File, Input OTP or their class props.
+`hidden`, checkbox/radio, range, color, file and button-like types remain unwrapped; `class` targets their native input,
+while `wrapper-class` and `clearable` have no effect. This change does not redesign Textarea, File or Input OTP.
 
 `type="search"` now enables the package's keyboard-accessible clear button by default. Keep the native browser UI instead
 with `:clearable="false"`; the text-control root remains stable. `auto-submit` is still opt-in. With auto-submit enabled,

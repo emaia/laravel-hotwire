@@ -115,12 +115,14 @@ search input before the event bubbles to this controller.
 Drawer, Alert Dialog and the mobile Sidebar also defer their earlier Escape dismissal to an enhanced, nonempty and
 editable search inside their own panel. Empty, readonly, disabled or unenhanced fields retain normal overlay dismissal.
 
-Overlay coordination tracks the controller's connection separately from the visual touched class and reads the native
-input's current value. Programmatic value changes without an `input` event therefore keep the same Escape behavior.
+Overlay coordination reads the generic `data-hotwire-escape-clear` capability on the native control, not controller names,
+Stimulus targets or visual classes. This controller advertises it only while connected with both targets ready and removes
+it when disconnected or when a required target disappears. The overlay reads the current value, type, readonly and disabled
+state when Escape arrives, so programmatic value changes without an `input` event keep the same behavior.
 Keyboard events and `pageshow` resynchronize the visual state, including after browser history restoration; a Turbo morph
-that retains the controller also retains its connection state.
+that retains the controller also retains its Escape capability.
 
-Connection, touched and clear-button visibility state are registered with the package's
+Escape capability, touched and clear-button visibility state are registered with the package's
 [snapshot normalizer](../turbo-snapshots.md). Restored HTML does not claim an active controller or hide native search
 clearing while waiting for lazy reconnection; the input value and unrelated application classes are preserved.
 

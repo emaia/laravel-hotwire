@@ -11,11 +11,10 @@ test.beforeAll(() => {
 for (const upstream of [false, true]) {
     test(`normalizes cached search state before lazy reconnection (${upstream ? "1555" : "published"})`, async ({ page }) => {
         const requests = await start(page, { upstream, search: true });
-        const root = page.locator("#search");
         const input = page.locator("#search-input");
         const clear = page.locator("#search-clear");
         await input.fill("Local search");
-        await expect(root).toHaveAttribute("data-clear-input-connected", "");
+        await expect(input).toHaveAttribute("data-hotwire-escape-clear", "");
         await expect(clear).toBeVisible();
         // Keep focus inside the search so the cached copy also contains the visible custom button.
         await page.evaluate(() => document.querySelector("#next").click());
@@ -25,7 +24,7 @@ for (const upstream of [false, true]) {
         expect(await page.evaluate(() => {
             const copy = window.Turbo.session.view.getCachedSnapshotForLocation(new URL("/one", location.href)).element;
             return {
-                connected: copy.querySelector("#search").hasAttribute("data-clear-input-connected"),
+                connected: copy.querySelector("#search-input").hasAttribute("data-hotwire-escape-clear"),
                 touched: copy.querySelector("#search-input").classList.contains("clear-input--touched"),
                 buttonHidden: copy.querySelector("#search-clear").classList.contains("hidden"),
             };
@@ -35,7 +34,7 @@ for (const upstream of [false, true]) {
         await page.goBack();
         await restored(page);
         await expect(page.locator("#client-marker")).toHaveCount(1);
-        await expect(root).not.toHaveAttribute("data-clear-input-connected");
+        await expect(input).not.toHaveAttribute("data-hotwire-escape-clear");
         await expect(input).toHaveClass("app-input");
         await expect(input).toHaveValue("Local search");
         await expect(clear).toBeHidden();
@@ -52,7 +51,7 @@ for (const upstream of [false, true]) {
             document.addEventListener("inputCleared", () => window.clearEvents++);
             window.registerSearch();
         });
-        await expect(root).toHaveAttribute("data-clear-input-connected", "");
+        await expect(input).toHaveAttribute("data-hotwire-escape-clear", "");
         await expect(clear).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(input).toHaveValue("");

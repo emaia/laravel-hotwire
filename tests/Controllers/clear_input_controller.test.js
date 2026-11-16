@@ -80,12 +80,12 @@ test.serial(
         const copy = mounted.root.cloneNode(true);
         normalizeSnapshot(copy);
 
-        expect(copy.hasAttribute("data-clear-input-connected")).toBe(false);
+        expect(copy.querySelector("input").hasAttribute("data-hotwire-escape-clear")).toBe(false);
         expect(copy.className).toBe("app-root");
         expect(copy.querySelector("input").className).toBe("app-input");
         expect(copy.querySelector("input").value).toBe("Trees");
         expect([...copy.querySelector("button").classList].sort()).toEqual(["app-button", "hidden"]);
-        expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(true);
+        expect(input.hasAttribute("data-hotwire-escape-clear")).toBe(true);
         expect(input.classList.contains("clear-input--touched")).toBe(true);
         expect(document.querySelector("button").classList.contains("hidden")).toBe(false);
     },
@@ -99,11 +99,11 @@ test.serial("tracks connection independently of the input's visual touched state
         </span>
     `);
 
-    expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(true);
-    expect(document.querySelector("input").classList.contains("clear-input--touched")).toBe(false);
-    mounted.application.unload("clear-input");
-    expect(mounted.root.hasAttribute("data-clear-input-connected")).toBe(false);
     const input = document.querySelector("input");
+    expect(input.hasAttribute("data-hotwire-escape-clear")).toBe(true);
+    expect(input.classList.contains("clear-input--touched")).toBe(false);
+    mounted.application.unload("clear-input");
+    expect(input.hasAttribute("data-hotwire-escape-clear")).toBe(false);
     input.value = "Trees";
     window.dispatchEvent(new Event("pageshow"));
     expect(input.classList.contains("clear-input--touched")).toBe(false);

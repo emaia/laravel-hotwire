@@ -3,12 +3,13 @@ import { Controller } from "@hotwired/stimulus";
 import { isComposing } from "./_composition.js";
 import { rememberSnapshotState } from "./_snapshot.js";
 
-const CONNECTION_ATTRIBUTE = "data-clear-input-connected";
+const ESCAPE_ATTRIBUTE = "data-hotwire-escape-clear";
 
 export default class extends Controller {
     static targets = ["clearButton", "input"];
 
     #snapshotTargets = new WeakSet();
+    #connected = false;
 
     initialize() {
         this.handleButtonClick = this.handleButtonClick.bind(this);
@@ -17,11 +18,10 @@ export default class extends Controller {
         this.handleFocusIn = this.handleFocusIn.bind(this);
         this.handleFocusOut = this.handleFocusOut.bind(this);
         this.handleKeydown = this.handleKeydown.bind(this);
-        this.preserveConnection = this.preserveConnection.bind(this);
+        this.preserveEscapeCapability = this.preserveEscapeCapability.bind(this);
     }
 
     connect() {
-        rememberSnapshotState(this.element, { attributes: [CONNECTION_ATTRIBUTE] });
         this.resyncAfterMorph();
 
         this.element.addEventListener("click", this.handleButtonClick);
@@ -29,10 +29,11 @@ export default class extends Controller {
         this.element.addEventListener("focusin", this.handleFocusIn);
         this.element.addEventListener("focusout", this.handleFocusOut);
         this.element.addEventListener("keydown", this.handleKeydown);
-        this.element.addEventListener("turbo:before-morph-attribute", this.preserveConnection);
+        this.element.addEventListener("turbo:before-morph-attribute", this.preserveEscapeCapability);
         document.addEventListener("turbo:render", this.resyncAfterMorph);
         window.addEventListener("pageshow", this.resyncAfterMorph);
-        this.element.setAttribute(CONNECTION_ATTRIBUTE, "");
+        this.#connected = true;
+        this.#syncEscapeCapability();
     }
 
     resyncAfterMorph() {
@@ -98,20 +99,24 @@ export default class extends Controller {
     }
 
     inputTargetConnected(input) {
-        rememberSnapshotState(input, { classes: ["clear-input--touched"] });
+        rememberSnapshotState(input, { attributes: [ESCAPE_ATTRIBUTE], classes: ["clear-input--touched"] });
         this.#snapshotTargets.add(input);
+        this.#syncEscapeCapability();
         this.resyncAfterMorph();
     }
 
     inputTargetDisconnected(input) {
         this.#snapshotTargets.delete(input);
+        input.removeAttribute(ESCAPE_ATTRIBUTE);
         input.classList.remove("clear-input--touched");
         if (this.hasClearButtonTarget) this.clearButtonTarget.classList.add("hidden");
+        this.#syncEscapeCapability();
     }
 
     clearButtonTargetConnected(button) {
         rememberSnapshotState(button, { classes: ["hidden"] });
         this.#snapshotTargets.add(button);
+        this.#syncEscapeCapability();
         this.resyncAfterMorph();
     }
 
@@ -119,16 +124,28 @@ export default class extends Controller {
         this.#snapshotTargets.delete(button);
         button.classList.add("hidden");
         if (this.hasInputTarget) this.inputTarget.classList.remove("clear-input--touched");
+        this.#syncEscapeCapability();
     }
 
-    preserveConnection(event) {
+    preserveEscapeCapability(event) {
         if (
-            event.target === this.element &&
-            event.detail?.attributeName === CONNECTION_ATTRIBUTE &&
+            this.#connected &&
+            this.hasInputTarget &&
+            event.target === this.inputTarget &&
+            event.detail?.attributeName === ESCAPE_ATTRIBUTE &&
             event.detail.mutationType === "remove"
         ) {
             event.preventDefault();
         }
+    }
+
+    #syncEscapeCapability() {
+        if (!this.hasInputTarget || !this.#snapshotTargets.has(this.inputTarget)) return;
+
+        this.inputTarget.toggleAttribute(
+            ESCAPE_ATTRIBUTE,
+            this.#connected && this.hasClearButtonTarget && this.#snapshotTargets.has(this.clearButtonTarget),
+        );
     }
 
     #syncButtonVisibility() {
@@ -142,13 +159,14 @@ export default class extends Controller {
     }
 
     disconnect() {
-        this.element.removeAttribute(CONNECTION_ATTRIBUTE);
+        this.#connected = false;
+        this.#syncEscapeCapability();
         this.element.removeEventListener("click", this.handleButtonClick);
         this.element.removeEventListener("input", this.handleInputChange);
         this.element.removeEventListener("focusin", this.handleFocusIn);
         this.element.removeEventListener("focusout", this.handleFocusOut);
         this.element.removeEventListener("keydown", this.handleKeydown);
-        this.element.removeEventListener("turbo:before-morph-attribute", this.preserveConnection);
+        this.element.removeEventListener("turbo:before-morph-attribute", this.preserveEscapeCapability);
 
         document.removeEventListener("turbo:render", this.resyncAfterMorph);
         window.removeEventListener("pageshow", this.resyncAfterMorph);

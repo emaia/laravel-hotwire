@@ -32,20 +32,21 @@ Renders an `<input>` with:
 | `mask`              | `string\|null`      | `null`              | Preset (`cpf`, `phone-br`, ...) or raw Maska string          |
 | `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; text inputs default to debounced     |
 | `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when auto-submit is debounced    |
-| `class`             | `string`            | `""`                | Layout classes on the stable root; native input for unwrapped types |
-| `input-class`       | `string`            | `""`                | Classes on the native `<input>`                              |
+| `class`             | `string`            | `""`                | Classes on the native `<input>`, like the other native form controls |
+| `wrapper-class`     | `string`            | `""`                | Layout classes on the stable root for text-like inputs        |
 
 Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-*`) passes through.
 
 ## Layout and native control
 
 Text-like inputs always render a full-width `data-slot="input-wrapper"` root, whether or not clearing is enabled. It
-fills flex rows and horizontal Fields without an extra layout class; explicit width utilities on `class` still win.
-Use `class` for outer layout and `input-class` for control appearance, height and native states:
+fills flex rows and horizontal Fields without an extra layout class; explicit width utilities on `wrapper-class` still win.
+Use `wrapper-class` for outer layout and `class` for control appearance, height and native states, following the same
+convention as Textarea, File and Input OTP:
 
 ```blade
 <div class="flex gap-2">
-    <hw:input name="q" type="search" class="flex-1" input-class="font-mono disabled:opacity-50" />
+    <hw:input name="q" type="search" wrapper-class="flex-1" class="font-mono disabled:opacity-50" />
     <hw:button type="submit">Search</hw:button>
 </div>
 ```
@@ -56,8 +57,8 @@ control. A user-provided `data-slot` also applies to that input, not to the root
 
 Text-like types include `text`, `search`, `email`, `password`, `url`, `tel`, `number`, `date`, `datetime-local`, `month`,
 `time` and `week`. Unknown types follow HTML's text fallback. `hidden`, `checkbox`, `radio`, `range`, `color`, `file`,
-`button`, `submit`, `reset` and `image` remain unwrapped; their `class` and `input-class` are merged on the native input,
-and `clearable` is ignored. Prefer the dedicated components where available.
+`button`, `submit`, `reset` and `image` remain unwrapped; `class` stays on the native input, while `wrapper-class` and
+`clearable` are ignored. Prefer the dedicated components where available.
 
 ## Search
 

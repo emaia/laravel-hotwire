@@ -37,7 +37,7 @@ class Input extends Component
         public bool|string $autoSubmit = false,
         public int|string|null $autoSubmitDelay = null,
         public string $class = '',
-        public string $inputClass = '',
+        public string $wrapperClass = '',
         public ?Htmlable $stimulus = null,
     ) {
         $this->type = strtolower($type);

@@ -17,7 +17,7 @@ test.beforeAll(async () => {
     for (const preset of ["nova", "bloom"]) {
         styles[preset] = await compileCssFixture(
             packageSourceEntrypoint(`../../vendor/emaia/laravel-hotwire/resources/css/presets/${preset}.css`) +
-                '\n@source inline("flex-1 col-span-2 w-40 md:hidden");',
+                '\n@source inline("flex-1 col-span-2 w-40 h-10 md:hidden");',
         );
     }
 });
@@ -119,6 +119,7 @@ for (const preset of ["nova", "bloom"]) {
         expect((await page.locator("#default-flex-input").boundingBox()).width).toBeCloseTo(400, 0);
         expect((await page.locator("#horizontal-input").boundingBox()).width).toBeGreaterThan(300);
         expect((await page.locator("#fixed-width-input").boundingBox()).width).toBeCloseTo(160, 0);
+        await expect(page.locator("#fixed-width-input")).toHaveCSS("height", "40px");
     });
 
     test(`${preset}: native clearing remains available before enhancement and after disconnect`, async ({ page }) => {
@@ -356,6 +357,16 @@ test("partial clear-input markup tolerates missing targets without errors", asyn
         document.querySelector("#missing-input button").click();
     });
     expect(await page.evaluate(() => window.controllerErrors)).toEqual([]);
+    await expect(page.locator("#missing-button input")).not.toHaveAttribute("data-hotwire-escape-clear");
+    const search = page.locator("#frame-search");
+    await expect(search).toHaveAttribute("data-hotwire-escape-clear", "");
+    await search.locator("..").evaluate((root) => {
+        window.removedClearButton = root.querySelector("button");
+        window.removedClearButton.remove();
+    });
+    await expect(search).not.toHaveAttribute("data-hotwire-escape-clear");
+    await search.locator("..").evaluate((root) => root.append(window.removedClearButton));
+    await expect(search).toHaveAttribute("data-hotwire-escape-clear", "");
 });
 
 test("Turbo morph and controller reconnect retain clearing without duplicate events", async ({ page }) => {
@@ -365,7 +376,7 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
         const next = frame.cloneNode(true);
         for (const node of next.querySelectorAll("[data-hotwire-snapshot]"))
             node.removeAttribute("data-hotwire-snapshot");
-        next.querySelector('[data-controller="clear-input"]').removeAttribute("data-clear-input-connected");
+        next.querySelector("input").removeAttribute("data-hotwire-escape-clear");
         next.querySelector("input").className = "";
         next.querySelector("input").setAttribute("value", "Oak");
         next.querySelector("button").classList.add("hidden");
@@ -376,22 +387,23 @@ test("Turbo morph and controller reconnect retain clearing without duplicate eve
     });
     await expect(page.locator("#frame-search")).toHaveValue("Oak");
     const root = page.locator('[data-slot="input-wrapper"]:has(> #frame-search)');
-    await expect(root).toHaveAttribute("data-clear-input-connected", "");
+    await expect(page.locator("#frame-search")).toHaveAttribute("data-hotwire-escape-clear", "");
     await root.evaluate((node) => node.removeAttribute("data-controller"));
     await expect
         .poll(() => root.evaluate((node) => window.app.getControllerForElementAndIdentifier(node, "clear-input")))
         .toBeNull();
-    await expect(root).not.toHaveAttribute("data-clear-input-connected");
+    await expect(page.locator("#frame-search")).not.toHaveAttribute("data-hotwire-escape-clear");
     await root.evaluate((node) => node.setAttribute("data-controller", "clear-input"));
     await expect
         .poll(() => root.evaluate((node) => !!window.app.getControllerForElementAndIdentifier(node, "clear-input")))
         .toBe(true);
-    await expect(root).toHaveAttribute("data-clear-input-connected", "");
+    await expect(page.locator("#frame-search")).toHaveAttribute("data-hotwire-escape-clear", "");
     await clearWithin(page, "frame-search");
     expect(await page.evaluate(() => window.clearEvents)).toBe(1);
     await page.locator("#frame-search").evaluate((input) => {
         const replacement = input.cloneNode(true);
         replacement.removeAttribute("data-hotwire-snapshot");
+        replacement.removeAttribute("data-hotwire-escape-clear");
         input.replaceWith(replacement);
     });
     await expect(page.locator("#frame-search")).toHaveAttribute("data-hotwire-snapshot");

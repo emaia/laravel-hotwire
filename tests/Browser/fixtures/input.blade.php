@@ -7,14 +7,14 @@
     <hw:input id="horizontal-input" />
 </hw:field>
 <div class="fixture-wide-flex">
-    <hw:input id="fixed-width-input" aria-label="Fixed width" class="w-40" />
+    <hw:input id="fixed-width-input" aria-label="Fixed width" wrapper-class="w-40" class="h-10" />
 </div>
 <div id="flex-layout" class="fixture-flex">
-    <hw:input id="flex-input" aria-label="Flexible" class="flex-1" />
+    <hw:input id="flex-input" aria-label="Flexible" wrapper-class="flex-1" />
     <button class="fixture-sibling">Next</button>
 </div>
 <div id="grid-layout" class="fixture-grid">
-    <hw:input id="grid-input" type="search" aria-label="Grid search" class="col-span-2" value="Trees" />
+    <hw:input id="grid-input" type="search" aria-label="Grid search" wrapper-class="col-span-2" value="Trees" />
     <button>Next</button>
 </div>
 <hw:form id="filters" method="get" auto-submit auto-submit-delay="150">
