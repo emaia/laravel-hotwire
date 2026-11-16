@@ -116,8 +116,8 @@ Drawer, Alert Dialog and the mobile Sidebar also defer their earlier Escape dism
 editable search inside their own panel. Empty, readonly, disabled or unenhanced fields retain normal overlay dismissal.
 
 Overlay coordination reads the generic `data-hotwire-escape-clear` capability on the native control, not controller names,
-Stimulus targets or visual classes. This controller advertises it only while connected with both targets ready and removes
-it when disconnected or when a required target disappears. The overlay reads the current value, type, readonly and disabled
+Stimulus targets or visual classes. This controller advertises it only on search inputs while connected with both targets
+ready and removes it when disconnected or when a required target disappears. The overlay reads the current value, type, readonly and disabled
 state when Escape arrives, so programmatic value changes without an `input` event keep the same behavior.
 Keyboard events and `pageshow` resynchronize the visual state, including after browser history restoration; a Turbo morph
 that retains the controller also retains its Escape capability.

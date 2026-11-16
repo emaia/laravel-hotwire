@@ -109,6 +109,19 @@ test.serial("tracks connection independently of the input's visual touched state
     expect(input.classList.contains("clear-input--touched")).toBe(false);
 });
 
+test.serial("does not advertise Escape clearing for a clearable text input", async () => {
+    await mount(`
+        <span data-controller="clear-input">
+            <input type="text" data-clear-input-target="input" value="Trees" />
+            <button data-clear-input-target="clearButton"></button>
+        </span>
+    `);
+    const input = document.querySelector("input");
+    expect(input.hasAttribute("data-hotwire-escape-clear")).toBe(false);
+    document.querySelector("button").click();
+    expect(input.value).toBe("");
+});
+
 test.serial("resynchronizes programmatic values on keydown without consuming normal keys", async () => {
     await mount(`
         <span data-controller="clear-input">

@@ -144,7 +144,10 @@ export default class extends Controller {
 
         this.inputTarget.toggleAttribute(
             ESCAPE_ATTRIBUTE,
-            this.#connected && this.hasClearButtonTarget && this.#snapshotTargets.has(this.clearButtonTarget),
+            this.#connected &&
+                this.inputTarget.type === "search" &&
+                this.hasClearButtonTarget &&
+                this.#snapshotTargets.has(this.clearButtonTarget),
         );
     }
 
