@@ -452,6 +452,14 @@ it('selects Toaster visuals through the package component but not the standalone
         ->and($manifest->modulesFor([]))->toBe([]);
 });
 
+it('excludes unrelated wrapper visuals from input-only bundles', function () {
+    $manifest = app(CssModuleManifest::class);
+
+    expect($manifest->modulesFor(['input']))->not->toContain('control-wrappers')
+        ->and($manifest->modulesFor(['textarea']))->toContain('control-wrappers')
+        ->and($manifest->modulesFor(['file']))->toContain('control-wrappers');
+});
+
 it('selects Video Embed visuals through the package component but not the standalone OEmbed controller', function () {
     $manifest = app(CssModuleManifest::class);
 

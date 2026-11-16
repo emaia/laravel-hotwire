@@ -403,6 +403,7 @@ async function bundle() {
         .replaceAll("export function ", "function ");
     const clearInput = (await readFile("resources/js/controllers/clear_input_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")
+        .replace('import { isComposing } from "./_composition.js";', "")
         .replace("export default class extends Controller", "class ClearInputController extends Controller");
     const multiSelect = (await readFile("resources/js/controllers/multi_select_controller.js", "utf8"))
         .replace('import { Controller } from "@hotwired/stimulus";', "")

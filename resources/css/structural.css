@@ -172,14 +172,25 @@
         display: block;
     }
 
-    [data-slot="input-wrapper"][data-clearable="true"] {
+    [data-slot="input-wrapper"] {
+        display: block;
         position: relative;
+        min-inline-size: 0;
+        inline-size: 100%;
+    }
+
+    [data-slot="input-wrapper"][data-clearable="true"] > input[type="search"].clear-input--touched::-webkit-search-cancel-button {
+        display: none;
     }
 
     .clear-input--touched:focus + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]),
     .clear-input--touched:hover + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]),
     .clear-input--touched + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]):hover {
         display: var(--clear-input-button-display, revert) !important;
+    }
+
+    .clear-input--touched:is(:disabled, [readonly]) + :is([data-slot="clear-input-button"], [data-clear-input-target~="clearButton"]) {
+        display: none !important;
     }
 }
 

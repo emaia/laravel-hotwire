@@ -199,7 +199,7 @@ return [
         ),
         'hover-card' => $module(['hover-card']),
         'icon' => $module(['icon']),
-        'control-wrappers' => $module(['input', 'textarea', 'file']),
+        'control-wrappers' => $module(['textarea', 'file']),
         'clearable-input-layout' => $module(['input', 'multi-select']),
         'text-controls' => $module(['input', 'select']),
         'checkable-controls' => $module([

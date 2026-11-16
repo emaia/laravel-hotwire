@@ -327,7 +327,7 @@ it('projects form control slot contracts from their component classes', function
             'root' => ['name' => 'form', 'kind' => 'structural'],
         ],
         Input::class => [
-            'wrapper' => ['name' => 'input-wrapper', 'kind' => 'visual'],
+            'wrapper' => ['name' => 'input-wrapper', 'kind' => 'structural'],
             'root' => ['name' => 'input', 'kind' => 'visual'],
             'clear-button' => ['name' => 'clear-input-button', 'kind' => 'visual'],
         ],

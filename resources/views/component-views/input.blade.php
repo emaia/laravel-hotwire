@@ -44,8 +44,6 @@
         'data-clear-input-target' => $clearable ? 'input' : null,
         'class' => $class ?: null,
     ], $attributes, $stimulus, except: ['required', 'checked', 'auto-submit', 'auto-submit-delay'], protectedPrefixes: $internalPrefixes);
-
-    $hasWrapper = $clearable;
 @endphp
 
 @if ($hasWrapper)

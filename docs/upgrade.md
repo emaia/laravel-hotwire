@@ -6,6 +6,46 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Input roots and native search clearing
+
+Text-like `<hw:input>` controls now always render an `input-wrapper` root, with or without `clearable`. The class contract
+stays consistent with the other native fields: `class` styles the input, and `wrapper-class` styles its root. Existing
+clearable inputs keep their current class destinations. Inputs that previously had no wrapper may need outer-layout
+utilities moved to `wrapper-class`:
+
+```blade
+{{-- Before --}}
+<hw:input name="title" class="col-span-2 font-mono h-10" />
+
+{{-- After --}}
+<hw:input name="title" wrapper-class="col-span-2" class="font-mono h-10" />
+```
+
+Review width, flex/grid placement, margins and outer positioning that assumed the input itself was the outer layout item;
+use `wrapper-class` when those utilities belong on the root. Typography, control height, border, background and native-state
+variants such as `disabled:*`, `focus-visible:*` and `aria-invalid:*` stay in `class`, without a new input-specific class prop.
+Classes are not inspected, forwarded to both elements or automatically split. `style`, `id`, `name`, HTML, ARIA and
+Stimulus attributes continue to target the native input, not the root; existing controller targets remain on the control.
+Review direct-child selectors and peer relationships that assumed the input itself was the component root.
+
+`hidden`, checkbox/radio, range, color, file and button-like types remain unwrapped; `class` targets their native input,
+while `wrapper-class` and `clearable` have no effect. This change does not redesign Textarea, File or Input OTP.
+
+`type="search"` now enables the package's keyboard-accessible clear button by default. Keep the native browser UI instead
+with `:clearable="false"`; the text-control root remains stable. `auto-submit` is still opt-in. With auto-submit enabled,
+custom clearing submits immediately and cancels pending typing debounce. The native search cancel button is suppressed
+only while the nonempty input is enhanced; it remains usable before JavaScript loads and returns after disconnect.
+Escape on an enhanced nonempty search input now emits the same immediate clear event and consumes that keypress;
+Escape on an empty input remains available to its parent. Existing Escape handlers that prevent the default or stop
+propagation, including Multi Select's popup handler, keep their priority. The Multi Select popup search uses the same
+clear-button composition.
+
+Rebuild application CSS after upgrading. `input-wrapper` is now structural: remove preset rules that supplied its
+conditional display/positioning and inherit these mechanics from the current foundation. Keep visual input and clear
+button styling in the preset. Regenerate selective bundles; application-owned preset clones must be reviewed manually.
+Review view forks against the new Input/Multi Select markup and update published `clear_input_controller.js` copies for
+delegated, reconnect-safe listeners and immutable-input handling.
+
 ### Package views are no longer publishable
 
 The `hotwire-views` publish tag has been removed. Publishing by provider or through `vendor:publish --all` no longer

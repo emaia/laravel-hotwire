@@ -135,7 +135,7 @@ it('emits search, select-all, max and positioning values', function () {
     $view = $this->blade('<x-hw::multi-select name="status[]" :options="[\'active\' => \'Active\']" :max="2" select-all side="right" align="end" :side-offset="8" :align-offset="-2" strategy="fixed" :flip="false" :shift="false" />');
 
     $view->assertSee('data-multi-select-search-value="true"', false);
-    $view->assertSee('type="text"', false);
+    $view->assertSee('type="search"', false);
     $view->assertSee('data-slot="input-group"', false);
     $view->assertSee('data-slot="input-group-addon"', false);
     $view->assertSee('data-slot="multi-select-search-icon"', false);
@@ -237,7 +237,7 @@ it('keeps the internal clearable search input out of form submission and validat
     preg_match('/<input[^>]*data-slot="multi-select-search"[^>]*>/i', $html, $matches);
 
     expect($matches[0] ?? '')
-        ->toContain('type="text"')
+        ->toContain('type="search"')
         ->toContain('data-multi-select-target="search"')
         ->not->toContain('name=')
         ->not->toContain('required');

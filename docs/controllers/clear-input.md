@@ -5,6 +5,9 @@ Adds an "X" button to clear an input value. The button appears automatically whe
 **Identifier:** `clear-input`
 **Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers clear-input`.
 
+For Blade usage, prefer [`<hw:input type="search">`](../components/input.md#search), which activates this controller by
+default, or `<hw:input clearable>` for another text-like type. The component's root is stable with or without clearing.
+
 ## Requirements
 
 - No external dependencies.
@@ -98,6 +101,33 @@ Set `--clear-input-button-display` when the visible button needs a specific disp
 ## Behavior
 
 The controller re-syncs the `clear-input--touched` class on every `turbo:render`. With `<hw:meta refresh />` (or `data-turbo-action="morph"`), idiomorph rewrites the input's `class` attribute from server HTML, which does not contain the runtime-added class, so the clear button would no longer appear over `old()`-restored values. The listener re-applies or removes the class based on the current input value after the morph completes.
+
+Listeners are delegated from the controller root, so replacing a target or reconnecting the controller does not retain
+listeners on old targets or duplicate clear events. Disabled and readonly inputs cannot be cleared, including disabled
+state inherited from a fieldset. The foundation hides their clear button without duplicating immutable state onto it,
+so clearing becomes available again when the native control becomes editable.
+
+Escape clears a nonempty `type="search"` input through the same `input` / `inputCleared` event sequence as clicking the
+button and stops that keypress from also closing an enclosing overlay. Empty inputs, composing input and keys already
+prevented by another controller are left alone. A control such as Multi Select can keep its own Escape handling on the
+search input before the event bubbles to this controller.
+
+Drawer, Alert Dialog and the mobile Sidebar also defer their earlier Escape dismissal to an enhanced, nonempty and
+editable search inside their own panel. Empty, readonly, disabled or unenhanced fields retain normal overlay dismissal.
+
+Overlay coordination reads the generic `data-hotwire-escape-clear` capability on the native control, not controller names,
+Stimulus targets or visual classes. This controller advertises it only on search inputs while connected with both targets
+ready and removes it when disconnected or when a required target disappears. The overlay reads the current value, type, readonly and disabled
+state when Escape arrives, so programmatic value changes without an `input` event keep the same behavior.
+Keyboard events and `pageshow` resynchronize the visual state, including after browser history restoration; a Turbo morph
+that retains the controller also retains its Escape capability.
+
+Escape capability, touched and clear-button visibility state are registered with the package's
+[snapshot normalizer](../turbo-snapshots.md). Restored HTML does not claim an active controller or hide native search
+clearing while waiting for lazy reconnection; the input value and unrelated application classes are preserved.
+
+Missing targets are tolerated during DOM replacement. Disconnecting or removing a target retires its enhancement state;
+the native search cancel button remains available before enhancement or when the custom clear control is absent.
 
 ## Targets
 

@@ -580,7 +580,7 @@ return [
             'view' => 'hotwire::component-views.input',
             'docs' => 'docs/components/input.md',
             'category' => 'forms',
-            'description' => 'Laravel-aware input with validation, masks, clearing, selection and auto-submit',
+            'description' => 'Native input with Laravel validation, masks, content selection on focus, accessible search clearing and opt-in auto-submit',
             'controllers' => ['auto-select', 'clear-input', 'input-mask', 'auto-submit'],
             'styling' => [
                 'slots' => [

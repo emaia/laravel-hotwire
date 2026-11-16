@@ -18,13 +18,26 @@ beforeEach(function () {
 
 // --- Plain render ---
 
-it('renders a plain input without wrapper for simple case', function () {
-    $view = $this->blade('<x-hw::input name="email" />');
+it('keeps a stable root around text-like controls regardless of clearing', function (string $type, bool $clearable) {
+    $html = (string) $this->blade('<x-hw::input name="value" :type="$type" :clearable="$clearable" />', compact('type', 'clearable'));
+    $xpath = new DOMXPath(dom($html));
 
-    $view->assertDontSee('<span class="hw-input"', false);
-    $view->assertSee('<input', false);
-    $view->assertSee('name="email"', false);
-});
+    expect($xpath->query('//span[@data-slot="input-wrapper"]/input[@name="value"]'))->toHaveCount(1)
+        ->and($xpath->query('//span[@data-slot="input-wrapper"]'))->toHaveCount(1)
+        ->and($xpath->query('//button[@data-slot="clear-input-button"]'))->toHaveCount($clearable ? 1 : 0);
+})->with(['text', 'search', 'email', 'password', 'url', 'tel', 'number', 'date', 'datetime-local', 'month', 'time', 'week'])
+    ->with([false, true]);
+
+it('keeps non-textual controls unwrapped even when clearing is requested', function (string $type) {
+    $html = (string) $this->blade('<x-hw::input name="value" :type="$type" clearable wrapper-class="outer" class="control" />', compact('type'));
+    $xpath = new DOMXPath(dom($html));
+    $input = $xpath->query('//input')->item(0);
+
+    expect($xpath->query('//*[@data-slot="input-wrapper"]'))->toHaveCount(0)
+        ->and($xpath->query('//button'))->toHaveCount(0)
+        ->and($input->getAttribute('class'))->toBe('control')
+        ->and($input->hasAttribute('wrapper-class'))->toBeFalse();
+})->with(['hidden', 'checkbox', 'radio', 'range', 'color', 'file', 'button', 'submit', 'reset', 'image']);
 
 it('uses default type=text', function () {
     $view = $this->blade('<x-hw::input name="email" />');
@@ -37,6 +50,26 @@ it('passes through type prop', function () {
 
     $view->assertSee('type="email"', false);
 });
+
+it('normalizes native input types before resolving checkable behavior', function (string $type) {
+    session()->put('_old_input', ['plan' => 'pro']);
+    $html = (string) $this->blade('<x-hw::input name="plan" :type="$type" value="pro" mask="cpf" auto-select clearable auto-submit />', compact('type'));
+    $xpath = new DOMXPath(dom($html));
+    $input = $xpath->query('//input')->item(0);
+
+    expect($input->getAttribute('type'))->toBe(strtolower($type))
+        ->and($input->getAttribute('data-checkable'))->toBe('true')
+        ->and($input->getAttribute('data-action'))->toBe('change->auto-submit#submit')
+        ->and($input->hasAttribute('checked'))->toBeTrue()
+        ->and($html)->not->toContain('input-wrapper')
+        ->not->toContain('input-mask')
+        ->not->toContain('auto-select')
+        ->not->toContain('clear-input');
+
+    if (strtolower($type) === 'radio') {
+        expect($input->getAttribute('id'))->toBe('plan-pro');
+    }
+})->with(['Checkbox', 'RADIO']);
 
 // --- Id derivation ---
 
@@ -226,6 +259,51 @@ it('uses change events for checkable input auto-submit', function () {
 
 // --- Wrapper: clearable ---
 
+it('enhances native search inputs with clearing without opting into submission', function (string $type) {
+    $html = (string) $this->blade('<x-hw::input name="q" :type="$type" />', compact('type'));
+    $xpath = new DOMXPath(dom($html));
+
+    expect($xpath->query('//input')->item(0)->getAttribute('type'))->toBe(strtolower($type))
+        ->and($xpath->query('//*[@data-slot="input-wrapper"]')->item(0)->getAttribute('data-clearable'))->toBe('true')
+        ->and($xpath->query('//button[@type="button"]'))->toHaveCount(1)
+        ->and($html)->toContain('data-controller="clear-input"')
+        ->not->toContain('auto-submit');
+})->with(['search', 'SEARCH']);
+
+it('lets search inputs opt out of custom clearing without changing their root', function () {
+    $html = (string) $this->blade('<x-hw::input name="q" type="search" :clearable="false" />');
+    $xpath = new DOMXPath(dom($html));
+
+    expect($xpath->query('//*[@data-slot="input-wrapper"]/input[@type="search"]'))->toHaveCount(1)
+        ->and($xpath->query('//*[@data-slot="input-wrapper"]')->item(0)->getAttribute('data-clearable'))->toBe('false')
+        ->and($xpath->query('//button'))->toHaveCount(0)
+        ->and($html)->not->toContain('data-controller="clear-input"');
+});
+
+it('wires search clearing to immediate auto-submit when explicitly enabled', function () {
+    $view = $this->blade('<x-hw::input name="q" type="search" auto-submit />');
+
+    $view->assertSee('data-action="input->auto-submit#debouncedSubmit inputCleared->auto-submit#submit"', false);
+});
+
+it('keeps immutable state on the native input without latching it onto the clear button', function (string $attribute) {
+    $html = (string) $this->blade('<x-hw::input name="q" type="search" '.$attribute.' />');
+    $xpath = new DOMXPath(dom($html));
+    $button = $xpath->query('//button')->item(0);
+
+    expect($button)->not->toBeNull()
+        ->and($xpath->query('//input')->item(0)->hasAttribute($attribute))->toBeTrue()
+        ->and($button->hasAttribute('disabled'))->toBeFalse();
+})->with(['disabled', 'readonly']);
+
+it('keeps the clear action enabled when disabled and readonly are false', function () {
+    $html = (string) $this->blade('<x-hw::input name="q" type="search" :disabled="false" :readonly="false" />');
+    $button = (new DOMXPath(dom($html)))->query('//button')->item(0);
+
+    expect($button)->not->toBeNull()
+        ->and($button->hasAttribute('disabled'))->toBeFalse();
+});
+
 it('renders wrapper with clear-input controller when clearable', function () {
     $view = $this->blade('<x-hw::input name="q" clearable />');
 
@@ -261,16 +339,32 @@ it('combines element + wrapper controllers correctly', function () {
 
 // --- Class merge ---
 
-it('merges class on input element', function () {
-    $view = $this->blade('<x-hw::input name="email" class="border" />');
+it('separates root layout classes from native control classes', function (bool $clearable) {
+    $html = (string) $this->blade('<x-hw::input name="email" :clearable="$clearable" wrapper-class="flex-1 col-span-2" class="font-mono h-10" />', compact('clearable'));
+    $xpath = new DOMXPath(dom($html));
 
-    $view->assertSee('border', false);
-});
+    expect($xpath->query('//*[@data-slot="input-wrapper"]')->item(0)->getAttribute('class'))->toBe('flex-1 col-span-2')
+        ->and($xpath->query('//input')->item(0)->getAttribute('class'))->toBe('font-mono h-10')
+        ->and($xpath->query('//input')->item(0)->hasAttribute('wrapper-class'))->toBeFalse();
+})->with([false, true]);
 
-it('merges wrapper-class on wrapper when present', function () {
-    $view = $this->blade('<x-hw::input name="q" clearable wrapper-class="relative" />');
+it('keeps HTML ARIA and Stimulus attributes on the native control', function () {
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::field name="q" label="Search">
+            <x-hw::input id="query" required aria-label="Find products" data-controller="analytics" data-action="input->analytics#track" data-analytics-target="query" style="color: inherit" />
+        </x-hw::field>
+    BLADE);
+    $xpath = new DOMXPath(dom($html));
+    $root = $xpath->query('//*[@data-slot="input-wrapper"]')->item(0);
+    $input = $xpath->query('//input')->item(0);
 
-    $view->assertSee('relative', false);
+    foreach (['id' => 'query', 'name' => 'q', 'aria-label' => 'Find products', 'aria-describedby' => 'query-error', 'data-controller' => 'analytics', 'data-action' => 'input->analytics#track', 'data-analytics-target' => 'query', 'style' => 'color: inherit'] as $attribute => $value) {
+        expect($input->getAttribute($attribute))->toBe($value)
+            ->and($root->hasAttribute($attribute))->toBeFalse();
+    }
+
+    expect($input->hasAttribute('required'))->toBeTrue()
+        ->and($xpath->query('//label[@for="query"]'))->toHaveCount(1);
 });
 
 // --- User data-controller merge ---

@@ -111,6 +111,41 @@ test("composing Escape does not close the overlay", async () => {
     expect(overlay.isOpen).toBe(true);
 });
 
+test("capture-phase Escape yields to an enhanced nonempty search without consuming the key", async () => {
+    const { modal, backdrop, dialog } = elements();
+    dialog.innerHTML = `<span data-controller="application-search">
+        <input type="search" data-hotwire-escape-clear value="Trees">
+    </span>`;
+    overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
+    await overlay.open();
+    const input = dialog.querySelector("input");
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+
+    expect(overlay.isOpen).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+});
+
+for (const state of ["empty", "readonly", "disabled", "no-capability", "text", "textarea", "outside"]) {
+    test(`capture-phase Escape still closes when the search is ${state}`, async () => {
+        const { modal, backdrop, dialog } = elements();
+        dialog.innerHTML = `<span>
+            ${state === "textarea" ? '<textarea data-hotwire-escape-clear>Trees</textarea>' : '<input type="search" class="clear-input--touched" data-hotwire-escape-clear value="Trees">'}
+        </span>`;
+        const input = dialog.querySelector("input, textarea");
+        if (state === "empty") input.value = "";
+        if (["readonly", "disabled"].includes(state)) input.setAttribute(state, "");
+        if (state === "no-capability") input.removeAttribute("data-hotwire-escape-clear");
+        if (state === "text") input.type = "text";
+        if (state === "outside") document.body.append(input.parentElement);
+        overlay = createOverlay(null, options({ modal, backdrop, dialog, escapeCapture: true, stopEscapePropagation: true }));
+        await overlay.open();
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+
+        expect(overlay.isOpen).toBe(false);
+    });
+}
+
 test("an overlay that has never opened is not the top overlay", () => {
     const { modal, backdrop, dialog } = elements();
     overlay = createOverlay(null, options({ modal, backdrop, dialog }));

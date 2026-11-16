@@ -1,7 +1,7 @@
 # Input
 
-Form input with auto-derived `id`/`errorKey` from `name`, automatic `old()` merge, ARIA wiring, and optional Stimulus
-behaviors (`mask`, `clearable`, `auto-select`).
+Form input with auto-derived `id`/`errorKey` from `name`, automatic `old()` merge, ARIA wiring, a stable text-control root,
+and optional Stimulus behaviors (`mask`, `clearable`, `auto-select`). Native search inputs are clearable by default.
 
 ## Quick example
 
@@ -22,20 +22,71 @@ Renders an `<input>` with:
 |---------------------|---------------------|---------------------|--------------------------------------------------------------|
 | `name`              | `string\|null`      | —                   | Pass-through. Drives `id` and `errorKey` if those aren't set |
 | `id`                | `string\|null`      | derived from `name` | Override the auto-derived id                                 |
-| `type`              | `string`            | `"text"`            | Pass-through                                                 |
+| `type`              | `string`            | `"text"`            | Native input type, normalized to lowercase                   |
 | `value`             | `mixed`             | `null`              | Merged with `old($errorKey, $value)` unless `:old="false"`   |
 | `checked`           | `bool`              | `false`             | Initial checked state for `type="checkbox"` / `type="radio"` |
 | `errorKey`          | `string\|null`      | derived from `name` | Override for arrays where HTML `name` ≠ validation key       |
 | `old`               | `bool`              | `true`              | Disable `old()` auto-merge                                   |
-| `clearable`         | `bool`              | `false`             | Wrapper + clear button (controller `clear-input`)            |
+| `clearable`         | `bool\|null`        | `null`              | Clear button; defaults to enabled for `type="search"`, disabled otherwise |
 | `auto-select`       | `bool`              | `false`             | Selects content on focus (controller `auto-select`)          |
 | `mask`              | `string\|null`      | `null`              | Preset (`cpf`, `phone-br`, ...) or raw Maska string          |
 | `auto-submit`       | `bool\|string`      | `false`             | Add auto-submit wiring; text inputs default to debounced     |
 | `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override when auto-submit is debounced    |
-| `class`             | `string`            | `""`                | Merged on `<input>`                                          |
-| `wrapper-class`     | `string`            | `""`                | Merged on the wrapper when one is present                    |
+| `class`             | `string`            | `""`                | Classes on the native `<input>`, like the other native form controls |
+| `wrapper-class`     | `string`            | `""`                | Layout classes on the stable root for text-like inputs        |
 
 Any other HTML attribute (`placeholder`, `pattern`, `disabled`, `data-*`, `aria-*`) passes through.
+
+## Layout and native control
+
+Text-like inputs always render a full-width `data-slot="input-wrapper"` root, whether or not clearing is enabled. It
+fills flex rows and horizontal Fields without an extra layout class; explicit width utilities on `wrapper-class` still win.
+Use `wrapper-class` for outer layout and `class` for control appearance, height and native states, following the same
+convention as Textarea, File and Input OTP:
+
+```blade
+<div class="flex gap-2">
+    <hw:input name="q" type="search" wrapper-class="flex-1" class="font-mono disabled:opacity-50" />
+    <hw:button type="submit">Search</hw:button>
+</div>
+```
+
+The root has no field semantics. `id`, `name`, `style`, `required`, `disabled`, ARIA and user-provided Stimulus attributes
+remain on the actual input, so labels, validation, form submission and custom controllers keep targeting the native
+control. A user-provided `data-slot` also applies to that input, not to the root.
+
+Text-like types include `text`, `search`, `email`, `password`, `url`, `tel`, `number`, `date`, `datetime-local`, `month`,
+`time` and `week`. Unknown types follow HTML's text fallback. `hidden`, `checkbox`, `radio`, `range`, `color`, `file`,
+`button`, `submit`, `reset` and `image` remain unwrapped; `class` stays on the native input, while `wrapper-class` and
+`clearable` are ignored. Prefer the dedicated components where available.
+
+## Search
+
+```blade
+<hw:input name="q" type="search" :value="request('q')" :old="false" aria-label="Search products" />
+```
+
+`type="search"` keeps the native search semantics and adds the package's tabbable clear button. The foundation suppresses
+the browser's search cancel button only once the controller has enhanced the nonempty control, avoiding duplicate
+controls without removing native clearing before JavaScript loads. Disconnecting restores the native UI. Disabled and
+readonly inputs do not expose or perform custom clearing, including controls inside a disabled fieldset.
+
+With the controller active, Escape on a nonempty search input uses the same clear event as the button. It consumes that
+keypress so an enclosing overlay does not close as well; Escape on an empty input is left to the parent. This also
+applies to Drawer, Alert Dialog and the mobile Sidebar, whose earlier Escape listeners yield to the enhanced search.
+Escape reads the current value even if application code changed it without an `input` event. Visual state is refreshed
+on keyboard interaction and browser `pageshow`, rather than being used to decide whether the controller is connected.
+IME composition and keys already handled by another control are left alone. Multi Select retains its own Escape-to-close
+behavior rather than adopting Escape-to-clear inside its popup.
+
+Use `:clearable="false"` to keep only the browser's native search UI. The component root stays unchanged:
+
+```blade
+<hw:input name="q" type="search" :clearable="false" aria-label="Search products" />
+```
+
+Search never enables automatic submission by itself. Opt into `auto-submit` on the field and its ancestor form when
+desired; see [Auto-submit](#auto-submit). A search icon remains optional composition through `InputGroup`.
 
 For range selection, prefer the dedicated [`<hw:slider>`](./slider.md). It keeps the native input behavior while adding
 Slider-specific orientation, visual fill and documentation without exposing text-input-only props.
@@ -47,7 +98,7 @@ the real form control while the group composes any SVG/component you provide.
 
 ```blade
 <hw:input-group>
-    <hw:input name="q" clearable placeholder="Search..." />
+    <hw:input name="q" type="search" placeholder="Search..." />
 
     <hw:input-group.addon align="inline-start">
         <x-lucide-search class="size-4" />
@@ -99,7 +150,7 @@ Use `auto-submit="immediate"` to submit a text input without debounce. Checkable
 default.
 
 When `clearable` and `auto-submit` are both enabled, clearing the field submits immediately so pending debounced typing is
-cancelled and the empty result set is shown right away.
+cancelled and the empty result set is shown right away. This includes Escape clearing on enhanced search inputs.
 
 ## Checkbox and radio
 
@@ -179,6 +230,6 @@ controllers auto-load from the package; publish one only when you want to custom
 
 The component exposes stable `data-slot` hooks for preset and application CSS:
 
-- `data-slot="input-wrapper"`
+- `data-slot="input-wrapper"` — stable structural root for text-like controls; mechanics are supplied by the foundation
 - `data-slot="input"`
 - `data-slot="clear-input-button"`

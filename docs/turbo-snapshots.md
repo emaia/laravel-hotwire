@@ -63,6 +63,9 @@ installSnapshotNormalization(document);
   File-object pipeline, or object URL.
 - **Morph guard:** remove package-owned permanent claims from incoming snapshots,
   not permanent declarations owned by the application.
+- **Clear Input:** remove the transient Escape capability and restore the input's initial touched class and the clear button's
+  initial visibility before lazy reconnection. Preserve the field value and application classes, leaving native search
+  clearing available while the controller is absent. Live morphs keep Escape capability and snapshot ownership metadata.
 - **Carousel and Chart:** reconstruct Embla/ECharts UI from configuration.
   Runtime-only plugin/chart state is not guaranteed to survive.
 
