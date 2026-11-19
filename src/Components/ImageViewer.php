@@ -1,0 +1,66 @@
+<?php
+
+namespace Emaia\LaravelHotwire\Components;
+
+use Emaia\LaravelHotwire\Support\ComponentId;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
+
+class ImageViewer extends BaseComponent
+{
+    public const array SLOTS = [
+        'root' => ['name' => 'image-viewer', 'kind' => 'structural'],
+        'source' => ['name' => 'image-viewer-source', 'kind' => 'structural'],
+        'overlay' => ['name' => 'image-viewer-overlay', 'kind' => 'visual'],
+        'backdrop' => ['name' => 'image-viewer-backdrop', 'kind' => 'visual'],
+        'dialog' => ['name' => 'image-viewer-dialog', 'kind' => 'visual'],
+        'toolbar' => ['name' => 'image-viewer-toolbar', 'kind' => 'visual'],
+        'actions' => ['name' => 'image-viewer-actions', 'kind' => 'structural'],
+        'button' => ['name' => 'image-viewer-button', 'kind' => 'visual'],
+        'counter' => ['name' => 'image-viewer-counter', 'kind' => 'visual'],
+        'zoom' => ['name' => 'image-viewer-zoom', 'kind' => 'visual'],
+        'zoom-control' => ['name' => 'image-viewer-zoom-control', 'kind' => 'structural'],
+        'caption' => ['name' => 'image-viewer-caption', 'kind' => 'visual'],
+        'status' => ['name' => 'image-viewer-status', 'kind' => 'visual'],
+        'viewport' => ['name' => 'image-viewer-viewport', 'kind' => 'structural'],
+        'image' => ['name' => 'image-viewer-image', 'kind' => 'structural'],
+        'icon' => ['name' => 'image-viewer-icon', 'kind' => 'structural'],
+    ];
+
+    public string $resolvedId;
+
+    /** @param array<string, string> $labels */
+    public function __construct(
+        public ?string $id = null,
+        public string $label = 'Image viewer',
+        public bool $download = false,
+        public bool $loop = false,
+        public string $motion = 'default',
+        public array $labels = [],
+        public ?Htmlable $stimulus = null,
+    ) {
+        $this->resolvedId = $id ?? app(ComponentId::class)->next('hw-image-viewer');
+        $this->motion = $motion === 'none' ? 'none' : 'default';
+        $this->labels = array_replace([
+            'previous' => 'Previous image',
+            'next' => 'Next image',
+            'zoomIn' => 'Zoom in',
+            'zoomOut' => 'Zoom out',
+            'zoom' => 'Zoom level',
+            'reset' => 'Fit image',
+            'close' => 'Close',
+            'download' => 'Download original',
+            'loading' => 'Loading image…',
+            'error' => 'This image could not be loaded.',
+            'viewport' => 'Image. Use + and - to zoom; arrow keys to pan when zoomed.',
+        ], $labels);
+    }
+
+    /** Render the source region and the viewer's presentation shell. */
+    public function render(): View
+    {
+        return view('hotwire::component-views.image-viewer', [
+            'slotNames' => array_map(static fn (array $slot): string => $slot['name'], self::SLOTS),
+        ]);
+    }
+}

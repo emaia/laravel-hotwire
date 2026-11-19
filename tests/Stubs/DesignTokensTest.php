@@ -892,6 +892,8 @@ it('uses physical inline CSS only for documented physical contracts', function (
             'transform: translateX(50%)',
         ],
         '[data-slot="toast"][data-position$="-center"]' => ['translate: -50% 0'],
+        // Image coordinates describe physical pixels, not reading-direction offsets.
+        '[data-slot="image-viewer-image"]' => ['transform: translate(var(--image-viewer-x), var(--image-viewer-y))'],
         '[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)' => ['translate: 50% 0'],
     ];
     $unexpectedStructural = collect($structuralPhysical)

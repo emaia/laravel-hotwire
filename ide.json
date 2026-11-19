@@ -534,6 +534,11 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Icon"
                 },
                 {
+                    "name": "image-viewer",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\ImageViewer"
+                },
+                {
                     "name": "input",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Input"

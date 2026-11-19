@@ -1,0 +1,42 @@
+@layer components {
+    [data-slot="image-viewer-overlay"] {
+        @apply text-foreground;
+    }
+    [data-slot="image-viewer-backdrop"] {
+        @apply bg-backdrop opacity-0;
+        transition: opacity 150ms ease-out;
+    }
+    [data-slot="image-viewer-dialog"] {
+        @apply bg-background border border-border rounded-xl shadow-lg opacity-0 scale-95;
+        transition: opacity 200ms ease-out, scale 200ms ease-out;
+    }
+    [data-slot="image-viewer-overlay"][data-state="open"] > [data-slot="image-viewer-backdrop"] {
+        @apply opacity-100;
+    }
+    [data-slot="image-viewer-overlay"][data-state="open"] > [data-slot="image-viewer-dialog"] {
+        @apply opacity-100 scale-100;
+    }
+    [data-slot="image-viewer-toolbar"] {
+        @apply gap-1 p-2 border-b border-border;
+    }
+    [data-slot="image-viewer-button"] {
+        @apply inline-flex items-center justify-center size-9 rounded-md cursor-pointer text-foreground hover:bg-accent hover:text-accent-foreground;
+    }
+    [data-slot="image-viewer-button"]:disabled {
+        @apply opacity-40 cursor-default;
+    }
+    [data-slot="image-viewer-counter"] {
+        @apply text-xs text-muted-foreground tabular-nums px-2;
+    }
+    [data-slot="image-viewer-zoom"] {
+        @apply h-9 rounded-md border border-input bg-background px-2 pe-8 text-sm text-foreground tabular-nums appearance-none disabled:opacity-40;
+    }
+    [data-slot="image-viewer-caption"] {
+        @apply text-sm text-muted-foreground text-center p-3 break-words;
+        max-height: 20dvh;
+        overflow: auto;
+    }
+    [data-slot="image-viewer-status"] {
+        @apply text-sm text-muted-foreground text-center p-6;
+    }
+}
