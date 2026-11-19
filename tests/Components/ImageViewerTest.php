@@ -85,3 +85,15 @@ it('renders opt-in thumbnails from a Blade-authored button template', function (
         ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//button[@data-action="image-viewer#selectThumbnail"]')->count())->toBe(1)
         ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//img[@alt=""]')->count())->toBe(1);
 });
+
+it('names the viewport group and toolbar independently of the dialog', function () {
+    $view = $this->blade('<x-hw::image-viewer label="Product photos" :labels="$labels" />', [
+        'labels' => ['controls' => 'Controles da imagem', 'viewport' => 'Use + e - para ampliar'],
+    ]);
+    $xpath = new DOMXPath(dom((string) $view));
+
+    expect($xpath->query('//*[@role="dialog" and @aria-label="Product photos"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-slot="image-viewer-toolbar" and @role="group" and @aria-label="Controles da imagem"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-image-viewer-target="viewport" and @role="group" and @aria-label="Use + e - para ampliar"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@role="group" and @aria-label="Product photos"]')->count())->toBe(0);
+});

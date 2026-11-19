@@ -1,5 +1,21 @@
 <?php
 
+it('keeps component and controller tables alphabetized', function () {
+    $readme = file_get_contents(__DIR__.'/../../README.md');
+    $tables = [
+        'components' => explode('## Controllers', explode('## Components', $readme, 2)[1], 2)[0],
+        'controllers' => explode('## Styling', explode('## Controllers', $readme, 2)[1], 2)[0],
+    ];
+
+    foreach ($tables as $name => $table) {
+        preg_match_all('/\[([^]]+)\]\(docs\/(?:components|controllers)\/[^)]+\)/', $table, $matches);
+        $sorted = $matches[1];
+        usort($sorted, strcasecmp(...));
+
+        expect($matches[1])->toBe(array_values($sorted), "README {$name} table is not alphabetized.");
+    }
+});
+
 it('links every registered component in the README component table', function () {
     $catalog = require __DIR__.'/../../src/Registry/catalog.php';
     $readme = file_get_contents(__DIR__.'/../../README.md');

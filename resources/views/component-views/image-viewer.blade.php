@@ -34,7 +34,7 @@
             aria-label="{{ $label }}"
             tabindex="-1"
         >
-            <div data-slot="{{ $slotNames['toolbar'] }}" role="group" aria-label="{{ $label }}">
+            <div data-slot="{{ $slotNames['toolbar'] }}" role="group" aria-label="{{ $labels['controls'] }}">
                 <span
                     data-slot="{{ $slotNames['counter'] }}"
                     data-image-viewer-target="counter"
@@ -142,6 +142,7 @@
             <div
                 data-slot="{{ $slotNames['viewport'] }}"
                 data-image-viewer-target="viewport"
+                role="group"
                 tabindex="0"
                 aria-label="{{ $labels['viewport'] }}"
             >

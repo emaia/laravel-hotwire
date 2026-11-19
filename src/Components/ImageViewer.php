@@ -57,6 +57,7 @@ class ImageViewer extends BaseComponent
             'loading' => 'Loading image…',
             'error' => 'This image could not be loaded.',
             'viewport' => 'Image. Use + and - to zoom; arrow keys to pan when zoomed.',
+            'controls' => 'Image controls',
             'thumbnails' => 'Choose image',
             'thumbnail' => 'View image :index of :total',
         ], $labels);

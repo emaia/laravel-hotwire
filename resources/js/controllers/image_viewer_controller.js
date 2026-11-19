@@ -63,6 +63,7 @@ export default class extends Controller {
             attributes: true,
             attributeFilter: [
                 "src",
+                "href",
                 "srcset",
                 "sizes",
                 "alt",
@@ -156,12 +157,14 @@ export default class extends Controller {
             this.setupShell();
         }
         const old = this.active;
+        const previousItems = this.items;
         const previousIndex = Math.max(0, this.items.indexOf(old));
         this.items = this.source
             ? [...this.source.querySelectorAll("img")]
                   .filter((img) => img.closest('[data-controller~="image-viewer"]') === this.element)
                   .map((img) => this.describe(img))
             : [];
+        this.refreshTrigger(previousItems);
         if (!this.items.length || !this.shell) {
             this.closeForCache();
             this.active = null;
@@ -179,7 +182,8 @@ export default class extends Controller {
             if (
                 !sameIdentity ||
                 this.active.url !== old.url ||
-                (this.geometry && this.imageTarget.getAttribute("src") !== this.active.url)
+                this.active.crossOrigin !== old.crossOrigin ||
+                this.active.referrerPolicy !== old.referrerPolicy
             ) {
                 this.loadCurrent();
             } else {
@@ -187,6 +191,17 @@ export default class extends Controller {
                 this.render();
             }
         }
+    }
+
+    refreshTrigger(previousItems) {
+        if (!this.trigger || this.source?.contains(this.trigger)) return;
+        // Preserve the opener's identity, not the image reached through gallery navigation.
+        const origin = previousItems.find((item) => item.link === this.trigger || this.trigger.contains(item.node));
+        const retained =
+            origin && this.items.find((item) => (origin.key ? item.key === origin.key : item.node === origin.node));
+        if (!retained) return;
+        this.trigger = retained.link ?? retained.node.closest("button") ?? retained.node;
+        this.overlay?.setTriggerElement(this.trigger);
     }
 
     describe(node) {
@@ -200,6 +215,8 @@ export default class extends Controller {
             ),
             caption: node.dataset.caption ?? node.alt,
             alt: node.alt,
+            crossOrigin: node.hasAttribute("crossorigin") ? node.crossOrigin : null,
+            referrerPolicy: node.referrerPolicy,
             thumbnail: this.safeURL(
                 node.hasAttribute("srcset") ? node.currentSrc || node.getAttribute("src") : node.getAttribute("src"),
             ),
@@ -252,7 +269,7 @@ export default class extends Controller {
             { signal: this.shellListeners.signal },
         );
         rememberSnapshotState(this.imageTarget, {
-            attributes: ["src", "alt", "hidden"],
+            attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy"],
             styles: ["--image-viewer-width", "--image-viewer-height", "--image-viewer-x", "--image-viewer-y"],
         });
         rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
@@ -323,6 +340,7 @@ export default class extends Controller {
     show(index) {
         const item = this.items[index];
         if (!item || !this.overlay) return;
+        if (item === this.active && this.overlay.isOpen) return this.overlay.settled;
         this.cancelLoad();
         this.active = item;
         this.syncMetadata();
@@ -368,8 +386,7 @@ export default class extends Controller {
         const generation = this.generation;
         const item = this.active;
         const loader = (this.loader = new Image());
-        if (item.node.hasAttribute("crossorigin")) loader.crossOrigin = item.node.crossOrigin;
-        loader.referrerPolicy = item.node.referrerPolicy;
+        this.applyImagePolicy(loader, item);
         loader.onload = () => {
             if (generation !== this.generation || !this.connected || !this.overlay?.isOpen) return;
             const rect = this.viewportDimensions();
@@ -377,8 +394,6 @@ export default class extends Controller {
             this.loader = null;
             loader.onload = loader.onerror = null;
             if (!this.geometry) return this.loadFailed();
-            this.imageTarget.src = item.url;
-            this.imageTarget.alt = this.active.alt;
             this.loadingTarget.hidden = true;
             this.viewportTarget.removeAttribute("aria-busy");
             this.render();
@@ -388,6 +403,14 @@ export default class extends Controller {
             if (generation === this.generation && this.connected) this.loadFailed();
         };
         loader.src = item.url;
+    }
+
+    // Keep fetch modes aligned so the displayed image can reuse the loader's resource.
+    applyImagePolicy(image, item) {
+        if (item.crossOrigin === null) image.removeAttribute("crossorigin");
+        else if (image.crossOrigin !== item.crossOrigin) image.crossOrigin = item.crossOrigin;
+        if (!item.referrerPolicy) image.removeAttribute("referrerpolicy");
+        else if (image.referrerPolicy !== item.referrerPolicy) image.referrerPolicy = item.referrerPolicy;
     }
 
     loadFailed() {
@@ -541,6 +564,9 @@ export default class extends Controller {
     render() {
         if (this.geometry) {
             const state = this.geometry;
+            this.applyImagePolicy(this.imageTarget, this.active);
+            if (this.imageTarget.getAttribute("src") !== this.active.url) this.imageTarget.src = this.active.url;
+            this.imageTarget.alt = this.active.alt;
             const style = this.imageTarget.style;
             style.setProperty("--image-viewer-width", `${state.naturalWidth * state.scale}px`);
             style.setProperty("--image-viewer-height", `${state.naturalHeight * state.scale}px`);

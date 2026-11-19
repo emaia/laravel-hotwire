@@ -23,7 +23,7 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
         <div data-slot="image-viewer-overlay" data-image-viewer-target="overlay" hidden inert>
             <div data-slot="image-viewer-backdrop" data-image-viewer-target="backdrop"></div>
             <section data-slot="image-viewer-dialog" data-image-viewer-target="dialog" role="dialog" aria-modal="true" aria-label="Photos" tabindex="-1">
-                <div data-slot="image-viewer-toolbar">
+                <div data-slot="image-viewer-toolbar" role="group" aria-label="Image controls">
                     <button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
                     <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>
                     <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
@@ -45,9 +45,9 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
                     <a data-image-viewer-target="download" data-turbo="false" download>Download</a>
                     <button id="close" data-action="image-viewer#close">Close</button>
                 </div>
-                <div data-slot="image-viewer-viewport" data-image-viewer-target="viewport" tabindex="0" aria-label="Image">
+                <div data-slot="image-viewer-viewport" data-image-viewer-target="viewport" role="group" tabindex="0" aria-label="Image">
                     <img data-slot="image-viewer-image" data-image-viewer-target="image" alt="" hidden>
-                    <p data-image-viewer-target="loading">Loading</p>
+                    <p data-image-viewer-target="loading" hidden>Loading</p>
                     <p data-image-viewer-target="error" hidden>Cannot load image</p>
                 </div>
                 ${
@@ -128,6 +128,115 @@ test("loop wraps toolbar and thumbnail keyboard navigation in both directions", 
     await thumbnails.nth(0).press("ArrowLeft");
     await expect(thumbnails.nth(2)).toBeFocused();
     await expect(thumbnails.nth(2)).toHaveAttribute("aria-current", "true");
+});
+
+test("navigation to the current image preserves zoom and emits no extra change, including a one-image swipe", async ({
+    page,
+    context,
+}) => {
+    await start(page, item("one"));
+    await page.locator("#gallery").evaluate((root) => root.setAttribute("data-image-viewer-loop-value", "true"));
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#zoom").click();
+    const geometry = await page.evaluate(() => {
+        window.noopChanges = 0;
+        document.querySelector("#gallery").addEventListener("image-viewer:changed", () => window.noopChanges++);
+        return { ...window.viewer().geometry };
+    });
+    await page.locator("#close").focus();
+    for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) await page.keyboard.press(key);
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
+    expect(await page.evaluate(() => window.noopChanges)).toBe(0);
+
+    await page.locator("#reset").click();
+    const viewport = await page.locator('[data-image-viewer-target="viewport"]').boundingBox();
+    const x = viewport.x + viewport.width / 2;
+    const y = viewport.y + viewport.height / 2;
+    const session = await context.newCDPSession(page);
+    await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+    await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x - 200, y, id: 1 }] });
+    await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.noopChanges)).toBe(0);
+});
+
+test("Home and End do not reload images already selected at the gallery boundaries", async ({ page }) => {
+    await start(page);
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#zoom").click();
+    const firstScale = await page.evaluate(() => window.viewer().geometry.scale);
+    await page.locator("#close").focus();
+    await page.keyboard.press("Home");
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry.scale)).toBe(firstScale);
+    await page.keyboard.press("End");
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 2");
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#zoom").click();
+    const lastScale = await page.evaluate(() => window.viewer().geometry.scale);
+    await page.locator("#close").focus();
+    await page.keyboard.press("End");
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry.scale)).toBe(lastScale);
+});
+
+test("the displayed image shares loader request policies and snapshots restore the authored defaults", async ({
+    page,
+}) => {
+    const origins = [];
+    await page.route("https://images.test/credentials.svg", async (route) => {
+        const headers = await route.request().allHeaders();
+        origins.push(headers.origin);
+        await route.fulfill({
+            contentType: "image/svg+xml",
+            headers: {
+                "Access-Control-Allow-Origin": headers.origin || "null",
+                "Access-Control-Allow-Credentials": "true",
+            },
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"/>',
+        });
+    });
+    await start(page, item("one", "https://images.test/credentials.svg") + item("two"));
+    await page.locator("#one img").evaluate((img) => {
+        img.crossOrigin = "use-credentials";
+        img.referrerPolicy = "no-referrer";
+    });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await expect(displayed(page)).toHaveAttribute("crossorigin", "use-credentials");
+    await expect(displayed(page)).toHaveAttribute("referrerpolicy", "no-referrer");
+    await page.waitForFunction(() => document.querySelector('[data-image-viewer-target="image"]').naturalWidth > 0);
+    expect(origins.length).toBeGreaterThan(0);
+    // The setContent fixture has an opaque origin; CORS image requests carry the literal Origin: null.
+    expect(origins).toEqual(Array(origins.length).fill("null"));
+    expect(
+        await page.evaluate(() => {
+            const copy = document.body.cloneNode(true);
+            window.normalizeSnapshot(copy);
+            const image = copy.querySelector('[data-image-viewer-target="image"]');
+            return {
+                crossorigin: image.hasAttribute("crossorigin"),
+                referrerpolicy: image.hasAttribute("referrerpolicy"),
+            };
+        }),
+    ).toEqual({ crossorigin: false, referrerpolicy: false });
+    await page.locator("#next").click();
+    await expect(displayed(page)).toHaveAttribute("src", image());
+    await expect(displayed(page)).not.toHaveAttribute("crossorigin");
+    expect(await displayed(page).evaluate((img) => img.referrerPolicy)).toBe("");
+});
+
+test("an enclosing link href change updates the fallback original without morphing", async ({ page }) => {
+    await start(page, `<a id="one" href="${image()}"><img src="${image(80, 60)}" data-image-key="one" alt="one"></a>`);
+    await page.locator("#one").click();
+    await expect(displayed(page)).toHaveAttribute("src", image());
+    const original = image(2000, 1000, "red");
+    await page.locator("#one").evaluate((link, url) => (link.href = url), original);
+    await expect(displayed(page)).toHaveAttribute("src", original);
+    await expect(page.locator('[data-image-viewer-target="download"]')).toHaveAttribute("href", original);
 });
 
 test("keyed thumbnail buttons survive source changes and remain safe to restore from cache", async ({ page }) => {
@@ -486,6 +595,12 @@ test("recovers the presentation after full morph and shell replacement while ret
     await start(page);
     await page.locator("#two").click();
     await expect(displayed(page)).toBeVisible();
+    await page.locator("#zoom").click();
+    const geometry = await page.evaluate(() => {
+        window.morphChanges = 0;
+        document.querySelector("#gallery").addEventListener("image-viewer:changed", () => window.morphChanges++);
+        return { ...window.viewer().geometry };
+    });
     const html = markup();
     await page.evaluate((html) => {
         const template = document.createElement("template");
@@ -494,6 +609,12 @@ test("recovers the presentation after full morph and shell replacement while ret
     }, html);
     await expect(displayed(page)).toHaveAttribute("src", image(800, 1200, "blue"));
     await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
+    expect(await page.evaluate(() => window.morphChanges)).toBe(0);
+    const rendered = await displayed(page).boundingBox();
+    expect(rendered.width).toBeCloseTo(geometry.naturalWidth * geometry.scale, 1);
+    expect(rendered.height).toBeCloseTo(geometry.naturalHeight * geometry.scale, 1);
+    await expect(page.locator('[data-image-viewer-target="loading"]')).toBeHidden();
     await page.locator("#gallery").evaluate((root, html) => {
         const template = document.createElement("template");
         template.innerHTML = html;
@@ -519,6 +640,22 @@ test("preserves zoom across keyed source replacement and updates accessible text
     expect(await page.evaluate(() => window.viewer().geometry.scale)).toBe(scale);
     await page.locator("#one img").evaluate((img) => (img.alt = "Updated accessible description"));
     await expect(displayed(page)).toHaveAttribute("alt", "Updated accessible description");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#one")).toBeFocused();
+});
+
+test("keyed source replacement retains the initiating focus destination rather than the current image", async ({
+    page,
+}) => {
+    await start(page);
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#next").click();
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 2");
+    await page.locator("#sources").evaluate((source, html) => (source.innerHTML = html), item("one") + item("two"));
+    await expect(displayed(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#one")).toBeFocused();
 });
 
 test("shares overlay stacking and scroll lock with a parent Modal", async ({ page }) => {
