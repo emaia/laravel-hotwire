@@ -23,3 +23,4 @@
 /phpstan.neon.dist  export-ignore
 /phpstan-baseline.neon  export-ignore
 /scripts/run_styles_fixture.php export-ignore
+/scripts/run_textarea_fixture.php export-ignore

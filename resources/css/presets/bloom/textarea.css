@@ -1,9 +1,20 @@
 @layer components {
     /* Textarea */
-    [data-slot="textarea"] { @apply flex min-h-24 w-full rounded-lg border border-input bg-muted/40 px-4 py-3 text-base text-foreground shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 md:text-sm; }
-    [data-slot="textarea-counter"] { @apply mt-1 block text-end text-xs text-muted-foreground tabular-nums; }
+    [data-slot="textarea"] { @apply flex min-h-24 w-full px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed md:text-sm; }
+    [data-slot="textarea"]:not(:where([data-slot="textarea-wrapper"] > *)), [data-slot="textarea-wrapper"] { @apply rounded-lg border border-input bg-muted/40 shadow-xs transition-[color,background-color,border-color,box-shadow]; }
+    [data-slot="textarea"]:not(:where([data-slot="textarea-wrapper"] > *)) { @apply focus-visible:border-ring focus-visible:bg-background focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20; }
+    [data-slot="textarea-wrapper"] { @apply flex min-w-0 w-full flex-col; }
+    [data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"]:focus-visible)) { @apply border-ring bg-background outline-solid outline-2 outline-offset-2 outline-ring; }
+    [data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"]:disabled)) { @apply cursor-not-allowed bg-input/50 opacity-50; }
+    [data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"][aria-invalid="true"])) { @apply border-destructive ring-[3px] ring-destructive/20; }
+    :where([data-slot="textarea-wrapper"]) > [data-slot="textarea"] { @apply rounded-none border-0 bg-transparent shadow-none; }
+    [data-slot="textarea-counter"] { @apply block min-w-0 px-4 pb-3 text-start text-xs text-muted-foreground tabular-nums; overflow-wrap: anywhere; }
 
     @scope ([data-theme="dark"]) to ([data-theme="light"]) {
-        :where(:scope, :scope *)[data-slot="textarea"] { @apply bg-input/40 focus-visible:bg-background disabled:bg-input/80 aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40; }
+        :where(:scope, :scope *)[data-slot="textarea"]:not(:where([data-slot="textarea-wrapper"] > *)) { @apply bg-input/40 focus-visible:bg-background disabled:bg-input/80 aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40; }
+        :where(:scope, :scope *)[data-slot="textarea-wrapper"] { @apply bg-input/40; }
+        :where(:scope, :scope *)[data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"]:focus-visible)) { @apply bg-background; }
+        :where(:scope, :scope *)[data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"]:disabled)) { @apply bg-input/80; }
+        :where(:scope, :scope *)[data-slot="textarea-wrapper"]:where(:has(> [data-slot="textarea"][aria-invalid="true"])) { @apply border-destructive/50 ring-destructive/40; }
     }
 }

@@ -23,8 +23,8 @@ Auto-resizing the textarea with an optional character counter. Mirrors the same 
 | `countdown`         | `bool`              | `false`             | Counter shows remaining instead of used                      |
 | `auto-submit`       | `bool\|string`      | `false`             | Add debounced auto-submit wiring                             |
 | `auto-submit-delay` | `int\|string\|null` | `null`              | Per-field debounce override                                  |
-| `class`             | `string`            | `""`                | Merged on `<textarea>`                                       |
-| `wrapper-class`     | `string`            | `""`                | Merged on the wrapper when counter is active                 |
+| `class`             | `string`            | `""`                | Merged on the native editing area                            |
+| `wrapper-class`     | `string`            | `""`                | Merged on the counted control's outer frame                  |
 
 Any other HTML attribute (`placeholder`, `rows`, `disabled`, `data-*`, `aria-*`) passes through.
 
@@ -49,22 +49,19 @@ The textarea grows automatically as the user types and shrinks when text is dele
 
 ## Char counter
 
-When `:counter` is set, a wrapper `<span>` with `data-controller="char-counter"` is rendered around the textarea. Its
-`<small data-slot="textarea-counter">` visual part contains the live counter target. Add `countdown` to show remaining
-characters:
+Set `:counter` to display a character count below the editable area, inside the control's frame. Use `wrapper-class` to
+style the frame and `class` to style the textarea. Add `countdown` to show remaining characters:
 
 ```blade
 <hw:textarea name="tweet" :counter="280" countdown />
 ```
 
-Customize the counter contents with the `counter-slot` named slot. The component keeps the visual wrapper and
-`aria-live="polite"`; custom content must expose `data-char-counter-target="counter"` where the live value belongs.
-Additional attributes on the named slot are merged onto the `<small>`, allowing per-instance styling. Because that
-package-owned root remains a `<small>`, slot content must be phrasing content:
+Customize the counter with `counter-slot`. Include `data-char-counter-target="counter"` where the live value belongs.
+Slot attributes style the counter container; its content must be phrasing content (text and inline elements):
 
 ```blade
 <hw:textarea name="bio" :counter="500">
-    <x-slot:counter-slot class="text-start">
+    <x-slot:counter-slot class="text-end">
         <span data-char-counter-target="counter"></span> of 500 characters
     </x-slot:counter-slot>
 </hw:textarea>
