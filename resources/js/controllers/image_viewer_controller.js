@@ -3,6 +3,7 @@ import { Controller } from "@hotwired/stimulus";
 import { createOverlay } from "./_overlay.js";
 import { rememberSnapshotState } from "./_snapshot.js";
 import { fitImage, panImage, resizeImage, zoomImage } from "./_image_viewport.js";
+import { createImageThumbnails } from "./_image_thumbnails.js";
 
 export default class extends Controller {
     static targets = [
@@ -24,6 +25,8 @@ export default class extends Controller {
         "zoomOut",
         "reset",
         "download",
+        "thumbnails",
+        "thumbnailTemplate",
     ];
     static values = { loop: { type: Boolean, default: false } };
 
@@ -36,13 +39,18 @@ export default class extends Controller {
         this.onKeydown = this.keydown.bind(this);
         this.onCache = this.closeForCache.bind(this);
         this.onMorph = this.queueRefresh.bind(this);
+        this.onSourceLoad = (event) => {
+            if (this.source?.contains(event.target)) this.queueRefresh();
+        };
     }
 
     connect() {
+        this.refreshThumbnails();
         this.connected = true;
         this.element.addEventListener("click", this.onClick);
         this.element.addEventListener("keydown", this.onKeydown);
         this.element.addEventListener("turbo:morph-element", this.onMorph);
+        this.element.addEventListener("load", this.onSourceLoad, true);
         document.addEventListener("turbo:before-cache", this.onCache);
         this.observer = new MutationObserver((records) => {
             if (records.some((record) => record.target === this.element || this.source?.contains(record.target))) {
@@ -58,6 +66,8 @@ export default class extends Controller {
                 "srcset",
                 "sizes",
                 "alt",
+                "referrerpolicy",
+                "crossorigin",
                 "id",
                 "data-original",
                 "data-caption",
@@ -75,6 +85,7 @@ export default class extends Controller {
         this.element.removeEventListener("click", this.onClick);
         this.element.removeEventListener("keydown", this.onKeydown);
         this.element.removeEventListener("turbo:morph-element", this.onMorph);
+        this.element.removeEventListener("load", this.onSourceLoad, true);
         document.removeEventListener("turbo:before-cache", this.onCache);
         this.teardownShell();
     }
@@ -98,6 +109,18 @@ export default class extends Controller {
         this.queueRefresh();
     }
     imageTargetDisconnected() {
+        this.queueRefresh();
+    }
+    thumbnailsTargetConnected() {
+        this.queueRefresh();
+    }
+    thumbnailsTargetDisconnected() {
+        this.queueRefresh();
+    }
+    thumbnailTemplateTargetConnected() {
+        this.queueRefresh();
+    }
+    thumbnailTemplateTargetDisconnected() {
         this.queueRefresh();
     }
 
@@ -142,10 +165,12 @@ export default class extends Controller {
         if (!this.items.length || !this.shell) {
             this.closeForCache();
             this.active = null;
+            this.refreshThumbnails();
             return;
         }
         const retained = old && this.items.find((item) => (old.key ? item.key === old.key : item.node === old.node));
         this.active = retained ?? this.items[Math.min(previousIndex, this.items.length - 1)];
+        this.refreshThumbnails();
         if (wasOpen && shellChanged) {
             this.overlay.setOpen({ notify: false });
             this.loadCurrent();
@@ -175,6 +200,9 @@ export default class extends Controller {
             ),
             caption: node.dataset.caption ?? node.alt,
             alt: node.alt,
+            thumbnail: this.safeURL(
+                node.hasAttribute("srcset") ? node.currentSrc || node.getAttribute("src") : node.getAttribute("src"),
+            ),
             download: this.safeURL(
                 node.dataset.downloadUrl ||
                     node.dataset.original ||
@@ -238,7 +266,10 @@ export default class extends Controller {
             stopEscapePropagation: true,
             getTriggerElement: () => this.trigger,
             onEscape: () => this.close(),
-            onOpen: () => this.dispatch("opened"),
+            onOpen: () => {
+                this.syncThumbnails();
+                this.dispatch("opened");
+            },
             onClose: () => {
                 this.cancelLoad();
                 this.cancelPointers();
@@ -261,6 +292,8 @@ export default class extends Controller {
         this.cancelPointers();
         this.shellListeners?.abort();
         this.resizeObserver?.disconnect();
+        this.thumbnails?.clear();
+        this.thumbnails = null;
         this.overlay?.cleanup();
         this.overlay = null;
         this.shell = null;
@@ -345,11 +378,11 @@ export default class extends Controller {
             loader.onload = loader.onerror = null;
             if (!this.geometry) return this.loadFailed();
             this.imageTarget.src = item.url;
-            this.imageTarget.alt = item.alt;
+            this.imageTarget.alt = this.active.alt;
             this.loadingTarget.hidden = true;
             this.viewportTarget.removeAttribute("aria-busy");
             this.render();
-            this.dispatch("changed", { detail: { index: this.items.indexOf(item), image: item.node } });
+            this.dispatch("changed", { detail: { index: this.items.indexOf(this.active), image: this.active.node } });
         };
         loader.onerror = () => {
             if (generation === this.generation && this.connected) this.loadFailed();
@@ -379,6 +412,50 @@ export default class extends Controller {
             link.hidden = !url;
         }
         this.syncControls();
+        this.syncThumbnails();
+    }
+
+    refreshThumbnails() {
+        if (!this.hasThumbnailsTarget) {
+            this.thumbnails?.clear();
+            this.thumbnails = null;
+            return;
+        }
+        if (!this.hasThumbnailTemplateTarget) {
+            throw new Error("Image viewer thumbnails require a thumbnailTemplate target.");
+        }
+        if (
+            this.thumbnails?.element !== this.thumbnailsTarget ||
+            this.thumbnails?.template !== this.thumbnailTemplateTarget
+        ) {
+            this.thumbnails?.clear();
+            this.thumbnails = createImageThumbnails(
+                this.thumbnailsTarget,
+                this.thumbnailTemplateTarget,
+                this.identifier,
+            );
+        }
+        this.thumbnails.render(
+            this.items,
+            this.items.indexOf(this.active),
+            this.overlay?.isOpen && !this.overlay.isOpening,
+        );
+    }
+
+    syncThumbnails() {
+        this.thumbnails?.sync(this.items.indexOf(this.active), this.overlay?.isOpen && !this.overlay.isOpening);
+    }
+
+    selectThumbnail(event) {
+        const index = Number(event.params?.index);
+        if (
+            Number.isInteger(index) &&
+            index >= 0 &&
+            index < this.items.length &&
+            index !== this.items.indexOf(this.active)
+        ) {
+            void this.show(index);
+        }
     }
 
     syncCaptionAccessibility() {
@@ -536,6 +613,21 @@ export default class extends Controller {
             event.target.closest("input, textarea, select, [contenteditable]")
         )
             return;
+        const focusedThumbnail = this.thumbnails?.indexOf(event.target) ?? -1;
+        if (focusedThumbnail >= 0 && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            const rtl = getComputedStyle(this.thumbnails.element).direction === "rtl";
+            const step = (event.key === "ArrowRight" ? 1 : -1) * (rtl ? -1 : 1);
+            let index =
+                event.key === "Home" ? 0 : event.key === "End" ? this.items.length - 1 : focusedThumbnail + step;
+            index = this.loopValue
+                ? (index + this.items.length) % this.items.length
+                : Math.max(0, Math.min(this.items.length - 1, index));
+            if (index !== this.items.indexOf(this.active)) void this.show(index);
+            this.thumbnails.focus(index);
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         const directions = { ArrowLeft: [-40, 0], ArrowRight: [40, 0], ArrowUp: [0, -40], ArrowDown: [0, 40] };
         if (!this.atFit && event.target === this.viewportTarget && directions[event.key]) {
             this.geometry = panImage(this.geometry, ...directions[event.key]);

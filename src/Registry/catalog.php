@@ -581,7 +581,7 @@ return [
             'view' => 'hotwire::component-views.image-viewer',
             'docs' => 'docs/components/image-viewer.md',
             'category' => 'overlay',
-            'description' => 'Image viewer for thumbnail galleries with zoom, pan, pinch gestures, keyboard navigation, Turbo updates and optional original downloads',
+            'description' => 'Image gallery viewer with zoom, pan, pinch gestures, keyboard navigation, Turbo updates, optional thumbnails and original downloads',
             'controllers' => ['image-viewer'],
             'styling' => ['slots' => [['class' => ImageViewer::class]]],
         ],
@@ -1450,7 +1450,7 @@ return [
             'source' => 'resources/js/controllers/image_viewer_controller.js',
             'docs' => 'docs/controllers/image-viewer.md',
             'category' => 'overlay',
-            'description' => 'Enhances linked thumbnails with zoom, pan, pinch gestures, keyboard navigation and automatic gallery updates after Turbo renders',
+            'description' => 'Enhances image galleries with zoom, pan, pinch gestures, keyboard and thumbnail navigation, and automatic updates after Turbo renders',
         ],
         'input-mask' => [
             'source' => 'resources/js/controllers/input_mask_controller.js',

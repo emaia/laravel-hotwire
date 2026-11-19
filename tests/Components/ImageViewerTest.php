@@ -73,3 +73,15 @@ it('offers fit and standard zoom percentages including natural size', function (
         ->and($xpath->query('//*[@data-slot="image-viewer-zoom"]/option[@value="1" and text()="100%"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-slot="image-viewer-zoom"]/option[@value="4" and text()="400%"]')->count())->toBe(1);
 });
+
+it('renders opt-in thumbnails from a Blade-authored button template', function () {
+    $this->blade('<x-hw::image-viewer />')->assertDontSee('data-image-viewer-target="thumbnails"', false);
+    $view = $this->blade('<x-hw::image-viewer thumbnails :labels="$labels"><img src="/thumb.jpg" data-original="/original.jpg" alt="Product"></x-hw::image-viewer>', [
+        'labels' => ['thumbnails' => 'Escolher imagem', 'thumbnail' => 'Ver imagem :index de :total'],
+    ]);
+    $xpath = new DOMXPath(dom((string) $view));
+
+    expect($xpath->query('//*[@data-slot="image-viewer-thumbnails" and @aria-label="Escolher imagem"]')->count())->toBe(1)
+        ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//button[@data-action="image-viewer#selectThumbnail"]')->count())->toBe(1)
+        ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//img[@alt=""]')->count())->toBe(1);
+});

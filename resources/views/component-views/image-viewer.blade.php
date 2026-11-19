@@ -159,6 +159,25 @@
                     {{ $labels['error'] }}
                 </p>
             </div>
+            @if ($thumbnails)
+                <div
+                    data-slot="{{ $slotNames['thumbnails'] }}"
+                    data-image-viewer-target="thumbnails"
+                    role="group"
+                    aria-label="{{ $labels['thumbnails'] }}"
+                ></div>
+                <template data-image-viewer-target="thumbnailTemplate">
+                    <button
+                        type="button"
+                        data-slot="{{ $slotNames['thumbnail'] }}"
+                        data-label="{{ $labels['thumbnail'] }}"
+                        data-action="image-viewer#selectThumbnail"
+                    >
+                        <img data-slot="{{ $slotNames['thumbnail-image'] }}" alt="" loading="lazy" draggable="false" />
+                    </button>
+                </template>
+            @endif
+
             <p data-slot="{{ $slotNames['caption'] }}" data-image-viewer-target="caption"></p>
         </section>
     </div>

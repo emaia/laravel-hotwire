@@ -25,6 +25,9 @@ class ImageViewer extends BaseComponent
         'viewport' => ['name' => 'image-viewer-viewport', 'kind' => 'structural'],
         'image' => ['name' => 'image-viewer-image', 'kind' => 'structural'],
         'icon' => ['name' => 'image-viewer-icon', 'kind' => 'structural'],
+        'thumbnails' => ['name' => 'image-viewer-thumbnails', 'kind' => 'visual'],
+        'thumbnail' => ['name' => 'image-viewer-thumbnail', 'kind' => 'visual'],
+        'thumbnail-image' => ['name' => 'image-viewer-thumbnail-image', 'kind' => 'structural'],
     ];
 
     public string $resolvedId;
@@ -38,6 +41,7 @@ class ImageViewer extends BaseComponent
         public string $motion = 'default',
         public array $labels = [],
         public ?Htmlable $stimulus = null,
+        public bool $thumbnails = false,
     ) {
         $this->resolvedId = $id ?? app(ComponentId::class)->next('hw-image-viewer');
         $this->motion = $motion === 'none' ? 'none' : 'default';
@@ -53,6 +57,8 @@ class ImageViewer extends BaseComponent
             'loading' => 'Loading image…',
             'error' => 'This image could not be loaded.',
             'viewport' => 'Image. Use + and - to zoom; arrow keys to pan when zoomed.',
+            'thumbnails' => 'Choose image',
+            'thumbnail' => 'View image :index of :total',
         ], $labels);
     }
 

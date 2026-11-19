@@ -201,6 +201,7 @@ it('classifies presentation-free and controller-owned slots as structural', func
         'image-viewer-icon',
         'image-viewer-actions',
         'image-viewer-zoom-control',
+        'image-viewer-thumbnail-image',
         'input-otp-slots',
         'input-wrapper',
         'map',

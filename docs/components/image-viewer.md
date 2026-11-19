@@ -29,8 +29,9 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 | `label` | `Image viewer` | Accessible dialog and controls group name |
 | `download` | `false` | Include an original download link |
 | `loop` | `false` | Wrap previous/next navigation |
+| `thumbnails` | `false` | Show a thumbnail strip inside the open viewer |
 | `motion` | `default` | Preset-driven enter/exit transitions; `none` disables them |
-| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `close`, `download`, `loading`, `error`, `viewport` |
+| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `close`, `download`, `loading`, `error`, `viewport`, `thumbnails`, `thumbnail` |
 | `stimulus` | `null` | Additional Stimulus attributes on the root |
 
 Other attributes, including `class`, apply to the root. The internal `data-image-viewer-*` namespace is protected.
@@ -73,7 +74,40 @@ Only HTTP(S), blob and image data URLs are accepted. This URL check is not autho
 - Opening and closing animate the backdrop/panel through the shared Presence lifecycle. Reduced motion and `motion="none"`
   disable those transitions. Image fit uses untransformed viewport dimensions while the panel enters; zoom/pan do not inherit panel transitions.
 
-Rotation, flip, thumbnails within the viewer, slideshow, fullscreen, inline mode and mixed media are not supported.
+Rotation, flip, magnifier, automatic slideshow, fullscreen, inline mode and mixed media are not supported.
+
+## Thumbnail navigation
+
+```blade
+<hw:image-viewer label="Product photos" thumbnails loop download>
+    @foreach ($photos as $photo)
+        <a href="{{ $photo->original_url }}" data-turbo="false">
+            <img src="{{ $photo->thumbnail_url }}"
+                 data-original="{{ $photo->original_url }}"
+                 data-image-key="{{ $photo->id }}"
+                 alt="{{ $photo->description }}">
+        </a>
+    @endforeach
+</hw:image-viewer>
+```
+
+The strip uses the source thumbnail, not the full original. Its selected button has `aria-current="true"` and remains
+in view after navigation. Tab enters the strip at that button; Left/Right select and focus an adjacent image in the
+strip's reading direction, and Home/End select first/last. The button's accessible label includes its position and
+the source image's `alt`. Customize `labels.thumbnail` using `:index` and `:total` placeholders.
+
+Short strips are centered by the official presets. When thumbnails exceed the available width, the strip falls back
+to a horizontally scrollable row so both ends remain reachable. The active thumbnail scrolls into view when navigation
+changes selection. `loop` wraps previous/next and thumbnail arrow-key navigation from last to first and first to last;
+omit it to stop at the ends.
+
+Thumbnail images load lazily, but their buttons are not virtualized. For very large collections, paginate or limit the
+source gallery in the application rather than rendering thousands of image controls.
+
+Stable image keys preserve thumbnail buttons and keyboard focus across source updates. Additions, removal, reordering,
+responsive thumbnail loads and changed thumbnail URLs update the strip without reconnecting the controller.
+Thumbnail markup comes from an internal Blade template; no carousel dependency is needed. This is direct navigation,
+not autoplay. With `thumbnails` omitted, existing presentation is unchanged.
 
 ## Download
 
@@ -104,6 +138,9 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-viewport"`: structural clipped interaction area; `data-pan-state="ready|dragging"` indicates available or active pan, and is absent when the image cannot pan.
 - `data-slot="image-viewer-image"`: structural displayed image.
 - `data-slot="image-viewer-icon"`: structural decorative icon.
+- `data-slot="image-viewer-thumbnails"`: optional horizontally scrollable strip.
+- `data-slot="image-viewer-thumbnail"`: native selection button; `aria-current="true"` marks the selected image.
+- `data-slot="image-viewer-thumbnail-image"`: structural thumbnail content inside its button.
 
 These names are emitted as `data-slot`. Nova and Bloom share the same anatomy. Geometry is supplied by the private
 `--image-viewer-width`, `--image-viewer-height`, `--image-viewer-x`, `--image-viewer-y` properties on the displayed image;
@@ -115,3 +152,4 @@ reading direction; it must not mirror the bitmap or the pointer pivot.
 
 `_image_viewport.js` owns DOM-free fit/zoom/pan calculations. The controller owns loading, gestures and source
 reconciliation. Blade owns all UI markup; the existing overlay helpers own focus, stacking, top layer and scroll lock.
+`_image_thumbnails.js` reconciles the Blade-authored thumbnail buttons while retaining their identity and keyboard focus.

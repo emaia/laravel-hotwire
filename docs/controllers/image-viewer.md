@@ -18,6 +18,7 @@ See [Image Viewer](../components/image-viewer.md) for image metadata, interactio
 | `previous`, `next` | Select the adjacent image |
 | `zoomIn`, `zoomOut` | Zoom around the viewport center |
 | `changeZoom` | Apply the native zoom selector's percentage or Fit value |
+| `selectThumbnail` | Select the image identified by the thumbnail button's `index` action parameter |
 | `reset` | Fit the current original without upscaling |
 | `close` | Close the viewer and return focus |
 | `closeForCache` | Close immediately without returning focus |
@@ -35,6 +36,12 @@ The displayed image starts hidden with no source.
 
 An optional `zoomSelect` target offers `fit`, numeric natural-scale values (`1` = 100%) and a disabled `current` option
 for intermediate values. The `fit` option can carry a translated `data-label`.
+
+Optional thumbnail navigation uses a `thumbnails` target and a `thumbnailTemplate` target. Supply both together:
+the list is controller-owned and starts empty; the template contains one native button with an image,
+`data-action="image-viewer#selectThumbnail"` and a translated `data-label` with `:index`/`:total` placeholders.
+Missing or malformed templates are configuration errors, not a fallback to JavaScript-generated UI.
+The strip uses roving keyboard focus and native scrolling; see the component's thumbnail example.
 
 The controller does not generate a fallback toolbar or accept HTML render callbacks. Keep the image source region
 separate from the presentation so updates do not observe the controller's own rendering.

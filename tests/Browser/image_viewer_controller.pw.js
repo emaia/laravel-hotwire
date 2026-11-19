@@ -17,7 +17,7 @@ const image = (width = 1600, height = 1200, color = "green") =>
 const item = (id, url = image(), caption = id) =>
     `<a id="${id}" href="${url}"><img src="${image(80, 60)}" data-image-key="${id}" data-original="${url}" data-caption="${caption}" alt="${id}"></a>`;
 
-function markup(items = item("one") + item("two", image(800, 1200, "blue"))) {
+function markup(items = item("one") + item("two", image(800, 1200, "blue")), thumbnails = false) {
     return `<div id="gallery" data-controller="image-viewer">
         <div id="sources" data-image-viewer-target="source">${items}</div>
         <div data-slot="image-viewer-overlay" data-image-viewer-target="overlay" hidden inert>
@@ -50,24 +50,223 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue"))) {
                     <p data-image-viewer-target="loading">Loading</p>
                     <p data-image-viewer-target="error" hidden>Cannot load image</p>
                 </div>
+                ${
+                    thumbnails
+                        ? `
+                    <div data-slot="image-viewer-thumbnails" data-image-viewer-target="thumbnails" role="group" aria-label="Choose image"></div>
+                    <template data-image-viewer-target="thumbnailTemplate">
+                        <button type="button" data-slot="image-viewer-thumbnail" data-label="View image :index of :total" data-action="image-viewer#selectThumbnail">
+                            <img data-slot="image-viewer-thumbnail-image" alt="" loading="lazy" draggable="false">
+                        </button>
+                    </template>
+                `
+                        : ""
+                }
                 <p data-slot="image-viewer-caption" data-image-viewer-target="caption"></p>
             </section>
         </div>
     </div>`;
 }
 
-async function start(page, items) {
+async function start(page, items, { thumbnails = false } = {}) {
     await page.setContent(`<base href="https://gallery.test/"><style>${readFileSync("resources/css/structural.css", "utf8")}
         [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
         [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
         #sources img { width:80px; height:60px }
-    </style>${markup(items)}`);
+        [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
+    </style>${markup(items, thumbnails)}`);
     await page.addScriptTag({ content: bundle });
     await page.waitForFunction(() => window.viewer()?.connected);
 }
 
 const overlay = (page) => page.locator('[data-image-viewer-target="overlay"]');
 const displayed = (page) => page.locator('[data-image-viewer-target="image"]');
+
+test("thumbnail selection follows clicks, toolbar navigation and native keyboard focus", async ({ page }) => {
+    await start(page, item("one") + item("two") + item("three"), { thumbnails: true });
+    await page.locator("#one img").evaluate((img) => {
+        img.referrerPolicy = "no-referrer";
+        img.crossOrigin = "anonymous";
+    });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    const thumbnails = page.locator('[data-slot="image-viewer-thumbnail"]');
+    await expect(thumbnails).toHaveCount(3);
+    await expect(thumbnails.nth(0)).toHaveAttribute("aria-current", "true");
+    await expect(thumbnails.nth(0)).toHaveAccessibleName("View image 1 of 3 — one");
+    await expect(thumbnails.nth(0).locator("img")).toHaveAttribute("src", image(80, 60));
+    await expect(thumbnails.nth(0).locator("img")).toHaveAttribute("referrerpolicy", "no-referrer");
+    await expect(thumbnails.nth(0).locator("img")).toHaveAttribute("crossorigin", "anonymous");
+    await thumbnails.nth(2).click();
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("3 / 3");
+    await expect(thumbnails.nth(2)).toHaveAttribute("aria-current", "true");
+    await thumbnails.nth(2).press("Home");
+    await expect(thumbnails.nth(0)).toBeFocused();
+    await thumbnails.nth(0).press("ArrowRight");
+    await expect(thumbnails.nth(1)).toBeFocused();
+    await expect(thumbnails.nth(1)).toHaveAttribute("aria-current", "true");
+    await page.locator("#next").click();
+    await expect(thumbnails.nth(2)).toHaveAttribute("aria-current", "true");
+});
+
+test("loop wraps toolbar and thumbnail keyboard navigation in both directions", async ({ page }) => {
+    await start(page, item("one") + item("two") + item("three"), { thumbnails: true });
+    await page.locator("#gallery").evaluate((root) => root.setAttribute("data-image-viewer-loop-value", "true"));
+    await page.locator("#three").click();
+    await expect(displayed(page)).toBeVisible();
+    await expect(page.locator("#next")).toBeEnabled();
+    await page.locator("#next").click();
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("1 / 3");
+    await expect(page.locator("#prev")).toBeEnabled();
+    await page.locator("#prev").click();
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("3 / 3");
+    const thumbnails = page.locator('[data-slot="image-viewer-thumbnail"]');
+    await thumbnails.nth(2).focus();
+    await thumbnails.nth(2).press("ArrowRight");
+    await expect(thumbnails.nth(0)).toBeFocused();
+    await expect(thumbnails.nth(0)).toHaveAttribute("aria-current", "true");
+    await thumbnails.nth(0).press("ArrowLeft");
+    await expect(thumbnails.nth(2)).toBeFocused();
+    await expect(thumbnails.nth(2)).toHaveAttribute("aria-current", "true");
+});
+
+test("keyed thumbnail buttons survive source changes and remain safe to restore from cache", async ({ page }) => {
+    await start(page, item("one") + item("two") + item("three"), { thumbnails: true });
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator('[data-slot="image-viewer-thumbnail"]').nth(1).focus();
+    await page.evaluate(() => {
+        window.retainedThumbnail = document.querySelectorAll('[data-slot="image-viewer-thumbnail"]')[1];
+        document.querySelector("#sources").prepend(document.querySelector("#two"));
+    });
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(0)).toBeFocused();
+    expect(
+        await page.evaluate(
+            () => document.querySelector('[data-slot="image-viewer-thumbnail"]') === window.retainedThumbnail,
+        ),
+    ).toBe(true);
+    await page.locator("#two img").evaluate((img) => {
+        img.src = "javascript:alert(1)";
+        img.alt = "Changed";
+    });
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(0)).toHaveAccessibleName(
+        "View image 1 of 3 — Changed",
+    );
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(0).locator("img")).not.toHaveAttribute("src");
+    await page.locator("#two").evaluate((node) => node.remove());
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(2);
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"][aria-current="true"]')).toBeFocused();
+    expect(
+        await page.evaluate(() => {
+            const copy = document.body.cloneNode(true);
+            window.normalizeSnapshot(copy);
+            return {
+                thumbnails: copy.querySelectorAll('[data-slot="image-viewer-thumbnail"]').length,
+                sources: copy.querySelector("#sources").querySelectorAll("img").length,
+                template: !!copy.querySelector('[data-image-viewer-target="thumbnailTemplate"]'),
+            };
+        }),
+    ).toEqual({ thumbnails: 0, sources: 2, template: true });
+    await page.locator("#sources").evaluate((node) => node.replaceChildren());
+    await expect(overlay(page)).toBeHidden();
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(0);
+    await page.locator("#sources").evaluate((node, html) => (node.innerHTML = html), item("restored"));
+    await page.locator("#restored").click();
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(1);
+});
+
+test("a pending original load reports the current selection after source reordering and text changes", async ({
+    page,
+}) => {
+    let release;
+    let first = true;
+    await page.route("https://gallery.test/pending.svg", async (route) => {
+        if (first) {
+            first = false;
+            await new Promise((resolve) => (release = resolve));
+        }
+        await route.fulfill({
+            contentType: "image/svg+xml",
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"/>',
+        });
+    });
+    await start(page, item("one", "/pending.svg") + item("two"), { thumbnails: true });
+    await page.evaluate(() => {
+        document.querySelector("#gallery").addEventListener(
+            "image-viewer:changed",
+            (event) =>
+                (window.changedImage = {
+                    index: event.detail.index,
+                    alt: event.detail.image.alt,
+                }),
+        );
+    });
+    await page.locator("#one").click();
+    await expect.poll(() => Boolean(release)).toBe(true);
+    await page.evaluate(() => {
+        document.querySelector("#sources").prepend(document.querySelector("#two"));
+        document.querySelector("#one img").alt = "Updated description";
+    });
+    await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 2");
+    release();
+    await expect(displayed(page)).toHaveAttribute("alt", "Updated description");
+    await expect.poll(() => page.evaluate(() => window.changedImage)).toEqual({ index: 1, alt: "Updated description" });
+});
+
+test("thumbnail presentation recovers after a full morph and a normalized cache reconnection", async ({ page }) => {
+    const sources = item("one") + item("two") + item("three");
+    await start(page, sources, { thumbnails: true });
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.evaluate(
+        (html) => {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+        },
+        markup(sources, true),
+    );
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(3);
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toHaveAttribute("aria-current", "true");
+    await page.evaluate(() => {
+        const root = document.querySelector("#gallery");
+        const copy = root.cloneNode(true);
+        window.normalizeSnapshot(copy);
+        root.replaceWith(copy);
+    });
+    await page.waitForFunction(() => window.viewer()?.connected);
+    await expect(overlay(page)).toBeHidden();
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(3);
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toHaveAttribute("aria-current", "true");
+});
+
+for (const direction of ["ltr", "rtl"]) {
+    test(`the active thumbnail remains in view and arrow keys follow ${direction} layout`, async ({ page }) => {
+        await start(page, Array.from({ length: 30 }, (_, index) => item(`photo-${index}`)).join(""), {
+            thumbnails: true,
+        });
+        await page.locator("#gallery").evaluate((root, dir) => (root.dir = dir), direction);
+        await page.locator("#photo-0").click();
+        await expect(displayed(page)).toBeVisible();
+        const thumbnails = page.locator('[data-slot="image-viewer-thumbnail"]');
+        await thumbnails.nth(0).focus();
+        await thumbnails.nth(0).press(direction === "rtl" ? "ArrowLeft" : "ArrowRight");
+        await expect(thumbnails.nth(1)).toBeFocused();
+        await thumbnails.nth(1).press("End");
+        await expect(thumbnails.nth(29)).toBeFocused();
+        await expect
+            .poll(() =>
+                thumbnails.nth(29).evaluate((node) => {
+                    const button = node.getBoundingClientRect();
+                    const strip = node.parentElement.getBoundingClientRect();
+                    return button.left >= strip.left - 1 && button.right <= strip.right + 1;
+                }),
+            )
+            .toBe(true);
+    });
+}
 
 test("opens the original, zooms and pans within bounds, resets and returns focus", async ({ page }) => {
     await start(page);
@@ -403,7 +602,36 @@ test.describe("preset presentation", () => {
     });
 
     for (const preset of ["nova", "bloom"]) {
-        test(`${preset} keeps the top-layer root transparent so only the backdrop dims the unchanged page`, async ({ page }) => {
+        for (const direction of ["ltr", "rtl"]) {
+            test(`${preset} keeps both ends of an overflowing thumbnail strip reachable in ${direction}`, async ({
+                page,
+            }) => {
+                await page.setViewportSize({ width: 390, height: 844 });
+                await start(page, Array.from({ length: 30 }, (_, index) => item(`photo-${index}`)).join(""), {
+                    thumbnails: true,
+                });
+                await page.locator("#gallery").evaluate((root, dir) => (root.dir = dir), direction);
+                await page.addStyleTag({ content: css[preset] });
+                await page.locator("#photo-0").click();
+                await page.evaluate(() => window.viewer().overlay.settled);
+                const thumbnails = page.locator('[data-slot="image-viewer-thumbnail"]');
+                const visible = (node) => {
+                    const button = node.getBoundingClientRect();
+                    const strip = node.parentElement.getBoundingClientRect();
+                    return button.left >= strip.left - 1 && button.right <= strip.right + 1;
+                };
+                await expect.poll(() => thumbnails.nth(0).evaluate(visible)).toBe(true);
+                await thumbnails.nth(0).focus();
+                await thumbnails.nth(0).press("End");
+                await expect.poll(() => thumbnails.nth(29).evaluate(visible)).toBe(true);
+                await thumbnails.nth(29).press("Home");
+                await expect.poll(() => thumbnails.nth(0).evaluate(visible)).toBe(true);
+            });
+        }
+
+        test(`${preset} keeps the top-layer root transparent so only the backdrop dims the unchanged page`, async ({
+            page,
+        }) => {
             await start(page);
             await page.addStyleTag({ content: css[preset] });
             await page.evaluate(() => {
@@ -415,7 +643,9 @@ test.describe("preset presentation", () => {
             const background = await page.evaluate(() => {
                 const canvas = document.createElement("canvas");
                 const context = canvas.getContext("2d");
-                context.fillStyle = getComputedStyle(document.querySelector('[data-image-viewer-target="backdrop"]')).backgroundColor;
+                context.fillStyle = getComputedStyle(
+                    document.querySelector('[data-image-viewer-target="backdrop"]'),
+                ).backgroundColor;
                 context.fillRect(0, 0, 1, 1);
                 return {
                     alpha: context.getImageData(0, 0, 1, 1).data[3],

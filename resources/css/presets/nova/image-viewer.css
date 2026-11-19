@@ -39,4 +39,14 @@
     [data-slot="image-viewer-status"] {
         @apply text-sm text-muted-foreground text-center p-6;
     }
+    [data-slot="image-viewer-thumbnails"] {
+        @apply gap-2 px-3 py-2 border-t border-border;
+        justify-content: safe center;
+    }
+    [data-slot="image-viewer-thumbnail"] {
+        @apply h-12 w-16 rounded-md border-2 border-transparent p-0 bg-muted cursor-pointer opacity-60 hover:opacity-100;
+    }
+    [data-slot="image-viewer-thumbnail"][aria-current="true"] {
+        @apply border-primary opacity-100;
+    }
 }
