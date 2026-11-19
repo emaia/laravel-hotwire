@@ -17,7 +17,12 @@ const image = (width = 1600, height = 1200, color = "green") =>
 const item = (id, url = image(), caption = id) =>
     `<a id="${id}" href="${url}"><img src="${image(80, 60)}" data-image-key="${id}" data-original="${url}" data-caption="${caption}" alt="${id}"></a>`;
 
-function markup(items = item("one") + item("two", image(800, 1200, "blue")), thumbnails = false, size = "default") {
+function markup(
+    items = item("one") + item("two", image(800, 1200, "blue")),
+    thumbnails = false,
+    size = "default",
+    { rotate = false, flip = false } = {},
+) {
     return `<div id="gallery" data-controller="image-viewer">
         <div id="sources" data-image-viewer-target="source">${items}</div>
         <div data-slot="image-viewer-overlay" data-image-viewer-target="overlay" hidden inert>
@@ -31,6 +36,22 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
                         <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
                         <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
                         <button id="reset" data-image-viewer-target="reset" data-action="image-viewer#reset">Reset</button>
+                        ${
+                            rotate
+                                ? `
+                            <button id="rotate-left" data-image-viewer-target="rotateLeft" data-action="image-viewer#rotateLeft">Rotate left</button>
+                            <button id="rotate-right" data-image-viewer-target="rotateRight" data-action="image-viewer#rotateRight">Rotate right</button>
+                        `
+                                : ""
+                        }
+                        ${
+                            flip
+                                ? `
+                            <button id="flip-horizontal" data-image-viewer-target="flipHorizontal" data-action="image-viewer#flipHorizontal" aria-pressed="false">Flip horizontally</button>
+                            <button id="flip-vertical" data-image-viewer-target="flipVertical" data-action="image-viewer#flipVertical" aria-pressed="false">Flip vertically</button>
+                        `
+                                : ""
+                        }
                         <span data-image-viewer-target="zoomLabel"></span>
                         <select data-slot="image-viewer-zoom" data-image-viewer-target="zoomSelect" data-action="change->image-viewer#changeZoom" aria-label="Zoom level" disabled>
                             <option value="fit" data-label="Fit image">Fit image</option>
@@ -77,19 +98,209 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
     </div>`;
 }
 
-async function start(page, items, { thumbnails = false, size = "default" } = {}) {
+async function start(page, items, { thumbnails = false, size = "default", rotate = false, flip = false } = {}) {
     await page.setContent(`<base href="https://gallery.test/"><style>${readFileSync("resources/css/structural.css", "utf8")}
         [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
         [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
         #sources img { width:80px; height:60px }
         [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
-    </style>${markup(items, thumbnails, size)}`);
+    </style>${markup(items, thumbnails, size, { rotate, flip })}`);
     await page.addScriptTag({ content: bundle });
     await page.waitForFunction(() => window.viewer()?.connected);
 }
 
 const overlay = (page) => page.locator('[data-image-viewer-target="overlay"]');
 const displayed = (page) => page.locator('[data-image-viewer-target="image"]');
+
+test("rotation and screen-axis flips render the fitted bitmap without reloading the original", async ({ page }) => {
+    await start(page, item("one", image(1600, 800)) + item("two"), { rotate: true, flip: true });
+    for (const id of ["rotate-left", "rotate-right", "flip-horizontal", "flip-vertical"]) {
+        await expect(page.locator(`#${id}`)).toBeDisabled();
+    }
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.evaluate(() => {
+        window.orientationChanges = 0;
+        document.querySelector("#gallery").addEventListener("image-viewer:changed", () => window.orientationChanges++);
+    });
+    await page.locator("#rotate-right").click();
+    const state = await page.evaluate(() => window.viewer().geometry);
+    expect(state.rotation).toBe(90);
+    expect(state.scale).toBe(Math.min(1, state.viewportWidth / 800, state.viewportHeight / 1600));
+    const box = await displayed(page).boundingBox();
+    expect(box.width).toBeCloseTo(800 * state.scale, 1);
+    expect(box.height).toBeCloseTo(1600 * state.scale, 1);
+    await page.locator("#flip-horizontal").click();
+    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "true");
+    const matrix = await displayed(page).evaluate((img) => {
+        const matrix = new DOMMatrix(getComputedStyle(img).transform);
+        return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
+    });
+    expect(matrix.a).toBeCloseTo(0);
+    expect(matrix.b).toBeCloseTo(1);
+    expect(matrix.c).toBeCloseTo(1);
+    expect(matrix.d).toBeCloseTo(0);
+    await page.locator("#rotate-right").click();
+    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#flip-vertical")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#rotate-right")).toBeFocused();
+    expect(await page.evaluate(() => window.orientationChanges)).toBe(0);
+    await expect(page.locator('[data-image-viewer-target="download"]')).toHaveAttribute("href", image(1600, 800));
+});
+
+test("fit preserves rotation and flips while navigation and reopening reset them", async ({ page }) => {
+    await start(page, undefined, { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#rotate-left").click();
+    await page.locator("#flip-vertical").click();
+    await page.locator("#zoom").click();
+    await page.locator("#reset").click();
+    expect(await page.evaluate(() => window.viewer().geometry)).toMatchObject({
+        rotation: 270,
+        flipX: false,
+        flipY: true,
+    });
+    expect(await page.evaluate(() => window.viewer().atFit)).toBe(true);
+    await page.locator("#next").click();
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry)).toMatchObject({
+        rotation: 0,
+        flipX: false,
+        flipY: false,
+    });
+    await page.locator("#flip-horizontal").click();
+    await page.keyboard.press("Escape");
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
+    expect(await page.evaluate(() => window.viewer().geometry.rotation)).toBe(0);
+});
+
+test("transformed geometry and toggle state survive morphs, shell replacement and snapshot normalization", async ({
+    page,
+}) => {
+    const sources = item("one") + item("two");
+    await start(page, sources, { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#rotate-right").click();
+    await page.locator("#flip-horizontal").click();
+    await page.getByRole("combobox", { name: "Zoom level" }).selectOption("2");
+    const geometry = await page.evaluate(() => ({ ...window.viewer().geometry }));
+    await page.evaluate(
+        (html) => {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+        },
+        markup(sources, false, "default", { rotate: true, flip: true }),
+    );
+    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "true");
+    expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
+    const box = await displayed(page).boundingBox();
+    expect(box.width).toBeCloseTo(geometry.naturalHeight * geometry.scale, 1);
+    expect(box.height).toBeCloseTo(geometry.naturalWidth * geometry.scale, 1);
+    await page
+        .locator('[data-image-viewer-target="overlay"]')
+        .evaluate((shell) => shell.replaceWith(shell.cloneNode(true)));
+    await expect(displayed(page)).toBeVisible();
+    expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
+    expect(
+        await page.evaluate(() => {
+            const copy = document.body.cloneNode(true);
+            window.normalizeSnapshot(copy);
+            const img = copy.querySelector('[data-image-viewer-target="image"]');
+            return {
+                angle: img.style.getPropertyValue("--image-viewer-rotation"),
+                flip: img.style.getPropertyValue("--image-viewer-flip-x"),
+                pressed: copy.querySelector("#flip-horizontal").getAttribute("aria-pressed"),
+            };
+        }),
+    ).toEqual({ angle: "", flip: "", pressed: "false" });
+});
+
+test("wheel, drag, keyboard and pinch use the oriented bounds without reversing screen-space pan", async ({
+    page,
+    context,
+}) => {
+    await start(page, undefined, { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#rotate-right").click();
+    await page.locator("#flip-horizontal").click();
+    await page.getByRole("combobox", { name: "Zoom level" }).selectOption("1");
+    const viewport = page.locator('[data-image-viewer-target="viewport"]');
+    const box = await viewport.boundingBox();
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(center.x, center.y);
+    await page.mouse.wheel(0, -100);
+    await expect.poll(() => page.evaluate(() => window.viewer().geometry.scale)).toBeGreaterThan(1);
+    const before = await page.evaluate(() => ({ ...window.viewer().geometry }));
+    await page.mouse.down();
+    await page.mouse.move(center.x + 30, center.y + 20, { steps: 3 });
+    await page.mouse.up();
+    const dragged = await page.evaluate(() => window.viewer().geometry);
+    expect(dragged.x).toBeCloseTo(before.x + 30, 1);
+    expect(dragged.y).toBeCloseTo(before.y + 20, 1);
+    await viewport.focus();
+    await page.keyboard.press("ArrowLeft");
+    expect(await page.evaluate(() => window.viewer().geometry.x)).toBeCloseTo(dragged.x - 40, 1);
+    await page.keyboard.press("0");
+    const fitScale = await page.evaluate(() => window.viewer().geometry.scale);
+    const session = await context.newCDPSession(page);
+    await session.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [
+            { x: center.x - 50, y: center.y, id: 1 },
+            { x: center.x + 50, y: center.y, id: 2 },
+        ],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [
+            { x: center.x - 100, y: center.y, id: 1 },
+            { x: center.x + 100, y: center.y, id: 2 },
+        ],
+    });
+    await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    const pinched = await page.evaluate(() => window.viewer().geometry);
+    expect(pinched.scale).toBeGreaterThan(fitScale);
+    expect(pinched).toMatchObject({ rotation: 90, flipX: true, flipY: false });
+    const rendered = await displayed(page).boundingBox();
+    expect(rendered.x - box.x).toBeCloseTo(pinched.x, 1);
+    expect(rendered.y - box.y).toBeCloseTo(pinched.y, 1);
+    expect(rendered.width).toBeCloseTo(pinched.naturalHeight * pinched.scale, 1);
+    expect(rendered.height).toBeCloseTo(pinched.naturalWidth * pinched.scale, 1);
+});
+
+test("rotation and flip controls disable during a replacement load and after failure", async ({ page }) => {
+    let release;
+    await page.route("https://gallery.test/transform-error.svg", async (route) => {
+        await new Promise((resolve) => (release = resolve));
+        await route.abort("failed");
+    });
+    await start(page, item("one"), { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#flip-horizontal").click();
+    await page.locator("#one img").evaluate((img) => (img.dataset.original = "/transform-error.svg"));
+    await expect.poll(() => Boolean(release)).toBe(true);
+    for (const id of ["rotate-left", "rotate-right", "flip-horizontal", "flip-vertical"]) {
+        await expect(page.locator(`#${id}`)).toBeDisabled();
+    }
+    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
+    release();
+    await expect(page.locator('[data-image-viewer-target="error"]')).toBeVisible();
+    for (const id of ["rotate-left", "rotate-right", "flip-horizontal", "flip-vertical"]) {
+        await expect(page.locator(`#${id}`)).toBeDisabled();
+    }
+    await page.evaluate(() => {
+        window.viewer().rotateLeft();
+        window.viewer().flipVertical();
+    });
+    await expect(displayed(page)).toBeHidden();
+});
 
 test("full size fills the viewport without a preset and retains zoom through resizing and morphs", async ({ page }) => {
     await start(page, item("one") + item("two"), { size: "full", thumbnails: true });

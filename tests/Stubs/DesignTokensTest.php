@@ -893,7 +893,7 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ],
         '[data-slot="toast"][data-position$="-center"]' => ['translate: -50% 0'],
         // Image coordinates describe physical pixels, not reading-direction offsets.
-        '[data-slot="image-viewer-image"]' => ['transform: translate(var(--image-viewer-x), var(--image-viewer-y))'],
+        '[data-slot="image-viewer-image"]' => ['transform: translate(var(--image-viewer-x), var(--image-viewer-y)) scale(var(--image-viewer-flip-x, 1), var(--image-viewer-flip-y, 1)) rotate(var(--image-viewer-rotation, 0deg))'],
         '[data-slot="toast"][data-position$="-center"]:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *)' => ['translate: 50% 0'],
     ];
     $unexpectedStructural = collect($structuralPhysical)

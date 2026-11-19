@@ -2,7 +2,7 @@
 import { Controller } from "@hotwired/stimulus";
 import { createOverlay } from "./_overlay.js";
 import { rememberSnapshotState } from "./_snapshot.js";
-import { fitImage, panImage, resizeImage, zoomImage } from "./_image_viewport.js";
+import { fitImage, flipImage, imageBounds, panImage, resizeImage, rotateImage, zoomImage } from "./_image_viewport.js";
 import { createImageThumbnails } from "./_image_thumbnails.js";
 
 export default class extends Controller {
@@ -24,6 +24,10 @@ export default class extends Controller {
         "zoomIn",
         "zoomOut",
         "reset",
+        "rotateLeft",
+        "rotateRight",
+        "flipHorizontal",
+        "flipVertical",
         "download",
         "thumbnails",
         "thumbnailTemplate",
@@ -137,6 +141,20 @@ export default class extends Controller {
     thumbnailTemplateTargetDisconnected() {
         this.queueRefresh();
     }
+    rotateLeftTargetConnected() {
+        this.queueRefresh();
+    }
+    rotateRightTargetConnected() {
+        this.queueRefresh();
+    }
+    flipHorizontalTargetConnected(button) {
+        rememberSnapshotState(button, { attributes: ["aria-pressed"] });
+        this.queueRefresh();
+    }
+    flipVerticalTargetConnected(button) {
+        rememberSnapshotState(button, { attributes: ["aria-pressed"] });
+        this.queueRefresh();
+    }
 
     queueRefresh() {
         if (!this.connected || this.refreshQueued) return;
@@ -151,6 +169,7 @@ export default class extends Controller {
         const thumbnailFocus = this.morphThumbnailFocus;
         this.morphThumbnailFocus = null;
         const wasOpen = this.overlay?.isOpen;
+        const previousGeometry = this.geometry;
         const shellChanged =
             this.shell &&
             (!this.hasOverlayTarget ||
@@ -189,23 +208,29 @@ export default class extends Controller {
         const retained = old && this.items.find((item) => (old.key ? item.key === old.key : item.node === old.node));
         this.active = retained ?? this.items[Math.min(previousIndex, this.items.length - 1)];
         this.refreshThumbnails();
+        const sameIdentity = old && (old.key ? this.active.key === old.key : this.active.node === old.node);
+        const sameRequest =
+            sameIdentity &&
+            this.active.url === old.url &&
+            this.active.crossOrigin === old.crossOrigin &&
+            this.active.referrerPolicy === old.referrerPolicy;
         if (wasOpen && shellChanged) {
             this.overlay.setOpen({ notify: false });
-            this.loadCurrent();
+            if (sameRequest && previousGeometry) {
+                const rect = this.viewportDimensions();
+                this.geometry = resizeImage(previousGeometry, rect.width, rect.height);
+                this.loadState = "ready";
+                this.syncMetadata();
+                this.render();
+            } else this.loadCurrent();
         } else if (this.overlay.isOpen) {
-            const sameIdentity = old && (old.key ? this.active.key === old.key : this.active.node === old.node);
-            if (
-                !sameIdentity ||
-                this.active.url !== old.url ||
-                this.active.crossOrigin !== old.crossOrigin ||
-                this.active.referrerPolicy !== old.referrerPolicy
-            ) {
+            if (!sameRequest) {
                 this.loadCurrent();
             } else {
                 this.syncMetadata();
                 this.render();
             }
-        }
+        } else this.syncControls();
         // A replaced shell cannot retain its buttons; restore only focus that the morph dropped.
         if (
             thumbnailFocus &&
@@ -291,7 +316,15 @@ export default class extends Controller {
         );
         rememberSnapshotState(this.imageTarget, {
             attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy", "aria-busy"],
-            styles: ["--image-viewer-width", "--image-viewer-height", "--image-viewer-x", "--image-viewer-y"],
+            styles: [
+                "--image-viewer-width",
+                "--image-viewer-height",
+                "--image-viewer-x",
+                "--image-viewer-y",
+                "--image-viewer-rotation",
+                "--image-viewer-flip-x",
+                "--image-viewer-flip-y",
+            ],
         });
         rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
         rememberSnapshotState(this.loadingTarget, { attributes: ["hidden"] });
@@ -525,6 +558,17 @@ export default class extends Controller {
             this.zoomInTarget.disabled = !this.geometry || this.geometry.scale >= this.geometry.maxScale;
         if (this.hasZoomOutTarget) this.zoomOutTarget.disabled = !this.geometry || this.atFit;
         if (this.hasResetTarget) this.resetTarget.disabled = !this.geometry || this.atFit;
+        for (const button of [
+            ...this.rotateLeftTargets,
+            ...this.rotateRightTargets,
+            ...this.flipHorizontalTargets,
+            ...this.flipVerticalTargets,
+        ])
+            button.disabled = !this.geometry;
+        for (const button of this.flipHorizontalTargets)
+            button.setAttribute("aria-pressed", String(this.geometry?.flipX ?? false));
+        for (const button of this.flipVerticalTargets)
+            button.setAttribute("aria-pressed", String(this.geometry?.flipY ?? false));
         if (this.hasZoomLabelTarget)
             this.zoomLabelTarget.textContent = this.geometry ? `${Math.round(this.geometry.scale * 100)}%` : "";
         this.syncZoomSelect();
@@ -596,10 +640,17 @@ export default class extends Controller {
             if (this.imageTarget.getAttribute("src") !== this.active.url) this.imageTarget.src = this.active.url;
             this.imageTarget.alt = this.active.alt;
             const style = this.imageTarget.style;
-            style.setProperty("--image-viewer-width", `${state.naturalWidth * state.scale}px`);
-            style.setProperty("--image-viewer-height", `${state.naturalHeight * state.scale}px`);
-            style.setProperty("--image-viewer-x", `${state.x}px`);
-            style.setProperty("--image-viewer-y", `${state.y}px`);
+            const bounds = imageBounds(state);
+            const width = state.naturalWidth * state.scale;
+            const height = state.naturalHeight * state.scale;
+            style.setProperty("--image-viewer-width", `${width}px`);
+            style.setProperty("--image-viewer-height", `${height}px`);
+            // CSS rotates around the bitmap center; geometry stores the oriented bounding box's top-left corner.
+            style.setProperty("--image-viewer-x", `${state.x + (bounds.width - width) / 2}px`);
+            style.setProperty("--image-viewer-y", `${state.y + (bounds.height - height) / 2}px`);
+            style.setProperty("--image-viewer-rotation", `${state.rotation}deg`);
+            style.setProperty("--image-viewer-flip-x", state.flipX ? "-1" : "1");
+            style.setProperty("--image-viewer-flip-y", state.flipY ? "-1" : "1");
         }
         this.syncPanState();
         this.syncControls();
@@ -609,10 +660,9 @@ export default class extends Controller {
         const viewport = this.shell?.viewport;
         if (!viewport) return;
         const state = this.geometry;
+        const bounds = state && imageBounds(state);
         const pannable =
-            state &&
-            (state.naturalWidth * state.scale > state.viewportWidth + 0.01 ||
-                state.naturalHeight * state.scale > state.viewportHeight + 0.01);
+            bounds && (bounds.width > state.viewportWidth + 0.01 || bounds.height > state.viewportHeight + 0.01);
         if (!pannable) {
             viewport.removeAttribute("data-pan-state");
             return;
@@ -650,8 +700,28 @@ export default class extends Controller {
 
     reset() {
         if (!this.geometry) return;
+        this.cancelPointers();
         const { viewportWidth, viewportHeight, naturalWidth, naturalHeight } = this.geometry;
-        this.geometry = fitImage(viewportWidth, viewportHeight, naturalWidth, naturalHeight);
+        this.geometry = fitImage(viewportWidth, viewportHeight, naturalWidth, naturalHeight, this.geometry);
+        this.render();
+    }
+
+    rotateLeft() {
+        this.transformImage(rotateImage, -90);
+    }
+    rotateRight() {
+        this.transformImage(rotateImage, 90);
+    }
+    flipHorizontal() {
+        this.transformImage(flipImage, "horizontal");
+    }
+    flipVertical() {
+        this.transformImage(flipImage, "vertical");
+    }
+    transformImage(operation, value) {
+        if (!this.geometry) return;
+        this.cancelPointers();
+        this.geometry = operation(this.geometry, value);
         this.render();
     }
 

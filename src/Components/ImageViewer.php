@@ -45,6 +45,8 @@ class ImageViewer extends BaseComponent
         public ?Htmlable $stimulus = null,
         public bool $thumbnails = false,
         public string $size = 'default',
+        public bool $rotate = false,
+        public bool $flip = false,
     ) {
         $this->resolvedId = $id ?? app(ComponentId::class)->next('hw-image-viewer');
         $this->motion = $motion === 'none' ? 'none' : 'default';
@@ -56,6 +58,10 @@ class ImageViewer extends BaseComponent
             'zoomOut' => 'Zoom out',
             'zoom' => 'Zoom level',
             'reset' => 'Fit image',
+            'rotateLeft' => 'Rotate left',
+            'rotateRight' => 'Rotate right',
+            'flipHorizontal' => 'Flip horizontally',
+            'flipVertical' => 'Flip vertically',
             'close' => 'Close',
             'download' => 'Download original',
             'loading' => 'Loading image…',

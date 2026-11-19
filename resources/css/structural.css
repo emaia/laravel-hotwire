@@ -890,8 +890,8 @@ html[data-reveal="off"] [data-reveal-armed] {
     height: var(--image-viewer-height);
     max-width: none;
     max-height: none;
-    transform: translate(var(--image-viewer-x), var(--image-viewer-y));
-    transform-origin: 0 0;
+    transform: translate(var(--image-viewer-x), var(--image-viewer-y)) scale(var(--image-viewer-flip-x, 1), var(--image-viewer-flip-y, 1)) rotate(var(--image-viewer-rotation, 0deg));
+    transform-origin: center;
     pointer-events: none;
 }
 

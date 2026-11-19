@@ -12,8 +12,20 @@
         'next' => 'm9 18 6-6-6-6',
         'zoomOut' => 'M5 12h14',
         'zoomIn' => 'M5 12h14M12 5v14',
-        'reset' => 'M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6',
     ];
+    if ($rotate) {
+        $controls += [
+            'rotateLeft' => 'M3 11a9 9 0 1 1 2.64 6.36M3 4v7h7',
+            'rotateRight' => 'M21 11a9 9 0 1 0-2.64 6.36M21 4v7h-7',
+        ];
+    }
+    if ($flip) {
+        $controls += [
+            'flipHorizontal' => 'M12 3v18M3 7l5 5-5 5V7Zm18 0-5 5 5 5V7Z',
+            'flipVertical' => 'M3 12h18M7 3l5 5 5-5H7Zm0 18 5-5 5 5H7Z',
+        ];
+    }
+    $controls['reset'] = 'M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6';
 @endphp
 
 <div {{ $viewerAttributes }}>
@@ -50,6 +62,9 @@
                             data-action="image-viewer#{{ $action }}"
                             aria-label="{{ $labels[$action] }}"
                             title="{{ $labels[$action] }}"
+                            @if (in_array($action, ['flipHorizontal', 'flipVertical'], true))
+                                aria-pressed="false"
+                            @endif
                         >
                             <svg
                                 data-slot="{{ $slotNames['icon'] }}"

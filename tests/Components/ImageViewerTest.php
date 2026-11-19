@@ -108,6 +108,32 @@ it('renders translated loading and error feedback with decorative status icons',
     $view->assertSee('Carregando imagem…')->assertSee('Não foi possível abrir a imagem.');
 });
 
+it('exposes rotation and flip controls independently as opt-ins', function (bool $rotate, bool $flip) {
+    $view = $this->blade('<x-hw::image-viewer :rotate="$rotate" :flip="$flip" :labels="$labels" />', [
+        'rotate' => $rotate,
+        'flip' => $flip,
+        'labels' => [
+            'rotateLeft' => 'Girar à esquerda',
+            'rotateRight' => 'Girar à direita',
+            'flipHorizontal' => 'Espelhar horizontalmente',
+            'flipVertical' => 'Espelhar verticalmente',
+        ],
+    ]);
+    $xpath = new DOMXPath(dom((string) $view));
+
+    foreach (['rotateLeft' => 'Girar à esquerda', 'rotateRight' => 'Girar à direita'] as $action => $label) {
+        expect($xpath->query('//button[@data-image-viewer-target="'.$action.'" and @data-action="image-viewer#'.$action.'" and @aria-label="'.$label.'" and @title="'.$label.'"]')->count())->toBe($rotate ? 1 : 0);
+    }
+    foreach (['flipHorizontal' => 'Espelhar horizontalmente', 'flipVertical' => 'Espelhar verticalmente'] as $action => $label) {
+        expect($xpath->query('//button[@data-image-viewer-target="'.$action.'" and @data-action="image-viewer#'.$action.'" and @aria-label="'.$label.'" and @title="'.$label.'" and @aria-pressed="false"]')->count())->toBe($flip ? 1 : 0);
+    }
+})->with([
+    'neither' => [false, false],
+    'rotation only' => [true, false],
+    'flip only' => [false, true],
+    'both' => [true, true],
+]);
+
 it('renders opt-in thumbnails from a Blade-authored button template', function () {
     $this->blade('<x-hw::image-viewer />')->assertDontSee('data-image-viewer-target="thumbnails"', false);
     $view = $this->blade('<x-hw::image-viewer thumbnails :labels="$labels"><img src="/thumb.jpg" data-original="/original.jpg" alt="Product"></x-hw::image-viewer>', [

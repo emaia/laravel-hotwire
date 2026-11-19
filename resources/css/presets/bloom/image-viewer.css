@@ -35,6 +35,9 @@
     [data-slot="image-viewer-button"]:disabled {
         @apply opacity-40 cursor-default;
     }
+    [data-slot="image-viewer-button"][aria-pressed="true"] {
+        @apply bg-accent text-accent-foreground;
+    }
     [data-slot="image-viewer-counter"] {
         @apply text-xs font-medium text-muted-foreground tabular-nums px-2;
     }

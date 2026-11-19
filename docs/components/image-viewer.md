@@ -30,9 +30,11 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 | `download` | `false` | Include an original download link |
 | `loop` | `false` | Wrap previous/next navigation |
 | `thumbnails` | `false` | Show a thumbnail strip inside the open viewer |
+| `rotate` | `false` | Show controls for 90° left/right rotation |
+| `flip` | `false` | Show horizontal/vertical mirror controls |
 | `size` | `default` | Use `full` for an edge-to-edge viewer; `default` retains the windowed presentation |
 | `motion` | `default` | Preset-driven enter/exit transitions; `none` disables them |
-| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
+| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
 | `stimulus` | `null` | Additional Stimulus attributes on the root |
 
 Other attributes, including `class`, apply to the root. The internal `data-image-viewer-*` namespace is protected.
@@ -100,7 +102,33 @@ their source URL. Each image's policies replace the previous image's policies.
 - Opening and closing animate the backdrop/panel through the shared Presence lifecycle. Reduced motion and `motion="none"`
   disable those transitions. Image fit uses untransformed viewport dimensions while the panel enters; zoom/pan do not inherit panel transitions.
 
-Rotation, flip, magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed media are not supported.
+Magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed media are not supported.
+
+## Rotation and flip
+
+```blade
+<hw:image-viewer rotate flip thumbnails download
+    :labels="['rotateLeft' => __('Girar à esquerda'), 'rotateRight' => __('Girar à direita'),
+              'flipHorizontal' => __('Espelhar horizontalmente'), 'flipVertical' => __('Espelhar verticalmente')]"
+>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`rotate` and `flip` independently opt into their toolbar controls. Rotation uses 90° steps; flips mirror the currently
+displayed image across the screen's horizontal or vertical axis, regardless of rotation or reading direction.
+Rotating a mirrored image still turns it in the requested direction. The flip buttons expose their current screen-axis
+state through `aria-pressed`; those states exchange axes on a quarter turn.
+
+Fit uses the rotated image's bounds, without upscaling small originals. At fit, rotating refits automatically.
+While zoomed, rotation/flip retain natural-scale zoom and the source point at the viewport center when the pan limits
+allow it. Pan, wheel, pinch, the zoom selector and viewport resizing all use the oriented bounds.
+Controls are disabled while the image is loading or unavailable.
+
+**Fit image**, `0` and the selector's Fit option only adjust the current view: they preserve rotation and flips.
+Navigation, reopening, or loading a changed original starts at the original orientation. Morphs of the same image and
+request preserve orientation, zoom and pan, including replacement of the viewer shell.
+These are presentation-only transforms: source thumbnails, original downloads and file metadata are unchanged.
 
 ## Full viewport presentation
 
@@ -192,7 +220,8 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-thumbnail-image"`: structural thumbnail content inside its button.
 
 These names are emitted as `data-slot`. Nova and Bloom share the same anatomy. Geometry is supplied by the private
-`--image-viewer-width`, `--image-viewer-height`, `--image-viewer-x`, `--image-viewer-y` properties on the displayed image;
+`--image-viewer-width`, `--image-viewer-height`, `--image-viewer-x`, `--image-viewer-y`, `--image-viewer-rotation`,
+`--image-viewer-flip-x` and `--image-viewer-flip-y` properties on the displayed image;
 do not override those runtime values in a preset.
 The image's x/y translation is deliberately physical, measured from the viewport's top-left corner regardless of RTL
 reading direction; it must not mirror the bitmap or the pointer pivot.
