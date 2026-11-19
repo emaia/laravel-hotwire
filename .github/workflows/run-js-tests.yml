@@ -16,6 +16,7 @@ on:
       - 'scripts/run_make_preset_fixture.php'
       - 'scripts/preset_contrast_manifest.php'
       - 'scripts/run_styles_fixture.php'
+      - 'scripts/run_textarea_fixture.php'
       - 'src/Commands/MakePresetCommand.php'
       - 'src/Commands/BundlePresetCommand.php'
       - 'src/Components/**'
@@ -28,6 +29,7 @@ on:
       - 'src/Support/Preset*.php'
       - 'tests/Css/**'
       - 'tests/Fixtures/css/**'
+      - 'tests/Fixtures/views/**'
       - 'tests/Support/LoaderStubViteBuildTest.php'
   pull_request:
     paths:
@@ -43,6 +45,7 @@ on:
       - 'scripts/run_make_preset_fixture.php'
       - 'scripts/preset_contrast_manifest.php'
       - 'scripts/run_styles_fixture.php'
+      - 'scripts/run_textarea_fixture.php'
       - 'src/Commands/MakePresetCommand.php'
       - 'src/Commands/BundlePresetCommand.php'
       - 'src/Components/**'
@@ -55,6 +58,7 @@ on:
       - 'src/Support/Preset*.php'
       - 'tests/Css/**'
       - 'tests/Fixtures/css/**'
+      - 'tests/Fixtures/views/**'
       - 'tests/Support/LoaderStubViteBuildTest.php'
 
 concurrency:

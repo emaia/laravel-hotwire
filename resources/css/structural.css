@@ -1202,6 +1202,14 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
     }
 
     @media (forced-colors: active) {
+        /* Keep the standalone counted surface visible when forced colors suppress shadow rings. */
+        :where(
+            [data-slot="textarea-wrapper"]:not([data-slot="input-group"] > *):has(> [data-slot="textarea"]:focus-visible)
+        ) {
+            outline: 2px solid Highlight;
+            outline-offset: 2px;
+        }
+
         :where(
             input[data-checkable="true"],
             [data-slot="switch"],

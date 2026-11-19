@@ -54,11 +54,7 @@ spacing from the shadcn reference.
 
 ```blade
 <hw:input-group>
-    <hw:textarea name="message" />
-
-    <hw:input-group.addon align="block-end">
-        0/280
-    </hw:input-group.addon>
+    <hw:textarea name="message" :counter="280" />
 </hw:input-group>
 ```
 
