@@ -33,6 +33,7 @@ export default class extends Controller {
     initialize() {
         this.pointers = new Map();
         this.items = [];
+        this.loadState = "idle";
         this.captionTabIndexes = new WeakMap();
         this.generation = 0;
         this.onClick = this.activate.bind(this);
@@ -272,7 +273,9 @@ export default class extends Controller {
             attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy"],
             styles: ["--image-viewer-width", "--image-viewer-height", "--image-viewer-x", "--image-viewer-y"],
         });
-        rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
+        rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state", "aria-busy"] });
+        rememberSnapshotState(this.loadingTarget, { attributes: ["hidden"] });
+        rememberSnapshotState(this.errorTarget, { attributes: ["hidden"] });
         this.overlay = createOverlay(this, {
             modalTarget: this.overlayTarget,
             backdropTarget: this.backdropTarget,
@@ -369,19 +372,18 @@ export default class extends Controller {
             this.loader = null;
         }
         this.geometry = null;
+        // Preserve the last painted content until an overlay exit finishes or another load renders.
+        this.loadState = "idle";
         this.syncPanState();
     }
 
     loadCurrent() {
         this.cancelLoad();
         this.cancelPointers();
+        this.loadState = "loading";
         this.syncMetadata();
-        this.imageTarget.hidden = true;
         this.imageTarget.removeAttribute("src");
-        this.loadingTarget.hidden = false;
-        this.errorTarget.hidden = true;
-        this.viewportTarget.setAttribute("aria-busy", "true");
-        this.syncControls();
+        this.render();
         if (!this.active.url) return this.loadFailed();
         const generation = this.generation;
         const item = this.active;
@@ -394,8 +396,7 @@ export default class extends Controller {
             this.loader = null;
             loader.onload = loader.onerror = null;
             if (!this.geometry) return this.loadFailed();
-            this.loadingTarget.hidden = true;
-            this.viewportTarget.removeAttribute("aria-busy");
+            this.loadState = "ready";
             this.render();
             this.dispatch("changed", { detail: { index: this.items.indexOf(this.active), image: this.active.node } });
         };
@@ -414,12 +415,13 @@ export default class extends Controller {
     }
 
     loadFailed() {
+        if (this.loader) {
+            this.loader.onload = this.loader.onerror = null;
+            this.loader = null;
+        }
         this.geometry = null;
-        this.loadingTarget.hidden = true;
-        this.errorTarget.hidden = false;
-        this.imageTarget.hidden = true;
-        this.viewportTarget.removeAttribute("aria-busy");
-        this.syncControls();
+        this.loadState = "error";
+        this.render();
     }
 
     syncMetadata() {
@@ -562,6 +564,11 @@ export default class extends Controller {
     }
 
     render() {
+        this.loadingTarget.hidden = this.loadState !== "loading";
+        this.errorTarget.hidden = this.loadState !== "error";
+        this.imageTarget.hidden = this.loadState !== "ready" || !this.geometry;
+        if (this.loadState === "loading") this.viewportTarget.setAttribute("aria-busy", "true");
+        else this.viewportTarget.removeAttribute("aria-busy");
         if (this.geometry) {
             const state = this.geometry;
             this.applyImagePolicy(this.imageTarget, this.active);
@@ -572,7 +579,6 @@ export default class extends Controller {
             style.setProperty("--image-viewer-height", `${state.naturalHeight * state.scale}px`);
             style.setProperty("--image-viewer-x", `${state.x}px`);
             style.setProperty("--image-viewer-y", `${state.y}px`);
-            this.imageTarget.hidden = false;
         }
         this.syncPanState();
         this.syncControls();

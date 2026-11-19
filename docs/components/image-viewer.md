@@ -68,7 +68,8 @@ their source URL. Each image's policies replace the previous image's policies.
   focused, where all arrow keys pan. Escape closes only the top overlay. Ctrl/Meta browser zoom shortcuts are not intercepted.
 - Source additions, removal, reordering and metadata changes update a surviving controller automatically. Stable keys
   preserve selection; removing the active image selects the nearest remaining index. Empty galleries close.
-- Morphing the presentation for the same image and request preserves zoom and pan rather than restarting loading.
+- Morphing the presentation for the same image and request preserves zoom, pan and loading/error feedback without
+  restarting the request.
   Navigating to the current selection is a no-op, including loop navigation with one image and Home/End at a boundary.
 - If a keyed source replacement retains the opening image, closing returns focus to its replacement control, not to a
   different image selected later. Changing only a fallback link's `href` also updates an open viewer.

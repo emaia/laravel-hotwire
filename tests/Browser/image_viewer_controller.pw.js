@@ -627,6 +627,88 @@ test("recovers the presentation after full morph and shell replacement while ret
     await expect(overlay(page)).toBeHidden();
 });
 
+test("a full morph preserves pending loading feedback without restarting the request", async ({ page }) => {
+    const url = "https://gallery.test/morph-pending.svg";
+    const sources = item("one", url) + item("two");
+    let release;
+    let requests = 0;
+    await page.route(url, async (route) => {
+        if (++requests === 1) await new Promise((resolve) => (release = resolve));
+        await route.fulfill({
+            contentType: "image/svg+xml",
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"/>',
+        });
+    });
+    await start(page, sources);
+    await page.locator("#one").click();
+    const loading = page.locator('[data-image-viewer-target="loading"]');
+    const error = page.locator('[data-image-viewer-target="error"]');
+    const viewport = page.locator('[data-image-viewer-target="viewport"]');
+    await expect.poll(() => Boolean(release)).toBe(true);
+    await expect(loading).toBeVisible();
+    await expect(viewport).toHaveAttribute("aria-busy", "true");
+    await page.evaluate((html) => {
+        const template = document.createElement("template");
+        template.innerHTML = html;
+        window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+    }, markup(sources));
+    await expect(loading).toBeVisible();
+    await expect(error).toBeHidden();
+    await expect(viewport).toHaveAttribute("aria-busy", "true");
+    await expect(displayed(page)).toBeHidden();
+    expect(requests).toBe(1);
+    release();
+    await expect(displayed(page)).toBeVisible();
+    await expect(loading).toBeHidden();
+    await expect(error).toBeHidden();
+    await expect(viewport).not.toHaveAttribute("aria-busy");
+});
+
+test("a full morph preserves failed loading feedback without retrying and navigation clears it", async ({ page }) => {
+    const url = "https://gallery.test/morph-failed.svg";
+    const sources = item("one", url) + item("two");
+    let abort;
+    let requests = 0;
+    await page.route(url, async (route) => {
+        if (++requests === 1) await new Promise((resolve) => (abort = resolve));
+        await route.abort("failed");
+    });
+    await start(page, sources);
+    await page.locator("#one").click();
+    const loading = page.locator('[data-image-viewer-target="loading"]');
+    const error = page.locator('[data-image-viewer-target="error"]');
+    const viewport = page.locator('[data-image-viewer-target="viewport"]');
+    await expect.poll(() => Boolean(abort)).toBe(true);
+    abort();
+    await expect(error).toBeVisible();
+    await page.evaluate((html) => {
+        const template = document.createElement("template");
+        template.innerHTML = html;
+        window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+    }, markup(sources));
+    await expect(error).toBeVisible();
+    await expect(loading).toBeHidden();
+    await expect(displayed(page)).toBeHidden();
+    await expect(viewport).not.toHaveAttribute("aria-busy");
+    expect(requests).toBe(1);
+    expect(
+        await page.evaluate(() => {
+            const copy = document.body.cloneNode(true);
+            window.normalizeSnapshot(copy);
+            return {
+                loading: copy.querySelector('[data-image-viewer-target="loading"]').hidden,
+                error: copy.querySelector('[data-image-viewer-target="error"]').hidden,
+                busy: copy.querySelector('[data-image-viewer-target="viewport"]').hasAttribute("aria-busy"),
+            };
+        }),
+    ).toEqual({ loading: true, error: true, busy: false });
+    await page.locator("#next").click();
+    await expect(displayed(page)).toBeVisible();
+    await expect(error).toBeHidden();
+    await expect(loading).toBeHidden();
+    await expect(viewport).not.toHaveAttribute("aria-busy");
+});
+
 test("preserves zoom across keyed source replacement and updates accessible text", async ({ page }) => {
     await start(page);
     await page.locator("#one").click();
@@ -864,6 +946,7 @@ test.describe("preset presentation", () => {
             });
             await expect(overlay(page)).toHaveAttribute("inert", "");
             await expect(overlay(page)).not.toHaveAttribute("hidden", "");
+            await expect(displayed(page)).toBeVisible();
             await expect
                 .poll(() =>
                     dialog.evaluate((node) =>

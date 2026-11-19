@@ -71,7 +71,7 @@ php artisan hotwire:docs auto-submit
 Laravel Hotwire ships composable Blade components for common server-rendered UI patterns:
 
 |                                                               |                                                         |                                                        |                                                           |
-|---------------------------------------------------------------|---------------------------------------------------------|--------------------------------------------------------|-----------------------------------------------------------|
+| ------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------- |
 | [Accordion](docs/components/accordion.md)                     | [Alert](docs/components/alert.md)                       | [Alert Dialog](docs/components/alert-dialog.md)        | [Aspect Ratio](docs/components/aspect-ratio.md)           |
 | [Attachment](docs/components/attachment.md)                   | [Avatar](docs/components/avatar.md)                     | [Back to Top](docs/components/back-to-top.md)          | [Badge](docs/components/badge.md)                         |
 | [Breadcrumb](docs/components/breadcrumb.md)                   | [Button](docs/components/button.md)                     | [Button Group](docs/components/button-group.md)        | [Card](docs/components/card.md)                           |
@@ -111,7 +111,7 @@ Package controllers auto-load from the vendor directory after `hotwire:install`.
 Standalone controllers include:
 
 |                                                        |                                                                    |                                                              |                                                                    |
-|--------------------------------------------------------|--------------------------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------------------|
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------ |
 | [Accordion](docs/controllers/accordion.md)             | [Alert Dialog](docs/controllers/alert-dialog.md)                   | [Animated Number](docs/controllers/animated-number.md)       | [Auto Resize](docs/controllers/auto-resize.md)                     |
 | [Auto Save](docs/controllers/auto-save.md)             | [Auto Select](docs/controllers/auto-select.md)                     | [Auto Submit](docs/controllers/auto-submit.md)               | [Autofocus](docs/controllers/autofocus.md)                         |
 | [Back to Top](docs/controllers/back-to-top.md)         | [Carousel](docs/controllers/carousel.md)                           | [Char Counter](docs/controllers/char-counter.md)             | [Chart](docs/controllers/chart.md)                                 |
