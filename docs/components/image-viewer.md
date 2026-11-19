@@ -91,6 +91,7 @@ their source URL. Each image's policies replace the previous image's policies.
 - Late loads cannot replace a more recent selection. Failed originals show an error rather than silently enlarging a thumbnail.
 - Loading and error feedback is centered in the image area, pairing a decorative spinner or unavailable-image icon with
   the translated `labels.loading` or `labels.error` message. Status text remains available to assistive technology.
+  During loading, `aria-busy` applies only to the image, not to an ancestor of the live status messages.
   Reduced motion replaces spinner rotation with the shared status pulse; `motion="none"` keeps the icon static.
 - Captions have no character limit or silent truncation. Official presets currently cap their height at 20dvh and scroll
   the full text; this is a layout choice, not a content-length standard. Overflowing captions enter the tab order and
@@ -112,6 +113,8 @@ Rotation, flip, magnifier, automatic slideshow, native browser fullscreen, inlin
 `size="full"` fills the browser viewport without the window's outer spacing. Nova and Bloom also remove its border,
 rounded corners and shadow, using an opacity-only transition so it stays edge-to-edge while opening and closing.
 The toolbar, optional thumbnails and caption remain available; image fit uses the space left by these controls.
+The surface stays edge-to-edge while its content respects `env(safe-area-inset-*)`, protecting controls from notches and
+home indicators when the application uses `viewport-fit=cover`. These physical insets also apply in RTL layouts.
 Omit `size` for the existing windowed presentation. Unsupported values fall back to `default`.
 
 This is a layout option, not the browser's Fullscreen API: browser chrome stays visible, no fullscreen permission is

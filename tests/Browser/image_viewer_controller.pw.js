@@ -24,26 +24,29 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
             <div data-slot="image-viewer-backdrop" data-image-viewer-target="backdrop"></div>
             <section data-slot="image-viewer-dialog" data-image-viewer-target="dialog" data-size="${size}" role="dialog" aria-modal="true" aria-label="Photos" tabindex="-1">
                 <div data-slot="image-viewer-toolbar" role="group" aria-label="Image controls">
-                    <button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
-                    <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>
-                    <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
-                    <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
-                    <button id="reset" data-image-viewer-target="reset" data-action="image-viewer#reset">Reset</button>
-                    <span data-image-viewer-target="counter"></span><span data-image-viewer-target="zoomLabel"></span>
-                    <select data-slot="image-viewer-zoom" data-image-viewer-target="zoomSelect" data-action="change->image-viewer#changeZoom" aria-label="Zoom level" disabled>
-                        <option value="fit" data-label="Fit image">Fit image</option>
-                        <option value="0.25">25%</option>
-                        <option value="0.5">50%</option>
-                        <option value="0.75">75%</option>
-                        <option value="1">100%</option>
-                        <option value="1.5">150%</option>
-                        <option value="2">200%</option>
-                        <option value="3">300%</option>
-                        <option value="4">400%</option>
-                        <option value="current" disabled hidden></option>
-                    </select>
-                    <a data-image-viewer-target="download" data-turbo="false" download>Download</a>
-                    <button id="close" data-action="image-viewer#close">Close</button>
+                    <span data-slot="image-viewer-counter" data-image-viewer-target="counter"></span>
+                    <div data-slot="image-viewer-actions">
+                        <button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
+                        <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>
+                        <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
+                        <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
+                        <button id="reset" data-image-viewer-target="reset" data-action="image-viewer#reset">Reset</button>
+                        <span data-image-viewer-target="zoomLabel"></span>
+                        <select data-slot="image-viewer-zoom" data-image-viewer-target="zoomSelect" data-action="change->image-viewer#changeZoom" aria-label="Zoom level" disabled>
+                            <option value="fit" data-label="Fit image">Fit image</option>
+                            <option value="0.25">25%</option>
+                            <option value="0.5">50%</option>
+                            <option value="0.75">75%</option>
+                            <option value="1">100%</option>
+                            <option value="1.5">150%</option>
+                            <option value="2">200%</option>
+                            <option value="3">300%</option>
+                            <option value="4">400%</option>
+                            <option value="current" disabled hidden></option>
+                        </select>
+                        <a data-image-viewer-target="download" data-turbo="false" download>Download</a>
+                        <button id="close" data-action="image-viewer#close">Close</button>
+                    </div>
                 </div>
                 <div data-slot="image-viewer-viewport" data-image-viewer-target="viewport" role="group" tabindex="0" aria-label="Image">
                     <img data-slot="image-viewer-image" data-image-viewer-target="image" alt="" hidden>
@@ -112,6 +115,38 @@ test("full size fills the viewport without a preset and retains zoom through res
     await expect(overlay(page)).toBeHidden();
     await expect(page.locator("#one")).toBeFocused();
 });
+
+for (const direction of ["ltr", "rtl"]) {
+    test(`full size keeps content within physical safe areas in ${direction}`, async ({ page, context }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await start(page, item("one") + item("two"), { size: "full", thumbnails: true });
+        await page.evaluate((dir) => {
+            document.documentElement.dir = dir;
+            const viewport = document.createElement("meta");
+            viewport.name = "viewport";
+            viewport.content = "width=device-width, initial-scale=1, viewport-fit=cover";
+            document.head.append(viewport);
+        }, direction);
+        const session = await context.newCDPSession(page);
+        await session.send("Emulation.setSafeAreaInsetsOverride", {
+            insets: { top: 32, right: 24, bottom: 20, left: 12 },
+        });
+        await page.locator("#one").click();
+        await expect(displayed(page)).toBeVisible();
+        const dialog = page.locator('[data-image-viewer-target="dialog"]');
+        await expect.poll(() => dialog.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+        const toolbar = await page.locator('[data-slot="image-viewer-toolbar"]').boundingBox();
+        const strip = await page.locator('[data-image-viewer-target="thumbnails"]').boundingBox();
+        const caption = await page.locator('[data-image-viewer-target="caption"]').boundingBox();
+        expect(toolbar.y).toBeGreaterThanOrEqual(32);
+        for (const box of [toolbar, strip, caption]) {
+            expect(box.x).toBeGreaterThanOrEqual(12);
+            expect(box.x + box.width).toBeLessThanOrEqual(390 - 24);
+            expect(box.y + box.height).toBeLessThanOrEqual(844 - 20);
+        }
+        expect(await page.evaluate(() => window.viewer().geometry.viewportWidth)).toBe(390 - 12 - 24);
+    });
+}
 
 test("thumbnail selection follows clicks, toolbar navigation and native keyboard focus", async ({ page }) => {
     await start(page, item("one") + item("two") + item("three"), { thumbnails: true });
@@ -831,7 +866,9 @@ test("a full morph preserves pending loading feedback without restarting the req
     const viewport = page.locator('[data-image-viewer-target="viewport"]');
     await expect.poll(() => Boolean(release)).toBe(true);
     await expect(loading).toBeVisible();
-    await expect(viewport).toHaveAttribute("aria-busy", "true");
+    await expect(displayed(page)).toHaveAttribute("aria-busy", "true");
+    await expect(viewport).not.toHaveAttribute("aria-busy");
+    expect(await loading.evaluate((node) => node.closest('[aria-busy="true"]') === null)).toBe(true);
     await page.evaluate((html) => {
         const template = document.createElement("template");
         template.innerHTML = html;
@@ -839,7 +876,16 @@ test("a full morph preserves pending loading feedback without restarting the req
     }, markup(sources));
     await expect(loading).toBeVisible();
     await expect(error).toBeHidden();
-    await expect(viewport).toHaveAttribute("aria-busy", "true");
+    await expect(displayed(page)).toHaveAttribute("aria-busy", "true");
+    await expect(viewport).not.toHaveAttribute("aria-busy");
+    expect(await loading.evaluate((node) => node.closest('[aria-busy="true"]') === null)).toBe(true);
+    expect(
+        await page.evaluate(() => {
+            const copy = document.body.cloneNode(true);
+            window.normalizeSnapshot(copy);
+            return copy.querySelector('[data-image-viewer-target="image"]').hasAttribute("aria-busy");
+        }),
+    ).toBe(false);
     await expect(displayed(page)).toBeHidden();
     expect(requests).toBe(1);
     release();
@@ -847,6 +893,7 @@ test("a full morph preserves pending loading feedback without restarting the req
     await expect(loading).toBeHidden();
     await expect(error).toBeHidden();
     await expect(viewport).not.toHaveAttribute("aria-busy");
+    await expect(displayed(page)).not.toHaveAttribute("aria-busy");
 });
 
 test("a full morph preserves failed loading feedback without retrying and navigation clears it", async ({ page }) => {
@@ -875,6 +922,8 @@ test("a full morph preserves failed loading feedback without retrying and naviga
     await expect(loading).toBeHidden();
     await expect(displayed(page)).toBeHidden();
     await expect(viewport).not.toHaveAttribute("aria-busy");
+    await expect(displayed(page)).not.toHaveAttribute("aria-busy");
+    expect(await error.evaluate((node) => node.closest('[aria-busy="true"]') === null)).toBe(true);
     expect(requests).toBe(1);
     expect(
         await page.evaluate(() => {
@@ -883,7 +932,7 @@ test("a full morph preserves failed loading feedback without retrying and naviga
             return {
                 loading: copy.querySelector('[data-image-viewer-target="loading"]').hidden,
                 error: copy.querySelector('[data-image-viewer-target="error"]').hidden,
-                busy: copy.querySelector('[data-image-viewer-target="viewport"]').hasAttribute("aria-busy"),
+                busy: copy.querySelector('[data-image-viewer-target="image"]').hasAttribute("aria-busy"),
             };
         }),
     ).toEqual({ loading: true, error: true, busy: false });

@@ -290,10 +290,10 @@ export default class extends Controller {
             { signal: this.shellListeners.signal },
         );
         rememberSnapshotState(this.imageTarget, {
-            attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy"],
+            attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy", "aria-busy"],
             styles: ["--image-viewer-width", "--image-viewer-height", "--image-viewer-x", "--image-viewer-y"],
         });
-        rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state", "aria-busy"] });
+        rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
         rememberSnapshotState(this.loadingTarget, { attributes: ["hidden"] });
         rememberSnapshotState(this.errorTarget, { attributes: ["hidden"] });
         this.overlay = createOverlay(this, {
@@ -587,8 +587,9 @@ export default class extends Controller {
         this.loadingTarget.hidden = this.loadState !== "loading";
         this.errorTarget.hidden = this.loadState !== "error";
         this.imageTarget.hidden = this.loadState !== "ready" || !this.geometry;
-        if (this.loadState === "loading") this.viewportTarget.setAttribute("aria-busy", "true");
-        else this.viewportTarget.removeAttribute("aria-busy");
+        // Keep live status messages outside the busy image's subtree.
+        if (this.loadState === "loading") this.imageTarget.setAttribute("aria-busy", "true");
+        else this.imageTarget.removeAttribute("aria-busy");
         if (this.geometry) {
             const state = this.geometry;
             this.applyImagePolicy(this.imageTarget, this.active);

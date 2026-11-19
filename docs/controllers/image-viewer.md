@@ -33,6 +33,7 @@ server-rendered anatomy: `source`, `overlay`, `backdrop`, `dialog`, `viewport`, 
 and `error` targets. Optional targets are `previous`, `next`, `zoomIn`, `zoomOut`, `reset`, `zoomLabel`, `zoomSelect`, and `download`.
 The overlay starts `hidden inert`; the dialog needs an accessible name, dialog semantics and `tabindex="-1"`.
 The displayed image starts hidden with no source.
+The controller marks only that image `aria-busy` while loading; keep live status messages outside the busy subtree.
 The dialog's `data-size="full"` fills the viewport; shipped presets remove its window border, corners and shadow.
 This is a CSS presentation option, not native browser fullscreen.
 
