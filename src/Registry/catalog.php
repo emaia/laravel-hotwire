@@ -581,7 +581,7 @@ return [
             'view' => 'hotwire::component-views.image-viewer',
             'docs' => 'docs/components/image-viewer.md',
             'category' => 'overlay',
-            'description' => 'Image gallery viewer with zoom, pan, pinch gestures, keyboard navigation, Turbo updates, optional thumbnails and original downloads',
+            'description' => 'Windowed or full-viewport image gallery viewer with zoom, pan, pinch gestures, keyboard navigation, Turbo updates, optional thumbnails and original downloads',
             'controllers' => ['image-viewer'],
             'styling' => ['slots' => [['class' => ImageViewer::class]]],
         ],

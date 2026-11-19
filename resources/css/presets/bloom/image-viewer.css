@@ -7,8 +7,18 @@
         transition: opacity 200ms ease-out;
     }
     [data-slot="image-viewer-dialog"] {
-        @apply bg-card text-card-foreground border border-border rounded-2xl shadow-xl opacity-0 scale-95 translate-y-3;
+        @apply bg-card text-card-foreground opacity-0 scale-95 translate-y-3;
         transition: opacity 300ms ease-out, scale 300ms ease-out, translate 300ms ease-out;
+    }
+    [data-slot="image-viewer-dialog"]:not([data-size]),
+    [data-slot="image-viewer-dialog"][data-size="default"] {
+        @apply border border-border rounded-2xl shadow-xl;
+    }
+    [data-slot="image-viewer-dialog"][data-size="full"] {
+        @apply border-0 rounded-none translate-y-0;
+        box-shadow: none;
+        scale: 1;
+        transition-property: opacity;
     }
     [data-slot="image-viewer-overlay"][data-state="open"] > [data-slot="image-viewer-backdrop"] {
         @apply opacity-100;
@@ -37,7 +47,14 @@
         overflow: auto;
     }
     [data-slot="image-viewer-status"] {
-        @apply text-sm text-muted-foreground text-center p-6;
+        @apply gap-4 text-sm text-muted-foreground text-center p-8;
+    }
+    [data-slot="image-viewer-loading-icon"],
+    [data-slot="image-viewer-error-icon"] {
+        @apply size-9 shrink-0;
+    }
+    [data-slot="image-viewer-loading-icon"] {
+        @apply animate-spin;
     }
     [data-slot="image-viewer-thumbnails"] {
         @apply gap-3 px-4 py-3 border-t border-border bg-muted/30;

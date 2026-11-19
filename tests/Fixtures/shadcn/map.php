@@ -1585,6 +1585,8 @@ return [
         'image-viewer-zoom' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-caption' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-status' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-loading-icon' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-error-icon' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-thumbnails' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-thumbnail' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'accordion' => ['decision' => 'equivalent', 'class' => 'cn-accordion'],

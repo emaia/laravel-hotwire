@@ -30,6 +30,7 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 | `download` | `false` | Include an original download link |
 | `loop` | `false` | Wrap previous/next navigation |
 | `thumbnails` | `false` | Show a thumbnail strip inside the open viewer |
+| `size` | `default` | Use `full` for an edge-to-edge viewer; `default` retains the windowed presentation |
 | `motion` | `default` | Preset-driven enter/exit transitions; `none` disables them |
 | `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
 | `stimulus` | `null` | Additional Stimulus attributes on the root |
@@ -37,13 +38,25 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 Other attributes, including `class`, apply to the root. The internal `data-image-viewer-*` namespace is protected.
 There is no controller override prop; compose application controllers and the viewer's events instead.
 
+Translate individual controls through `labels`. The `reset` label names both the fit button and the selector's
+Fit option; its current fit percentage is appended automatically.
+
+```blade
+<hw:image-viewer
+    label="Fotos do produto"
+    :labels="['reset' => __('Ajustar imagem'), 'zoom' => __('Nível de zoom'), 'close' => __('Fechar')]"
+>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Produto"></a>
+</hw:image-viewer>
+```
+
 ## Image metadata
 
 Attributes belong to each source `<img>`, not the wrapper.
 
 | Attribute | Purpose |
 | --- | --- |
-| `data-original` | Full image URL; falls back to the enclosing link, then the image source |
+| `data-original` | Full image URL; falls back to the enclosing link, then the declared image `src` |
 | `data-image-key` | Unique stable identity across morph/reordering; falls back to image id, then DOM identity |
 | `alt` | Accessible description of the displayed image |
 | `data-caption` | Plain-text caption; falls back to `alt`, never interpreted as HTML |
@@ -51,6 +64,8 @@ Attributes belong to each source `<img>`, not the wrapper.
 | `data-download-name` | Suggested filename; the server/browser may override it |
 
 Thumbnail `srcset`/`sizes` are not inherited by the full image. Images from nested viewer controllers are not included.
+Without `data-original` or an enclosing link, the original and download use the declared `src`, not the responsive
+candidate selected by the browser. Resizing a responsive source does not change the original or reset zoom.
 Only HTTP(S), blob and image data URLs are accepted. This URL check is not authorization: protect private media on the server.
 Source `crossorigin` and `referrerpolicy` apply to both the original loader and the displayed image, before assigning
 their source URL. Each image's policies replace the previous image's policies.
@@ -74,6 +89,9 @@ their source URL. Each image's policies replace the previous image's policies.
 - If a keyed source replacement retains the opening image, closing returns focus to its replacement control, not to a
   different image selected later. Changing only a fallback link's `href` also updates an open viewer.
 - Late loads cannot replace a more recent selection. Failed originals show an error rather than silently enlarging a thumbnail.
+- Loading and error feedback is centered in the image area, pairing a decorative spinner or unavailable-image icon with
+  the translated `labels.loading` or `labels.error` message. Status text remains available to assistive technology.
+  Reduced motion replaces spinner rotation with the shared status pulse; `motion="none"` keeps the icon static.
 - Captions have no character limit or silent truncation. Official presets currently cap their height at 20dvh and scroll
   the full text; this is a layout choice, not a content-length standard. Overflowing captions enter the tab order and
   retain native scrolling keys rather than triggering gallery navigation.
@@ -81,7 +99,23 @@ their source URL. Each image's policies replace the previous image's policies.
 - Opening and closing animate the backdrop/panel through the shared Presence lifecycle. Reduced motion and `motion="none"`
   disable those transitions. Image fit uses untransformed viewport dimensions while the panel enters; zoom/pan do not inherit panel transitions.
 
-Rotation, flip, magnifier, automatic slideshow, fullscreen, inline mode and mixed media are not supported.
+Rotation, flip, magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed media are not supported.
+
+## Full viewport presentation
+
+```blade
+<hw:image-viewer size="full" thumbnails download>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`size="full"` fills the browser viewport without the window's outer spacing. Nova and Bloom also remove its border,
+rounded corners and shadow, using an opacity-only transition so it stays edge-to-edge while opening and closing.
+The toolbar, optional thumbnails and caption remain available; image fit uses the space left by these controls.
+Omit `size` for the existing windowed presentation. Unsupported values fall back to `default`.
+
+This is a layout option, not the browser's Fullscreen API: browser chrome stays visible, no fullscreen permission is
+requested, and Escape closes the viewer as usual. Custom presets can style the dialog's `data-size="full"` hook.
 
 ## Thumbnail navigation
 
@@ -113,6 +147,9 @@ source gallery in the application rather than rendering thousands of image contr
 
 Stable image keys preserve thumbnail buttons and keyboard focus across source updates. Additions, removal, reordering,
 responsive thumbnail loads and changed thumbnail URLs update the strip without reconnecting the controller.
+Full morphs preserve the generated strip and its focused button. When a morph replaces the viewer shell, focus returns
+to the same keyed thumbnail (or the current selection if that image was removed). Replacing the thumbnail template
+also retains the focused image. Responsive loads update only the corresponding strip image, not the whole gallery.
 Thumbnail markup comes from an internal Blade template; no carousel dependency is needed. This is direct navigation,
 not autoplay. With `thumbnails` omitted, existing presentation is unchanged.
 
@@ -133,7 +170,7 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-source"`: structural source region; layout remains application-owned.
 - `data-slot="image-viewer-overlay"`: transparent full-screen top-layer root; `hidden`, `inert`, `data-state` follow the shared overlay lifecycle. The backdrop, not this root, dims the page.
 - `data-slot="image-viewer-backdrop"`: backdrop.
-- `data-slot="image-viewer-dialog"`: viewer panel.
+- `data-slot="image-viewer-dialog"`: viewer panel; `data-size="default|full"` selects its presentation.
 - `data-slot="image-viewer-toolbar"`: controls group.
 - `data-slot="image-viewer-actions"`: structural trailing group for controls and zoom level; the selection counter stays separate at the leading edge.
 - `data-slot="image-viewer-button"`: navigation, zoom, reset, download and close controls; native `disabled` where applicable.
@@ -142,6 +179,8 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-zoom-control"`: structural native selector wrapper and decorative inset chevron.
 - `data-slot="image-viewer-caption"`: text caption.
 - `data-slot="image-viewer-status"`: loading/error feedback, controlled by `hidden`.
+- `data-slot="image-viewer-loading-icon"`: decorative loading spinner.
+- `data-slot="image-viewer-error-icon"`: decorative unavailable-image icon.
 - `data-slot="image-viewer-viewport"`: structural clipped interaction area; `data-pan-state="ready|dragging"` indicates available or active pan, and is absent when the image cannot pan.
 - `data-slot="image-viewer-image"`: structural displayed image.
 - `data-slot="image-viewer-icon"`: structural decorative icon.

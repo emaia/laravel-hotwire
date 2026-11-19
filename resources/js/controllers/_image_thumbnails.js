@@ -7,11 +7,12 @@ export function createImageThumbnails(element, template, identifier) {
         throw new Error("Image viewer thumbnails require a button template containing an image.");
     }
     let entries = [];
+    let imagesBySource = new Map();
     let previousPrototype = null;
     element.replaceChildren();
 
-    function render(items, activeIndex, reveal = false) {
-        const prototype = template.content?.firstElementChild;
+    function render(items, activeIndex, reveal = false, currentTemplate = template) {
+        const prototype = currentTemplate.content?.firstElementChild;
         if (prototype?.tagName !== "BUTTON" || !prototype.querySelector("img")) {
             throw new Error("Image viewer thumbnails require a button template containing an image.");
         }
@@ -36,12 +37,8 @@ export function createImageThumbnails(element, template, identifier) {
             image.referrerPolicy = item.node.referrerPolicy;
             if (item.node.hasAttribute("crossorigin")) image.crossOrigin = item.node.crossOrigin;
             else image.removeAttribute("crossorigin");
-            if (item.thumbnail) {
-                if (image.getAttribute("src") !== item.thumbnail) image.setAttribute("src", item.thumbnail);
-            } else {
-                image.removeAttribute("src");
-            }
-            return { identity, button };
+            syncImage(image, item.thumbnail);
+            return { identity, button, image };
         });
         const retained = new Set(next.map((entry) => entry.button));
         for (const child of [...element.children]) {
@@ -53,6 +50,7 @@ export function createImageThumbnails(element, template, identifier) {
             cursor = button.nextElementSibling;
         }
         entries = next;
+        imagesBySource = new Map(items.map((item, index) => [item.node, entries[index].image]));
         previousPrototype = prototype;
         sync(activeIndex, reveal);
         if (focused) {
@@ -60,6 +58,14 @@ export function createImageThumbnails(element, template, identifier) {
             if (replacement && element.ownerDocument.activeElement !== replacement.button) {
                 replacement.button.focus({ preventScroll: true });
             }
+        }
+    }
+
+    function syncImage(image, url) {
+        if (url) {
+            if (image.getAttribute("src") !== url) image.setAttribute("src", url);
+        } else {
+            image.removeAttribute("src");
         }
     }
 
@@ -74,14 +80,24 @@ export function createImageThumbnails(element, template, identifier) {
 
     return {
         element,
-        template,
         render,
         sync,
+        focusedIdentity: () =>
+            entries.find((entry) => entry.button.contains(element.ownerDocument.activeElement))?.identity,
+        focusIdentity: (identity, fallbackIndex) => {
+            const entry = entries.find((entry) => entry.identity === identity) ?? entries[fallbackIndex];
+            entry?.button.focus({ preventScroll: true });
+        },
+        updateImage: (source, url) => {
+            const image = imagesBySource.get(source);
+            if (image) syncImage(image, url);
+        },
         focus: (index) => entries[index]?.button.focus({ preventScroll: true }),
         indexOf: (target) => entries.findIndex((entry) => entry.button.contains(target)),
         clear: () => {
             element.replaceChildren();
             entries = [];
+            imagesBySource.clear();
         },
     };
 }

@@ -17,12 +17,12 @@ const image = (width = 1600, height = 1200, color = "green") =>
 const item = (id, url = image(), caption = id) =>
     `<a id="${id}" href="${url}"><img src="${image(80, 60)}" data-image-key="${id}" data-original="${url}" data-caption="${caption}" alt="${id}"></a>`;
 
-function markup(items = item("one") + item("two", image(800, 1200, "blue")), thumbnails = false) {
+function markup(items = item("one") + item("two", image(800, 1200, "blue")), thumbnails = false, size = "default") {
     return `<div id="gallery" data-controller="image-viewer">
         <div id="sources" data-image-viewer-target="source">${items}</div>
         <div data-slot="image-viewer-overlay" data-image-viewer-target="overlay" hidden inert>
             <div data-slot="image-viewer-backdrop" data-image-viewer-target="backdrop"></div>
-            <section data-slot="image-viewer-dialog" data-image-viewer-target="dialog" role="dialog" aria-modal="true" aria-label="Photos" tabindex="-1">
+            <section data-slot="image-viewer-dialog" data-image-viewer-target="dialog" data-size="${size}" role="dialog" aria-modal="true" aria-label="Photos" tabindex="-1">
                 <div data-slot="image-viewer-toolbar" role="group" aria-label="Image controls">
                     <button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
                     <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>
@@ -47,8 +47,14 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
                 </div>
                 <div data-slot="image-viewer-viewport" data-image-viewer-target="viewport" role="group" tabindex="0" aria-label="Image">
                     <img data-slot="image-viewer-image" data-image-viewer-target="image" alt="" hidden>
-                    <p data-image-viewer-target="loading" hidden>Loading</p>
-                    <p data-image-viewer-target="error" hidden>Cannot load image</p>
+                    <div data-slot="image-viewer-status" data-image-viewer-target="loading" role="status" aria-atomic="true" hidden>
+                        <svg data-slot="image-viewer-loading-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <span>Loading</span>
+                    </div>
+                    <div data-slot="image-viewer-status" data-image-viewer-target="error" role="status" aria-atomic="true" hidden>
+                        <svg data-slot="image-viewer-error-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 3l18 18" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <span>Cannot load image</span>
+                    </div>
                 </div>
                 ${
                     thumbnails
@@ -68,19 +74,44 @@ function markup(items = item("one") + item("two", image(800, 1200, "blue")), thu
     </div>`;
 }
 
-async function start(page, items, { thumbnails = false } = {}) {
+async function start(page, items, { thumbnails = false, size = "default" } = {}) {
     await page.setContent(`<base href="https://gallery.test/"><style>${readFileSync("resources/css/structural.css", "utf8")}
         [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
         [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
         #sources img { width:80px; height:60px }
         [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
-    </style>${markup(items, thumbnails)}`);
+    </style>${markup(items, thumbnails, size)}`);
     await page.addScriptTag({ content: bundle });
     await page.waitForFunction(() => window.viewer()?.connected);
 }
 
 const overlay = (page) => page.locator('[data-image-viewer-target="overlay"]');
 const displayed = (page) => page.locator('[data-image-viewer-target="image"]');
+
+test("full size fills the viewport without a preset and retains zoom through resizing and morphs", async ({ page }) => {
+    await start(page, item("one") + item("two"), { size: "full", thumbnails: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    const dialog = page.locator('[data-image-viewer-target="dialog"]');
+    await expect.poll(() => dialog.boundingBox()).toEqual({ x: 0, y: 0, ...page.viewportSize() });
+    await page.getByRole("combobox", { name: "Zoom level" }).selectOption("1");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => dialog.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+    await page.evaluate(
+        (html) => {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+        },
+        markup(item("one") + item("two"), true, "full"),
+    );
+    await expect.poll(() => dialog.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+    expect(await page.evaluate(() => window.viewer().geometry.scale)).toBe(1);
+    expect(await page.evaluate(() => document.fullscreenElement)).toBeNull();
+    await page.keyboard.press("Escape");
+    await expect(overlay(page)).toBeHidden();
+    await expect(page.locator("#one")).toBeFocused();
+});
 
 test("thumbnail selection follows clicks, toolbar navigation and native keyboard focus", async ({ page }) => {
     await start(page, item("one") + item("two") + item("three"), { thumbnails: true });
@@ -327,6 +358,10 @@ test("thumbnail presentation recovers after a full morph and a normalized cache 
     await start(page, sources, { thumbnails: true });
     await page.locator("#two").click();
     await expect(displayed(page)).toBeVisible();
+    await page.locator('[data-slot="image-viewer-thumbnail"]').nth(1).focus();
+    await page.evaluate(() => {
+        window.focusedThumbnail = document.activeElement;
+    });
     await page.evaluate(
         (html) => {
             const template = document.createElement("template");
@@ -337,6 +372,8 @@ test("thumbnail presentation recovers after a full morph and a normalized cache 
     );
     await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(3);
     await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toHaveAttribute("aria-current", "true");
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toBeFocused();
+    expect(await page.evaluate(() => document.activeElement === window.focusedThumbnail)).toBe(true);
     await page.evaluate(() => {
         const root = document.querySelector("#gallery");
         const copy = root.cloneNode(true);
@@ -350,6 +387,129 @@ test("thumbnail presentation recovers after a full morph and a normalized cache 
     await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toHaveCount(3);
     await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toHaveAttribute("aria-current", "true");
 });
+
+test("replacing the thumbnail template retains the focused image while applying new markup", async ({ page }) => {
+    await start(page, item("one") + item("two"), { thumbnails: true });
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator('[data-slot="image-viewer-thumbnail"]').nth(1).focus();
+    await page.locator('[data-image-viewer-target="thumbnailTemplate"]').evaluate((template) => {
+        const replacement = template.cloneNode(true);
+        replacement.content.querySelector("button").dataset.label = "Photo :index of :total";
+        template.replaceWith(replacement);
+    });
+    const selected = page.locator('[data-slot="image-viewer-thumbnail"]').nth(1);
+    await expect(selected).toHaveAccessibleName("Photo 2 of 2 — two");
+    await expect(selected).toBeFocused();
+});
+
+test("a morph replacing the viewer shell restores focus to the same keyed thumbnail", async ({ page }) => {
+    const sources = item("one") + item("two");
+    await start(page, sources, { thumbnails: true });
+    await page.locator("#two").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator('[data-slot="image-viewer-thumbnail"]').nth(1).focus();
+    await page.evaluate(
+        (html) => {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            const old = template.content.querySelector('[data-image-viewer-target="overlay"]');
+            const replacement = document.createElement("aside");
+            for (const { name, value } of old.attributes) replacement.setAttribute(name, value);
+            replacement.id = "replacement-shell";
+            replacement.innerHTML = old.innerHTML;
+            old.replaceWith(replacement);
+            window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+        },
+        markup(sources, true),
+    );
+    await expect(page.locator("#replacement-shell")).toBeVisible();
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]').nth(1)).toBeFocused();
+});
+
+for (const thumbnails of [false, true]) {
+    test(`responsive source loads keep the authored original and zoom with thumbnails ${thumbnails ? "on" : "off"}`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 600, height: 700 });
+        await page.route("https://gallery.test/*.svg", (route) =>
+            route.fulfill({
+                contentType: "image/svg+xml",
+                body: '<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1800"/>',
+            }),
+        );
+        await start(
+            page,
+            '<img id="one" src="/fallback.svg" srcset="/small.svg 800w, /big.svg 2400w" sizes="100vw" alt="Responsive">',
+            { thumbnails },
+        );
+        await expect
+            .poll(() => page.locator("#one").evaluate((img) => img.currentSrc))
+            .toBe("https://gallery.test/small.svg");
+        await page.locator("#one").click();
+        await expect(displayed(page)).toBeVisible();
+        await expect(displayed(page)).toHaveAttribute("src", "https://gallery.test/fallback.svg");
+        await page.getByRole("combobox", { name: "Zoom level" }).selectOption("2");
+        await page.evaluate(() => {
+            window.responsiveChanges = 0;
+            document
+                .querySelector("#gallery")
+                .addEventListener("image-viewer:changed", () => window.responsiveChanges++);
+        });
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await expect
+            .poll(() => page.locator("#one").evaluate((img) => img.currentSrc))
+            .toBe("https://gallery.test/big.svg");
+        if (thumbnails) {
+            await expect(page.locator('[data-slot="image-viewer-thumbnail"] img')).toHaveAttribute(
+                "src",
+                "https://gallery.test/big.svg",
+            );
+        }
+        await expect(displayed(page)).toHaveAttribute("src", "https://gallery.test/fallback.svg");
+        await expect(page.locator('[data-image-viewer-target="download"]')).toHaveAttribute(
+            "href",
+            "https://gallery.test/fallback.svg",
+        );
+        expect(await page.evaluate(() => window.viewer().geometry.scale)).toBe(2);
+        expect(await page.evaluate(() => window.responsiveChanges)).toBe(0);
+    });
+}
+
+for (const thumbnails of [false, true]) {
+    test(`source image loads do not rebuild the gallery with thumbnails ${thumbnails ? "on" : "off"}`, async ({
+        page,
+    }) => {
+        await start(page, item("one") + item("two"), { thumbnails });
+        expect(
+            await page.evaluate(async () => {
+                const viewer = window.viewer();
+                let refreshes = 0;
+                const refresh = viewer.refresh.bind(viewer);
+                viewer.refresh = () => {
+                    refreshes++;
+                    return refresh();
+                };
+                for (const img of document.querySelectorAll("#sources img")) {
+                    img.dispatchEvent(new Event("load"));
+                    await Promise.resolve();
+                }
+                const plainLoads = refreshes;
+                // A responsive load updates just its thumbnail, never the full gallery.
+                const img = document.querySelector("#one img");
+                img.setAttribute("srcset", img.src);
+                await new Promise(requestAnimationFrame);
+                refreshes = 0;
+                img.dispatchEvent(new Event("load"));
+                await Promise.resolve();
+                viewer.disconnect();
+                img.dispatchEvent(new Event("load"));
+                await Promise.resolve();
+                return { plainLoads, responsiveLoads: refreshes };
+            }),
+        ).toEqual({ plainLoads: 0, responsiveLoads: 0 });
+    });
+}
 
 for (const direction of ["ltr", "rtl"]) {
     test(`the active thumbnail remains in view and arrow keys follow ${direction} layout`, async ({ page }) => {
@@ -476,6 +636,31 @@ test("selects exact natural-size zoom, reflects intermediate zoom and returns to
     await select.press("ArrowDown");
     await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("1 / 2");
     await expect(select).not.toHaveValue("fit");
+});
+
+test("the translated fit label survives zoom updates, resizing and a full morph", async ({ page }) => {
+    await start(page);
+    await page.locator('option[value="fit"]').evaluate((option) => {
+        option.dataset.label = option.textContent = "Ajustar imagem";
+    });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    const fit = page.locator('option[value="fit"]');
+    await expect(fit).toHaveText(/^Ajustar imagem \(\d+%\)$/);
+    await page.locator("#zoom").click();
+    await expect(fit).toHaveText(/^Ajustar imagem \(\d+%\)$/);
+    await page.setViewportSize({ width: 900, height: 700 });
+    await expect(fit).toHaveText(/^Ajustar imagem \(\d+%\)$/);
+    await page.evaluate((html) => {
+        const template = document.createElement("template");
+        template.innerHTML = html;
+        const option = template.content.querySelector('option[value="fit"]');
+        option.dataset.label = option.textContent = "Ajustar imagem";
+        window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+    }, markup());
+    await expect(fit).toHaveText(/^Ajustar imagem \(\d+%\)$/);
+    await page.getByRole("combobox", { name: "Zoom level" }).selectOption("fit");
+    expect(await page.evaluate(() => window.viewer().atFit)).toBe(true);
 });
 
 test("updates a surviving controller on reorder, original change, removal, empty and repopulation", async ({
@@ -821,6 +1006,91 @@ test.describe("preset presentation", () => {
     });
 
     for (const preset of ["nova", "bloom"]) {
+        for (const reducedMotion of ["no-preference", "reduce", "none"]) {
+            test(`${preset} centers loading and error feedback with ${reducedMotion} motion`, async ({ page }) => {
+                await page.emulateMedia({ reducedMotion: reducedMotion === "reduce" ? "reduce" : "no-preference" });
+                let release;
+                await page.route("https://gallery.test/status.svg", async (route) => {
+                    await new Promise((resolve) => (release = resolve));
+                    await route.abort("failed");
+                });
+                await start(page, item("one", "/status.svg"), { size: "full" });
+                if (reducedMotion === "none") await overlay(page).evaluate((node) => (node.dataset.motion = "none"));
+                await page.addStyleTag({ content: css[preset] });
+                await page.locator("#one").click();
+                await expect.poll(() => Boolean(release)).toBe(true);
+                await page.evaluate(() => window.viewer().overlay.settled);
+                const viewport = page.locator('[data-image-viewer-target="viewport"]');
+                const loading = page.locator('[data-image-viewer-target="loading"]');
+                const error = page.locator('[data-image-viewer-target="error"]');
+                const spinner = page.locator('[data-slot="image-viewer-loading-icon"]');
+                await expect(loading).toBeVisible();
+                await expect(error).toBeHidden();
+                await expect(spinner).toBeVisible();
+                await expect(loading).toHaveCSS("align-items", "center");
+                await expect(loading).toHaveCSS("justify-content", "center");
+                expect(await loading.boundingBox()).toEqual(await viewport.boundingBox());
+                if (reducedMotion === "none") await expect(spinner).toHaveCSS("animation-name", "none");
+                else if (reducedMotion === "reduce") await expect(spinner).not.toHaveCSS("animation-name", "spin");
+                else await expect(spinner).toHaveCSS("animation-name", "spin");
+                release();
+                await expect(error).toBeVisible();
+                await expect(loading).toBeHidden();
+                await expect(error.locator('[data-slot="image-viewer-error-icon"]')).toBeVisible();
+                await expect(error).toHaveCSS("align-items", "center");
+                await expect(error).toHaveCSS("justify-content", "center");
+                expect(await error.boundingBox()).toEqual(await viewport.boundingBox());
+                await expect(error).toHaveText("Cannot load image");
+            });
+        }
+
+        for (const mobile of [false, true]) {
+            test(`${preset} full size is edge-to-edge and borderless on ${mobile ? "mobile" : "desktop"}`, async ({
+                page,
+            }, testInfo) => {
+                await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 });
+                await start(page, item("one") + item("two"), { size: "full", thumbnails: true });
+                await page.addStyleTag({ content: css[preset] });
+                await page.locator("#one").click();
+                await page.evaluate(() => window.viewer().overlay.settled);
+                const dialog = page.locator('[data-image-viewer-target="dialog"]');
+                await expect.poll(() => dialog.boundingBox()).toEqual({ x: 0, y: 0, ...page.viewportSize() });
+                const frame = await dialog.evaluate((node) => {
+                    const style = getComputedStyle(node);
+                    return {
+                        borders: [
+                            style.borderTopWidth,
+                            style.borderRightWidth,
+                            style.borderBottomWidth,
+                            style.borderLeftWidth,
+                        ],
+                        corners: [
+                            style.borderTopLeftRadius,
+                            style.borderTopRightRadius,
+                            style.borderBottomLeftRadius,
+                            style.borderBottomRightRadius,
+                        ],
+                        shadow: style.boxShadow,
+                    };
+                });
+                expect(frame).toEqual({
+                    borders: ["0px", "0px", "0px", "0px"],
+                    corners: ["0px", "0px", "0px", "0px"],
+                    shadow: "none",
+                });
+                await expect(displayed(page)).toBeVisible();
+                await expect(page.locator('[data-image-viewer-target="viewport"]')).toBeVisible();
+                await dialog.screenshot({
+                    path: testInfo.outputPath(`${preset}-${mobile ? "mobile" : "desktop"}-full.png`),
+                });
+                await page.locator('[data-slot="image-viewer-thumbnail"]').nth(1).click();
+                await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 2");
+                await page.keyboard.press("Escape");
+                await expect(overlay(page)).toBeHidden();
+                await expect(page.locator("#one")).toBeFocused();
+            });
+        }
+
         for (const direction of ["ltr", "rtl"]) {
             test(`${preset} keeps both ends of an overflowing thumbnail strip reachable in ${direction}`, async ({
                 page,

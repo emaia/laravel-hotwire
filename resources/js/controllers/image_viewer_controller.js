@@ -40,8 +40,18 @@ export default class extends Controller {
         this.onKeydown = this.keydown.bind(this);
         this.onCache = this.closeForCache.bind(this);
         this.onMorph = this.queueRefresh.bind(this);
+        this.onBeforeMorph = (event) => {
+            const strip = this.thumbnails?.element;
+            if (!strip) return;
+            // The server renders an empty strip; its generated buttons own keyboard focus.
+            if (event.target === strip) event.preventDefault();
+            else if (event.target.contains(strip)) this.morphThumbnailFocus ??= this.thumbnails.focusedIdentity();
+        };
         this.onSourceLoad = (event) => {
-            if (this.source?.contains(event.target)) this.queueRefresh();
+            const image = event.target;
+            if (image.tagName === "IMG" && image.hasAttribute("srcset") && this.source?.contains(image)) {
+                this.thumbnails?.updateImage(image, this.safeURL(image.currentSrc || image.getAttribute("src")));
+            }
         };
     }
 
@@ -51,7 +61,7 @@ export default class extends Controller {
         this.element.addEventListener("click", this.onClick);
         this.element.addEventListener("keydown", this.onKeydown);
         this.element.addEventListener("turbo:morph-element", this.onMorph);
-        this.element.addEventListener("load", this.onSourceLoad, true);
+        this.element.addEventListener("turbo:before-morph-element", this.onBeforeMorph);
         document.addEventListener("turbo:before-cache", this.onCache);
         this.observer = new MutationObserver((records) => {
             if (records.some((record) => record.target === this.element || this.source?.contains(record.target))) {
@@ -83,10 +93,12 @@ export default class extends Controller {
 
     disconnect() {
         this.connected = false;
+        this.morphThumbnailFocus = null;
         this.observer?.disconnect();
         this.element.removeEventListener("click", this.onClick);
         this.element.removeEventListener("keydown", this.onKeydown);
         this.element.removeEventListener("turbo:morph-element", this.onMorph);
+        this.element.removeEventListener("turbo:before-morph-element", this.onBeforeMorph);
         this.element.removeEventListener("load", this.onSourceLoad, true);
         document.removeEventListener("turbo:before-cache", this.onCache);
         this.teardownShell();
@@ -136,6 +148,8 @@ export default class extends Controller {
     }
 
     refresh() {
+        const thumbnailFocus = this.morphThumbnailFocus;
+        this.morphThumbnailFocus = null;
         const wasOpen = this.overlay?.isOpen;
         const shellChanged =
             this.shell &&
@@ -192,6 +206,15 @@ export default class extends Controller {
                 this.render();
             }
         }
+        // A replaced shell cannot retain its buttons; restore only focus that the morph dropped.
+        if (
+            thumbnailFocus &&
+            this.overlay.isOpen &&
+            this.overlay.isTop &&
+            this.element.ownerDocument.activeElement === this.element.ownerDocument.body
+        ) {
+            this.thumbnails?.focusIdentity(thumbnailFocus, this.items.indexOf(this.active));
+        }
     }
 
     refreshTrigger(previousItems) {
@@ -211,9 +234,7 @@ export default class extends Controller {
             node,
             link,
             key: node.dataset.imageKey || node.id || null,
-            url: this.safeURL(
-                node.dataset.original || link?.getAttribute("href") || node.currentSrc || node.getAttribute("src"),
-            ),
+            url: this.safeURL(node.dataset.original || link?.getAttribute("href") || node.getAttribute("src")),
             caption: node.dataset.caption ?? node.alt,
             alt: node.alt,
             crossOrigin: node.hasAttribute("crossorigin") ? node.crossOrigin : null,
@@ -225,7 +246,6 @@ export default class extends Controller {
                 node.dataset.downloadUrl ||
                     node.dataset.original ||
                     link?.getAttribute("href") ||
-                    node.currentSrc ||
                     node.getAttribute("src"),
             ),
             filename: node.dataset.downloadName || "",
@@ -442,6 +462,7 @@ export default class extends Controller {
 
     refreshThumbnails() {
         if (!this.hasThumbnailsTarget) {
+            this.element.removeEventListener("load", this.onSourceLoad, true);
             this.thumbnails?.clear();
             this.thumbnails = null;
             return;
@@ -449,10 +470,8 @@ export default class extends Controller {
         if (!this.hasThumbnailTemplateTarget) {
             throw new Error("Image viewer thumbnails require a thumbnailTemplate target.");
         }
-        if (
-            this.thumbnails?.element !== this.thumbnailsTarget ||
-            this.thumbnails?.template !== this.thumbnailTemplateTarget
-        ) {
+        this.element.addEventListener("load", this.onSourceLoad, true);
+        if (this.thumbnails?.element !== this.thumbnailsTarget) {
             this.thumbnails?.clear();
             this.thumbnails = createImageThumbnails(
                 this.thumbnailsTarget,
@@ -464,6 +483,7 @@ export default class extends Controller {
             this.items,
             this.items.indexOf(this.active),
             this.overlay?.isOpen && !this.overlay.isOpening,
+            this.thumbnailTemplateTarget,
         );
     }
 

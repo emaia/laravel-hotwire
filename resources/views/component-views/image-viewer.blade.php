@@ -29,6 +29,7 @@
         <section
             data-slot="{{ $slotNames['dialog'] }}"
             data-image-viewer-target="dialog"
+            data-size="{{ $size }}"
             role="dialog"
             aria-modal="true"
             aria-label="{{ $label }}"
@@ -153,12 +154,51 @@
                     draggable="false"
                     hidden
                 />
-                <p data-slot="{{ $slotNames['status'] }}" data-image-viewer-target="loading" role="status" hidden>
-                    {{ $labels['loading'] }}
-                </p>
-                <p data-slot="{{ $slotNames['status'] }}" data-image-viewer-target="error" role="status" hidden>
-                    {{ $labels['error'] }}
-                </p>
+                <div
+                    data-slot="{{ $slotNames['status'] }}"
+                    data-image-viewer-target="loading"
+                    role="status"
+                    aria-atomic="true"
+                    hidden
+                >
+                    <svg
+                        data-slot="{{ $slotNames['loading-icon'] }}"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    <span>{{ $labels['loading'] }}</span>
+                </div>
+                <div
+                    data-slot="{{ $slotNames['status'] }}"
+                    data-image-viewer-target="error"
+                    role="status"
+                    aria-atomic="true"
+                    hidden
+                >
+                    <svg
+                        data-slot="{{ $slotNames['error-icon'] }}"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="m3 17 5-5 4 4 4-4 5 5M3 3l18 18" />
+                    </svg>
+                    <span>{{ $labels['error'] }}</span>
+                </div>
             </div>
             @if ($thumbnails)
                 <div

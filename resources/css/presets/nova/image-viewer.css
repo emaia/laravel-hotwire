@@ -7,8 +7,18 @@
         transition: opacity 150ms ease-out;
     }
     [data-slot="image-viewer-dialog"] {
-        @apply bg-background border border-border rounded-xl shadow-lg opacity-0 scale-95;
+        @apply bg-background opacity-0 scale-95;
         transition: opacity 200ms ease-out, scale 200ms ease-out;
+    }
+    [data-slot="image-viewer-dialog"]:not([data-size]),
+    [data-slot="image-viewer-dialog"][data-size="default"] {
+        @apply border border-border rounded-xl shadow-lg;
+    }
+    [data-slot="image-viewer-dialog"][data-size="full"] {
+        @apply border-0 rounded-none;
+        box-shadow: none;
+        scale: 1;
+        transition-property: opacity;
     }
     [data-slot="image-viewer-overlay"][data-state="open"] > [data-slot="image-viewer-backdrop"] {
         @apply opacity-100;
@@ -37,7 +47,14 @@
         overflow: auto;
     }
     [data-slot="image-viewer-status"] {
-        @apply text-sm text-muted-foreground text-center p-6;
+        @apply gap-3 text-sm text-muted-foreground text-center p-6;
+    }
+    [data-slot="image-viewer-loading-icon"],
+    [data-slot="image-viewer-error-icon"] {
+        @apply size-8 shrink-0;
+    }
+    [data-slot="image-viewer-loading-icon"] {
+        @apply animate-spin;
     }
     [data-slot="image-viewer-thumbnails"] {
         @apply gap-2 px-3 py-2 border-t border-border;

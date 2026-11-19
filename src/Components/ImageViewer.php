@@ -22,6 +22,8 @@ class ImageViewer extends BaseComponent
         'zoom-control' => ['name' => 'image-viewer-zoom-control', 'kind' => 'structural'],
         'caption' => ['name' => 'image-viewer-caption', 'kind' => 'visual'],
         'status' => ['name' => 'image-viewer-status', 'kind' => 'visual'],
+        'loading-icon' => ['name' => 'image-viewer-loading-icon', 'kind' => 'visual'],
+        'error-icon' => ['name' => 'image-viewer-error-icon', 'kind' => 'visual'],
         'viewport' => ['name' => 'image-viewer-viewport', 'kind' => 'structural'],
         'image' => ['name' => 'image-viewer-image', 'kind' => 'structural'],
         'icon' => ['name' => 'image-viewer-icon', 'kind' => 'structural'],
@@ -42,9 +44,11 @@ class ImageViewer extends BaseComponent
         public array $labels = [],
         public ?Htmlable $stimulus = null,
         public bool $thumbnails = false,
+        public string $size = 'default',
     ) {
         $this->resolvedId = $id ?? app(ComponentId::class)->next('hw-image-viewer');
         $this->motion = $motion === 'none' ? 'none' : 'default';
+        $this->size = $size === 'full' ? 'full' : 'default';
         $this->labels = array_replace([
             'previous' => 'Previous image',
             'next' => 'Next image',
