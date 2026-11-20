@@ -2,6 +2,54 @@
 
 All notable changes to `laravel-hotwire` will be documented in this file.
 
+## 0.88.0 - 2026-11-20
+
+### Image Viewer
+
+Inspect existing image galleries with a first-party viewer for Laravel, including zoom, pan, pinch, rotation, flips and Turbo-aware updates.
+
+#### Existing HTML and original images
+
+Wrap existing image links in `<hw:image-viewer>`. Keep lightweight thumbnails in `src`, provide originals through `data-original` or the enclosing link, and preserve working links without JavaScript.
+
+Original downloads are opt-in and remain unchanged by zoom, rotation or flips.
+
+See [Image Viewer](https://github.com/emaia/laravel-hotwire/blob/0.88.0/docs/components/image-viewer.md) for examples, props and image metadata.
+
+#### Zoom and transformations
+
+Use wheel, pinch, drag, keyboard shortcuts or the native zoom selector to inspect an image. Fit does not upscale small originals, and 100% represents natural image dimensions.
+
+Opt into `rotate` and `flip` for quarter turns and horizontal/vertical mirroring. Fit preserves the current orientation; navigating to another image or reopening starts at the original orientation.
+
+#### Navigation and presentation
+
+Opt into `thumbnails` and `arrows` for thumbnail navigation and side controls. Captions stay adjacent to the image, above the larger, closely spaced thumbnail strip.
+
+Choose the default windowed presentation or `size="full"` for an edge-to-edge layout with safe-area insets. Full-viewport layout does not invoke the browser's Fullscreen API.
+
+Discrete transforms use interruptible motion, and successful image loads fade in. Pan, pinch and wheel remain immediate. Reduced motion and `motion="none"` disable image effects.
+
+#### Turbo, focus and reading direction
+
+Surviving galleries preserve selection, zoom and orientation across morphs, including presentation replacement. Loading/error feedback survives updates, and cache preparation or disconnect retires pending work.
+
+Opening focuses the named dialog rather than an arbitrary control. Keyboard, swipe and navigation chevrons follow reading direction, while pan remains physical. Closing returns focus to the opening control when it is retained.
+
+See the [controller reference](https://github.com/emaia/laravel-hotwire/blob/0.88.0/docs/controllers/image-viewer.md) for actions and markup contracts.
+
+ImageViewer's automated browser coverage currently targets Chromium. Real Safari/iOS and screen-reader smokes remain pending.
+
+#### Upgrading
+
+Rebuild application assets after updating. If adopting ImageViewer with selective bundles or custom preset clones, include its styling in those presets.
+
+#### Maintenance
+
+PHP style CI now prepares the required extensions and runs the project's Pint in check-only mode, without automatic formatting commits.
+
+**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/0.87.0...0.88.0
+
 ## 0.87.0 - 2026-11-19
 
 ### Textarea counters inside the control frame
@@ -1580,6 +1628,7 @@ Laravel Hotwire now defaults to the `hw` prefix and supports the preferred short
 
 
 
+
 ```
 The configured `hotwire.prefix` remains customizable for apps that want another prefix.
 
@@ -1591,6 +1640,7 @@ Apps can also generate project-specific Stimulus helper metadata with:
 
 ```bash
 php artisan hotwire:ide-json
+
 
 
 
@@ -1853,6 +1903,7 @@ export default class extends CarouselController {
 
 
 
+
 ```
 Brace-aware injection respects an existing `resolve:` block. See [`docs/extending-controllers.md`](docs/extending-controllers.md).
 
@@ -1862,6 +1913,7 @@ Single canonical command for the greenfield case:
 
 ```bash
 php artisan hotwire:install
+
 
 
 
@@ -2082,6 +2134,7 @@ New `<x-hwc::map>` Blade component and `map` Stimulus controller — a Leaflet w
 
 
 
+
 ```
 - Default OpenStreetMap tiles with the required attribution automatically set
 - Inline markers with optional popups, or a `url` returning a GeoJSON `FeatureCollection`
@@ -2105,6 +2158,7 @@ The `chart` controller now supports a `poll` value (milliseconds) — when set w
 
 ```blade
 <x-hwc::chart url="/api/charts/sales" :poll="30_000" height="320px" />
+
 
 
 
@@ -2317,6 +2371,7 @@ Apache ECharts ^6.1.0 wrapper with server-rendered or URL-fetched options, Resiz
 
 
 
+
 ```
 #### Controller features
 
@@ -2383,6 +2438,7 @@ New `conditional-fields` Stimulus controller shows or hides dependent blocks bas
         ...
     </fieldset>
 </form>
+
 
 
 
@@ -2553,6 +2609,7 @@ Recommended path — encodes the rule once on the server, renders `hidden disabl
 
 
 
+
 ```
 #### Edit forms — the `:model` prop
 
@@ -2562,6 +2619,7 @@ Pass the same model your `<x-hwc::input>` / `<x-hwc::select>` / `<x-hwc::textare
 <x-hwc::conditional-field :model="$message" :when="['reason' => 'other']">
     <x-hwc::input name="other_reason" :value="$message->other_reason" />
 </x-hwc::conditional-field>
+
 
 
 
@@ -2729,6 +2787,7 @@ New `disclosure` Stimulus controller — collapsible inline content with proper 
 
 
 
+
 ```
 Two-way `open` value (default `false`), idempotent `toggle` / `open` / `close` actions, and a `disclosure:change` event with `{ open: bool }` for hooking analytics, icon swaps, or chained UI off transitions. The `content` target is required; the `trigger` target is optional and receives `aria-expanded` sync when present.
 
@@ -2742,6 +2801,7 @@ static outlets = ["disclosure"];
 revealHelp() {
     this.disclosureOutlet.open();
 }
+
 
 
 
@@ -2917,6 +2977,7 @@ New `password-visibility` Stimulus controller toggles a password input between h
 
 
 
+
 ```
 `aria-label` is driven by the `show-label` / `hide-label` values (defaults `Show password` / `Hide password`). A `password-visibility:change` event with `{ visible: bool }` fires on every transition so a small companion controller — or another listener — can swap icons. `connect()` always forces `type="password"`: visibility is never persisted across Turbo morphs or Drive navigations.
 
@@ -2929,6 +2990,7 @@ New `autofocus` Stimulus controller focuses the first matching field on `connect
 <form data-controller="autofocus" action="/messages" method="POST">
     <input type="text" name="title" autofocus/>
 </form>
+
 
 
 
@@ -3020,6 +3082,7 @@ New `back-to-top` Stimulus controller toggles `data-visible="true|false"` on its
            data-[visible=true]:opacity-100"
     aria-label="Back to top"
 >↑</button>
+
 
 
 
@@ -3201,6 +3264,7 @@ Single `size` prop replaces the previous `allow-small-width` and `allow-full-wid
 
 
 
+
 ```
 `allow-small-width` and `allow-full-width` are removed. Use `size="auto"` to keep the old "no width constraints" behavior, or `size="50vw"` to keep the old "half viewport" default. The migration table in `docs/components/modal.md` maps every previous combination to the new prop.
 
@@ -3298,6 +3362,7 @@ New `<x-hwc::frame-or-page>` component renders a view as a Turbo Frame payload o
 
 
 
+
 ```
 #### Model-aware frame ids
 
@@ -3307,6 +3372,7 @@ Pass a Model instead of a string; the component calls `dom_id()` to derive the f
 <x-hwc::frame-or-page :frame="$message" layout="layouts.dashboard">
     ...
 </x-hwc::frame-or-page>
+
 
 
 
@@ -3482,12 +3548,14 @@ The `<x-hwc::carousel>` component now supports an opt-in progress bar and slide 
 
 
 
+
 ```
 #### Slide counter
 
 ```blade
 <x-hwc::carousel :counter="true"
                  counter-class="text-sm">
+
 
 
 
@@ -3666,12 +3734,14 @@ export default class extends CarouselController {
 
 
 
+
 ```
 ```blade
 <x-hwc::carousel controller="gallery">
     <div>slide 1</div>
     <div>slide 2</div>
 </x-hwc::carousel>
+
 
 
 
