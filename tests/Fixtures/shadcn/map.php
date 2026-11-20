@@ -1576,6 +1576,20 @@ return [
 
     // Package visual slot => what the corpus says about it.
     'slots' => [
+        'image-viewer-overlay' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-backdrop' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-dialog' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-arrow' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-toolbar' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-button' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-counter' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-zoom' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-caption' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-status' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-loading-icon' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-error-icon' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-thumbnails' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-thumbnail' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'accordion' => ['decision' => 'equivalent', 'class' => 'cn-accordion'],
         'accordion-content' => ['decision' => 'equivalent', 'class' => 'cn-accordion-content'],
         'accordion-item' => ['decision' => 'equivalent', 'class' => 'cn-accordion-item'],

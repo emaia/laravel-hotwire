@@ -708,7 +708,7 @@ html[data-reveal="off"] [data-reveal-armed] {
         pointer-events: auto;
     }
 
-    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"])) {
+    :where([data-hotwire-top-layer][popover]:is([data-slot="modal-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="drawer-overlay"], [data-slot="sheet-overlay"], [data-slot="sidebar"], [data-slot="image-viewer-overlay"])) {
         width: 100vw;
         height: 100dvh;
         max-width: none;
@@ -770,6 +770,210 @@ html[data-reveal="off"] [data-reveal-armed] {
         [data-slot="accordion-item"][open]::details-content {
             opacity: 1;
         }
+    }
+}
+
+/* --- Image viewer viewport and overlay mechanics --- */
+[data-slot="image-viewer-overlay"] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+}
+
+[data-slot="image-viewer-overlay"][hidden] {
+    display: none;
+}
+
+[data-slot="image-viewer-backdrop"] {
+    position: absolute;
+    inset: 0;
+}
+
+[data-slot="image-viewer-dialog"] {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    width: calc(100% - 2rem);
+    height: calc(100% - 2rem);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+[data-slot="image-viewer-dialog"][data-size="full"] {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    /* Safe areas are physical screen edges, independent of reading direction. */
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+[data-slot="image-viewer-toolbar"] {
+    display: flex;
+    align-items: center;
+}
+
+[data-slot="image-viewer-toolbar"] > [data-slot="image-viewer-counter"] {
+    flex-shrink: 0;
+}
+
+[data-slot="image-viewer-actions"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: inherit;
+    min-width: 0;
+    margin-inline-start: auto;
+}
+
+[data-slot="image-viewer-actions"] > [data-slot="image-viewer-button"] {
+    flex-shrink: 0;
+}
+
+[data-slot="image-viewer-zoom-control"] {
+    position: relative;
+    display: inline-flex;
+}
+
+[data-slot="image-viewer-zoom-control"] > [data-slot="image-viewer-icon"] {
+    position: absolute;
+    inset-inline-end: 0.625rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+[data-slot="image-viewer-stage"] {
+    position: relative;
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+}
+
+[data-slot="image-viewer-arrow"] {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+}
+
+[data-slot="image-viewer-arrow"][data-side="previous"] {
+    inset-inline-start: var(--image-viewer-arrow-inset, 0px);
+}
+
+[data-slot="image-viewer-arrow"][data-side="next"] {
+    inset-inline-end: var(--image-viewer-arrow-inset, 0px);
+}
+
+:is(
+    [data-slot="image-viewer-arrow"],
+    [data-slot="image-viewer-button"][data-side="previous"],
+    [data-slot="image-viewer-button"][data-side="next"]
+):where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) > svg {
+    rotate: 180deg;
+}
+
+[data-slot="image-viewer-viewport"] {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    touch-action: none;
+    user-select: none;
+    overscroll-behavior: contain;
+    cursor: default;
+}
+
+[data-slot="image-viewer-viewport"][data-pan-state="ready"] {
+    cursor: grab;
+}
+
+[data-slot="image-viewer-viewport"][data-pan-state="dragging"] {
+    cursor: grabbing;
+}
+
+[data-slot="image-viewer-status"]:not([hidden]) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-slot="image-viewer-image"] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: var(--image-viewer-width);
+    height: var(--image-viewer-height);
+    max-width: none;
+    max-height: none;
+    transform: translate(var(--image-viewer-x), var(--image-viewer-y)) scale(var(--image-viewer-flip-x, 1), var(--image-viewer-flip-y, 1)) rotate(var(--image-viewer-rotation, 0deg));
+    transform-origin: center;
+    pointer-events: none;
+}
+
+[data-slot="image-viewer-icon"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+[data-slot="image-viewer-caption"] {
+    min-width: 0;
+}
+
+[data-slot="image-viewer-thumbnails"] {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+[data-slot="image-viewer-thumbnail"] {
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+[data-slot="image-viewer-thumbnail-image"] {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+[data-slot="image-viewer-button"]:focus-visible,
+[data-slot="image-viewer-arrow"]:focus-visible,
+[data-slot="image-viewer-thumbnail"]:focus-visible,
+[data-slot="image-viewer-zoom"]:focus-visible,
+[data-slot="image-viewer-caption"]:focus-visible,
+[data-slot="image-viewer-viewport"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+}
+
+@media (forced-colors: active) {
+    [data-slot="image-viewer-button"]:focus-visible,
+    [data-slot="image-viewer-arrow"]:focus-visible,
+    [data-slot="image-viewer-thumbnail"]:focus-visible,
+    [data-slot="image-viewer-zoom"]:focus-visible,
+    [data-slot="image-viewer-caption"]:focus-visible,
+    [data-slot="image-viewer-viewport"]:focus-visible {
+        outline-color: Highlight;
     }
 }
 
@@ -1069,12 +1273,15 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
 
     :is(
         [data-slot="modal-overlay"],
+        [data-slot="image-viewer-overlay"],
         [data-slot="alert-dialog-overlay"],
         [data-slot="drawer-overlay"],
         [data-slot="sheet-overlay"],
         [data-slot="sidebar"]
     ):is([data-motion="none"], [data-presence="instant"]) > :is(
         [data-slot="modal-backdrop"],
+        [data-slot="image-viewer-backdrop"],
+        [data-slot="image-viewer-dialog"],
         [data-slot="modal-positioner"],
         [data-slot="alert-dialog-backdrop"],
         [data-slot="alert-dialog-panel"],
@@ -1089,6 +1296,10 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
         animation: none !important;
     }
 
+    [data-slot="image-viewer-overlay"][data-motion="none"] [data-slot="image-viewer-loading-icon"] {
+        animation: none !important;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         :is(
             [data-slot="dropdown-menu"],
@@ -1097,6 +1308,8 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
             [data-slot="popover-content"],
             [data-slot="multi-select-content"],
             [data-slot="modal-backdrop"],
+            [data-slot="image-viewer-backdrop"],
+            [data-slot="image-viewer-dialog"],
             [data-slot="modal-positioner"],
             [data-slot="alert-dialog-backdrop"],
             [data-slot="alert-dialog-panel"],
@@ -1148,7 +1361,7 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
             animation: none !important;
         }
 
-        :where([data-slot="spinner"], [data-slot="pagination-next-spinner"]) {
+        :where([data-slot="spinner"], [data-slot="pagination-next-spinner"], [data-slot="image-viewer-loading-icon"]) {
             animation: hotwire-status-pulse 2s ease-in-out infinite;
         }
 

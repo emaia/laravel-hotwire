@@ -1,0 +1,902 @@
+// @hotwire-package
+import { Controller } from "@hotwired/stimulus";
+import { createOverlay } from "./_overlay.js";
+import { rememberSnapshotState } from "./_snapshot.js";
+import { fitImage, flipImage, imageBounds, panImage, resizeImage, rotateImage, zoomImage } from "./_image_viewport.js";
+import { createImageThumbnails } from "./_image_thumbnails.js";
+import { createImageMotion } from "./_image_motion.js";
+
+export default class extends Controller {
+    static targets = [
+        "source",
+        "overlay",
+        "backdrop",
+        "dialog",
+        "viewport",
+        "image",
+        "caption",
+        "counter",
+        "zoomLabel",
+        "zoomSelect",
+        "loading",
+        "error",
+        "previous",
+        "next",
+        "zoomIn",
+        "zoomOut",
+        "reset",
+        "rotateLeft",
+        "rotateRight",
+        "flipHorizontal",
+        "flipVertical",
+        "download",
+        "thumbnails",
+        "thumbnailTemplate",
+    ];
+    static values = { loop: { type: Boolean, default: false } };
+
+    initialize() {
+        this.pointers = new Map();
+        this.items = [];
+        this.loadState = "idle";
+        this.captionTabIndexes = new WeakMap();
+        this.generation = 0;
+        this.onClick = this.activate.bind(this);
+        this.onKeydown = this.keydown.bind(this);
+        this.onCache = this.closeForCache.bind(this);
+        this.onMorph = this.queueRefresh.bind(this);
+        this.onBeforeMorph = (event) => {
+            const strip = this.thumbnails?.element;
+            if (!strip) return;
+            // The server renders an empty strip; its generated buttons own keyboard focus.
+            if (event.target === strip) event.preventDefault();
+            else if (event.target.contains(strip)) this.morphThumbnailFocus ??= this.thumbnails.focusedIdentity();
+        };
+        this.onSourceLoad = (event) => {
+            const image = event.target;
+            if (image.tagName === "IMG" && image.hasAttribute("srcset") && this.source?.contains(image)) {
+                this.thumbnails?.updateImage(image, this.safeURL(image.currentSrc || image.getAttribute("src")));
+            }
+        };
+    }
+
+    connect() {
+        this.refreshThumbnails();
+        this.connected = true;
+        this.element.addEventListener("click", this.onClick);
+        this.element.addEventListener("keydown", this.onKeydown);
+        this.element.addEventListener("turbo:morph-element", this.onMorph);
+        this.element.addEventListener("turbo:before-morph-element", this.onBeforeMorph);
+        document.addEventListener("turbo:before-cache", this.onCache);
+        this.observer = new MutationObserver((records) => {
+            if (records.some((record) => record.target === this.element || this.source?.contains(record.target))) {
+                this.queueRefresh();
+            }
+        });
+        this.observer.observe(this.element, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: [
+                "src",
+                "href",
+                "srcset",
+                "sizes",
+                "alt",
+                "referrerpolicy",
+                "crossorigin",
+                "id",
+                "data-original",
+                "data-caption",
+                "data-image-key",
+                "data-download-url",
+                "data-download-name",
+            ],
+        });
+        this.refresh();
+    }
+
+    disconnect() {
+        this.connected = false;
+        this.morphThumbnailFocus = null;
+        this.observer?.disconnect();
+        this.element.removeEventListener("click", this.onClick);
+        this.element.removeEventListener("keydown", this.onKeydown);
+        this.element.removeEventListener("turbo:morph-element", this.onMorph);
+        this.element.removeEventListener("turbo:before-morph-element", this.onBeforeMorph);
+        this.element.removeEventListener("load", this.onSourceLoad, true);
+        document.removeEventListener("turbo:before-cache", this.onCache);
+        this.teardownShell();
+    }
+
+    sourceTargetConnected() {
+        this.queueRefresh();
+    }
+    loopValueChanged() {
+        if (this.connected) this.syncControls();
+    }
+    sourceTargetDisconnected() {
+        this.queueRefresh();
+    }
+    overlayTargetConnected() {
+        this.queueRefresh();
+    }
+    overlayTargetDisconnected() {
+        this.queueRefresh();
+    }
+    viewportTargetConnected() {
+        this.queueRefresh();
+    }
+    imageTargetConnected() {
+        this.queueRefresh();
+    }
+    imageTargetDisconnected() {
+        this.queueRefresh();
+    }
+    thumbnailsTargetConnected() {
+        this.queueRefresh();
+    }
+    thumbnailsTargetDisconnected() {
+        this.queueRefresh();
+    }
+    thumbnailTemplateTargetConnected() {
+        this.queueRefresh();
+    }
+    thumbnailTemplateTargetDisconnected() {
+        this.queueRefresh();
+    }
+    rotateLeftTargetConnected() {
+        this.queueRefresh();
+    }
+    previousTargetConnected() {
+        this.queueRefresh();
+    }
+    nextTargetConnected() {
+        this.queueRefresh();
+    }
+    rotateRightTargetConnected() {
+        this.queueRefresh();
+    }
+    flipHorizontalTargetConnected() {
+        this.queueRefresh();
+    }
+    flipVerticalTargetConnected() {
+        this.queueRefresh();
+    }
+
+    queueRefresh() {
+        if (!this.connected || this.refreshQueued) return;
+        this.refreshQueued = true;
+        queueMicrotask(() => {
+            this.refreshQueued = false;
+            if (this.connected) this.refresh();
+        });
+    }
+
+    refresh() {
+        const thumbnailFocus = this.morphThumbnailFocus;
+        this.morphThumbnailFocus = null;
+        const wasOpen = this.overlay?.isOpen;
+        const previousGeometry = this.geometry;
+        const shellChanged =
+            this.shell &&
+            (!this.hasOverlayTarget ||
+                !this.hasViewportTarget ||
+                !this.hasImageTarget ||
+                this.shell.overlay !== this.overlayTarget ||
+                this.shell.viewport !== this.viewportTarget ||
+                this.shell.image !== this.imageTarget);
+        if (shellChanged) this.teardownShell();
+        this.source = this.hasSourceTarget ? this.sourceTarget : null;
+        if (
+            !this.shell &&
+            this.hasOverlayTarget &&
+            this.hasBackdropTarget &&
+            this.hasDialogTarget &&
+            this.hasViewportTarget &&
+            this.hasImageTarget
+        ) {
+            this.setupShell();
+        }
+        const old = this.active;
+        const previousItems = this.items;
+        const previousIndex = Math.max(0, this.items.indexOf(old));
+        this.items = this.source
+            ? [...this.source.querySelectorAll("img")]
+                  .filter((img) => img.closest('[data-controller~="image-viewer"]') === this.element)
+                  .map((img) => this.describe(img))
+            : [];
+        this.refreshTrigger(previousItems);
+        if (!this.items.length || !this.shell) {
+            this.closeForCache();
+            this.active = null;
+            this.refreshThumbnails();
+            return;
+        }
+        const retained = old && this.items.find((item) => (old.key ? item.key === old.key : item.node === old.node));
+        this.active = retained ?? this.items[Math.min(previousIndex, this.items.length - 1)];
+        this.refreshThumbnails();
+        const sameIdentity = old && (old.key ? this.active.key === old.key : this.active.node === old.node);
+        const sameRequest =
+            sameIdentity &&
+            this.active.url === old.url &&
+            this.active.crossOrigin === old.crossOrigin &&
+            this.active.referrerPolicy === old.referrerPolicy;
+        if (wasOpen && shellChanged) {
+            this.overlay.setOpen({ notify: false });
+            if (sameRequest && previousGeometry) {
+                const rect = this.viewportDimensions();
+                this.geometry = resizeImage(previousGeometry, rect.width, rect.height);
+                this.loadState = "ready";
+                this.syncMetadata();
+                this.render();
+            } else this.loadCurrent();
+        } else if (this.overlay.isOpen) {
+            if (!sameRequest) {
+                this.loadCurrent();
+            } else {
+                this.syncMetadata();
+                this.render();
+            }
+        } else this.syncControls();
+        // A replaced shell cannot retain its buttons; restore only focus that the morph dropped.
+        if (
+            thumbnailFocus &&
+            this.overlay.isOpen &&
+            this.overlay.isTop &&
+            this.element.ownerDocument.activeElement === this.element.ownerDocument.body
+        ) {
+            this.thumbnails?.focusIdentity(thumbnailFocus, this.items.indexOf(this.active));
+        }
+    }
+
+    refreshTrigger(previousItems) {
+        if (!this.trigger || this.source?.contains(this.trigger)) return;
+        // Preserve the opener's identity, not the image reached through gallery navigation.
+        const origin = previousItems.find((item) => item.link === this.trigger || this.trigger.contains(item.node));
+        const retained =
+            origin && this.items.find((item) => (origin.key ? item.key === origin.key : item.node === origin.node));
+        if (!retained) return;
+        this.trigger = retained.link ?? retained.node.closest("button") ?? retained.node;
+        this.overlay?.setTriggerElement(this.trigger);
+    }
+
+    describe(node) {
+        const link = node.closest("a[href]");
+        return {
+            node,
+            link,
+            key: node.dataset.imageKey || node.id || null,
+            url: this.safeURL(node.dataset.original || link?.getAttribute("href") || node.getAttribute("src")),
+            caption: node.dataset.caption ?? node.alt,
+            alt: node.alt,
+            crossOrigin: node.hasAttribute("crossorigin") ? node.crossOrigin : null,
+            referrerPolicy: node.referrerPolicy,
+            thumbnail: this.safeURL(
+                node.hasAttribute("srcset") ? node.currentSrc || node.getAttribute("src") : node.getAttribute("src"),
+            ),
+            download: this.safeURL(
+                node.dataset.downloadUrl ||
+                    node.dataset.original ||
+                    link?.getAttribute("href") ||
+                    node.getAttribute("src"),
+            ),
+            filename: node.dataset.downloadName || "",
+        };
+    }
+
+    safeURL(value) {
+        if (!value) return null;
+        try {
+            const url = new URL(value, this.element.ownerDocument.baseURI);
+            if (["http:", "https:", "blob:"].includes(url.protocol) || /^data:image\//i.test(url.href)) return url.href;
+        } catch (_) {
+            // Invalid source metadata must not become a navigation or executable URL.
+        }
+        return null;
+    }
+
+    setupShell() {
+        this.shell = { overlay: this.overlayTarget, viewport: this.viewportTarget, image: this.imageTarget };
+        this.imageMotion = createImageMotion(this.imageTarget, this.overlayTarget);
+        this.shellListeners = new AbortController();
+        const listen = (name, handler, options = {}) =>
+            this.viewportTarget.addEventListener(name, handler.bind(this), {
+                ...options,
+                signal: this.shellListeners.signal,
+            });
+        listen("pointerdown", this.pointerdown);
+        listen("pointermove", this.pointermove);
+        listen("pointerup", this.pointerup);
+        listen("pointercancel", this.cancelPointers);
+        listen("lostpointercapture", this.lostCapture);
+        listen("wheel", this.wheel, { passive: false });
+        listen("dblclick", this.doubleClick);
+        listen("dragstart", (event) => event.preventDefault());
+        listen("gesturestart", this.gesture, { passive: false });
+        listen("gesturechange", this.gesture, { passive: false });
+        listen("gestureend", this.gesture, { passive: false });
+        this.backdropTarget.addEventListener(
+            "click",
+            () => {
+                if (this.overlay?.isTop) void this.close();
+            },
+            { signal: this.shellListeners.signal },
+        );
+        rememberSnapshotState(this.imageTarget, {
+            attributes: ["src", "alt", "hidden", "crossorigin", "referrerpolicy", "aria-busy"],
+            styles: [
+                "--image-viewer-width",
+                "--image-viewer-height",
+                "--image-viewer-x",
+                "--image-viewer-y",
+                "--image-viewer-rotation",
+                "--image-viewer-flip-x",
+                "--image-viewer-flip-y",
+            ],
+        });
+        rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
+        rememberSnapshotState(this.loadingTarget, { attributes: ["hidden"] });
+        rememberSnapshotState(this.errorTarget, { attributes: ["hidden"] });
+        this.overlay = createOverlay(this, {
+            modalTarget: this.overlayTarget,
+            backdropTarget: this.backdropTarget,
+            dialogTarget: this.dialogTarget,
+            initialFocus: "dialog",
+            lockScrollClasses: ["overflow-hidden"],
+            // A source gallery can live inside a Dropdown whose bubble-phase Escape handler closes its menu.
+            escapeCapture: true,
+            stopEscapePropagation: true,
+            getTriggerElement: () => this.trigger,
+            onEscape: () => this.close(),
+            onOpen: () => {
+                this.syncThumbnails();
+                this.dispatch("opened");
+            },
+            onClose: () => {
+                this.cancelLoad();
+                this.cancelPointers();
+                this.dispatch("closed");
+            },
+        });
+        this.resizeObserver = new ResizeObserver(() => {
+            if (!this.overlay?.isOpen) return;
+            this.syncCaptionAccessibility();
+            if (!this.geometry) return;
+            const rect = this.viewportDimensions();
+            this.geometry = resizeImage(this.geometry, rect.width, rect.height);
+            this.render();
+        });
+        this.resizeObserver.observe(this.viewportTarget);
+    }
+
+    teardownShell() {
+        this.cancelLoad();
+        this.cancelPointers();
+        this.shellListeners?.abort();
+        this.resizeObserver?.disconnect();
+        this.imageMotion?.destroy();
+        this.imageMotion = null;
+        this.thumbnails?.clear();
+        this.thumbnails = null;
+        this.overlay?.cleanup();
+        this.overlay = null;
+        this.shell = null;
+    }
+
+    activate(event) {
+        if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        )
+            return;
+        if (!this.source?.contains(event.target)) return;
+        const trigger = event.target.closest("a, button") ?? event.target.closest("img");
+        if (!trigger || trigger.hasAttribute("download") || (trigger.target && trigger.target !== "_self")) return;
+        this.refresh();
+        const index = this.items.findIndex((item) => item.node === trigger || trigger.contains(item.node));
+        if (index < 0 || !this.overlay) return;
+        event.preventDefault();
+        this.trigger = trigger;
+        void this.show(index);
+    }
+
+    show(index) {
+        const item = this.items[index];
+        if (!item || !this.overlay) return;
+        if (item === this.active && this.overlay.isOpen) return this.overlay.settled;
+        this.cancelLoad();
+        this.active = item;
+        this.syncMetadata();
+        const opening = this.overlay.open();
+        this.loadCurrent();
+        return opening;
+    }
+
+    close() {
+        this.cancelLoad();
+        this.cancelPointers();
+        return this.overlay?.close();
+    }
+
+    closeForCache() {
+        this.cancelLoad();
+        this.cancelPointers();
+        this.overlay?.closeNow({ restoreFocus: false });
+    }
+
+    cancelLoad() {
+        this.imageMotion?.reset();
+        this.generation++;
+        if (this.loader) {
+            this.loader.onload = this.loader.onerror = null;
+            this.loader.removeAttribute("src");
+            this.loader = null;
+        }
+        this.geometry = null;
+        // Preserve the last painted content until an overlay exit finishes or another load renders.
+        this.loadState = "idle";
+        this.syncPanState();
+    }
+
+    loadCurrent() {
+        this.cancelLoad();
+        this.cancelPointers();
+        this.loadState = "loading";
+        this.syncMetadata();
+        this.imageTarget.removeAttribute("src");
+        this.render();
+        if (!this.active.url) return this.loadFailed();
+        const generation = this.generation;
+        const item = this.active;
+        const loader = (this.loader = new Image());
+        this.applyImagePolicy(loader, item);
+        loader.onload = () => {
+            if (generation !== this.generation || !this.connected || !this.overlay?.isOpen) return;
+            const rect = this.viewportDimensions();
+            this.geometry = fitImage(rect.width, rect.height, loader.naturalWidth, loader.naturalHeight);
+            this.loader = null;
+            loader.onload = loader.onerror = null;
+            if (!this.geometry) return this.loadFailed();
+            this.loadState = "ready";
+            this.render({ fade: true });
+            this.dispatch("changed", { detail: { index: this.items.indexOf(this.active), image: this.active.node } });
+        };
+        loader.onerror = () => {
+            if (generation === this.generation && this.connected) this.loadFailed();
+        };
+        loader.src = item.url;
+    }
+
+    // Keep fetch modes aligned so the displayed image can reuse the loader's resource.
+    applyImagePolicy(image, item) {
+        if (item.crossOrigin === null) image.removeAttribute("crossorigin");
+        else if (image.crossOrigin !== item.crossOrigin) image.crossOrigin = item.crossOrigin;
+        if (!item.referrerPolicy) image.removeAttribute("referrerpolicy");
+        else if (image.referrerPolicy !== item.referrerPolicy) image.referrerPolicy = item.referrerPolicy;
+    }
+
+    loadFailed() {
+        if (this.loader) {
+            this.loader.onload = this.loader.onerror = null;
+            this.loader = null;
+        }
+        this.geometry = null;
+        this.loadState = "error";
+        this.render();
+    }
+
+    syncMetadata() {
+        this.captionTarget.textContent = this.active.caption;
+        this.syncCaptionAccessibility();
+        this.imageTarget.alt = this.active.alt;
+        this.counterTarget.textContent = `${this.items.indexOf(this.active) + 1} / ${this.items.length}`;
+        if (this.hasDownloadTarget) {
+            const link = this.downloadTarget;
+            const url = this.active.url && this.active.download;
+            url ? link.setAttribute("href", url) : link.removeAttribute("href");
+            link.setAttribute("download", this.active.filename);
+            link.hidden = !url;
+        }
+        this.syncControls();
+        this.syncThumbnails();
+    }
+
+    refreshThumbnails() {
+        if (!this.hasThumbnailsTarget) {
+            this.element.removeEventListener("load", this.onSourceLoad, true);
+            this.thumbnails?.clear();
+            this.thumbnails = null;
+            return;
+        }
+        if (!this.hasThumbnailTemplateTarget) {
+            throw new Error("Image viewer thumbnails require a thumbnailTemplate target.");
+        }
+        this.element.addEventListener("load", this.onSourceLoad, true);
+        if (this.thumbnails?.element !== this.thumbnailsTarget) {
+            this.thumbnails?.clear();
+            this.thumbnails = createImageThumbnails(
+                this.thumbnailsTarget,
+                this.thumbnailTemplateTarget,
+                this.identifier,
+            );
+        }
+        this.thumbnails.render(
+            this.items,
+            this.items.indexOf(this.active),
+            this.overlay?.isOpen && !this.overlay.isOpening,
+            this.thumbnailTemplateTarget,
+        );
+    }
+
+    syncThumbnails() {
+        this.thumbnails?.sync(this.items.indexOf(this.active), this.overlay?.isOpen && !this.overlay.isOpening);
+    }
+
+    selectThumbnail(event) {
+        const index = Number(event.params?.index);
+        if (
+            Number.isInteger(index) &&
+            index >= 0 &&
+            index < this.items.length &&
+            index !== this.items.indexOf(this.active)
+        ) {
+            void this.show(index);
+        }
+    }
+
+    syncCaptionAccessibility() {
+        if (!this.hasCaptionTarget) return;
+        const caption = this.captionTarget;
+        if (!this.captionTabIndexes.has(caption)) {
+            this.captionTabIndexes.set(caption, caption.getAttribute("tabindex"));
+            rememberSnapshotState(caption, { attributes: ["tabindex"] });
+        }
+        const tabIndex = caption.scrollHeight > caption.clientHeight + 1 ? "0" : this.captionTabIndexes.get(caption);
+        tabIndex === null ? caption.removeAttribute("tabindex") : caption.setAttribute("tabindex", tabIndex);
+    }
+
+    syncControls() {
+        const focused = this.element.ownerDocument.activeElement;
+        const index = this.items.indexOf(this.active);
+        for (const button of this.previousTargets)
+            button.disabled = this.items.length < 2 || (!this.loopValue && index <= 0);
+        for (const button of this.nextTargets)
+            button.disabled = this.items.length < 2 || (!this.loopValue && index >= this.items.length - 1);
+        if (this.hasZoomInTarget)
+            this.zoomInTarget.disabled = !this.geometry || this.geometry.scale >= this.geometry.maxScale;
+        if (this.hasZoomOutTarget) this.zoomOutTarget.disabled = !this.geometry || this.atFit;
+        if (this.hasResetTarget) this.resetTarget.disabled = !this.geometry || this.atFit;
+        for (const button of [
+            ...this.rotateLeftTargets,
+            ...this.rotateRightTargets,
+            ...this.flipHorizontalTargets,
+            ...this.flipVerticalTargets,
+        ])
+            button.disabled = !this.geometry;
+        if (this.hasZoomLabelTarget)
+            this.zoomLabelTarget.textContent = this.geometry ? `${Math.round(this.geometry.scale * 100)}%` : "";
+        this.syncZoomSelect();
+        if (focused?.disabled && this.overlay?.isOpen && this.overlay.isTop && this.dialogTarget.contains(focused)) {
+            const preferred = this.nextTargets.includes(focused)
+                ? this.previousTargets[0]
+                : this.previousTargets.includes(focused)
+                  ? this.nextTargets[0]
+                  : focused === this.zoomInTargets[0]
+                    ? this.zoomOutTargets[0]
+                    : this.zoomInTargets[0];
+            const available = [
+                preferred,
+                ...this.previousTargets,
+                ...this.nextTargets,
+                ...this.zoomInTargets,
+                ...this.zoomOutTargets,
+                this.dialogTarget.querySelector("button:not([disabled]), a[href]"),
+                this.dialogTarget,
+            ].find((element) => element && !element.disabled && !element.closest("[hidden], [inert]"));
+            available?.focus({ preventScroll: true });
+        }
+    }
+
+    syncZoomSelect() {
+        if (!this.hasZoomSelectTarget) return;
+        const select = this.zoomSelectTarget;
+        select.disabled = !this.geometry;
+        if (!this.geometry) return;
+        const { scale, minScale, maxScale } = this.geometry;
+        const fixed = [...select.options].filter((option) => Number(option.value) > 0);
+        for (const option of fixed) {
+            const unavailable = Number(option.value) < minScale - 0.0001 || Number(option.value) > maxScale;
+            if (option.disabled !== unavailable) option.disabled = unavailable;
+        }
+        const fit = select.querySelector('option[value="fit"]');
+        if (fit) {
+            const label = `${fit.dataset.label ?? "Fit"} (${Math.round(minScale * 100)}%)`;
+            if (fit.textContent !== label) fit.textContent = label;
+        }
+        const exact = fixed.find((option) => Math.abs(Number(option.value) - scale) < 0.0001);
+        const value = this.atFit ? "fit" : (exact?.value ?? "current");
+        const current = select.querySelector('option[value="current"]');
+        if (current) {
+            current.hidden = value !== "current";
+            const label = `${Math.round(scale * 100)}%`;
+            if (current.textContent !== label) current.textContent = label;
+        }
+        select.value = value;
+    }
+
+    changeZoom(event) {
+        const value = event.target.value;
+        if (value === "fit") this.reset();
+        else if (value !== "current") this.zoomTo(Number(value), undefined, undefined, true);
+    }
+
+    render(motion = {}) {
+        this.loadingTarget.hidden = this.loadState !== "loading";
+        this.errorTarget.hidden = this.loadState !== "error";
+        this.imageTarget.hidden = this.loadState !== "ready" || !this.geometry;
+        // Keep live status messages outside the busy image's subtree.
+        if (this.loadState === "loading") this.imageTarget.setAttribute("aria-busy", "true");
+        else this.imageTarget.removeAttribute("aria-busy");
+        if (this.geometry) {
+            const state = this.geometry;
+            this.applyImagePolicy(this.imageTarget, this.active);
+            if (this.imageTarget.getAttribute("src") !== this.active.url) this.imageTarget.src = this.active.url;
+            this.imageTarget.alt = this.active.alt;
+            const style = this.imageTarget.style;
+            const bounds = imageBounds(state);
+            const width = state.naturalWidth * state.scale;
+            const height = state.naturalHeight * state.scale;
+            style.setProperty("--image-viewer-width", `${width}px`);
+            style.setProperty("--image-viewer-height", `${height}px`);
+            // CSS rotates around the bitmap center; geometry stores the oriented bounding box's top-left corner.
+            style.setProperty("--image-viewer-x", `${state.x + (bounds.width - width) / 2}px`);
+            style.setProperty("--image-viewer-y", `${state.y + (bounds.height - height) / 2}px`);
+            style.setProperty("--image-viewer-rotation", `${state.rotation}deg`);
+            style.setProperty("--image-viewer-flip-x", state.flipX ? "-1" : "1");
+            style.setProperty("--image-viewer-flip-y", state.flipY ? "-1" : "1");
+            this.imageMotion?.sync(state, motion);
+        }
+        this.syncPanState();
+        this.syncControls();
+    }
+
+    syncPanState() {
+        const viewport = this.shell?.viewport;
+        if (!viewport) return;
+        const state = this.geometry;
+        const bounds = state && imageBounds(state);
+        const pannable =
+            bounds && (bounds.width > state.viewportWidth + 0.01 || bounds.height > state.viewportHeight + 0.01);
+        if (!pannable) {
+            viewport.removeAttribute("data-pan-state");
+            return;
+        }
+        viewport.dataset.panState = this.pointers.size === 1 && !this.drag?.swipe ? "dragging" : "ready";
+    }
+
+    get atFit() {
+        return !this.geometry || this.geometry.scale <= this.geometry.minScale + 0.0001;
+    }
+
+    previous() {
+        this.navigate(-1);
+    }
+    next() {
+        this.navigate(1);
+    }
+    navigate(step) {
+        let index = this.items.indexOf(this.active) + step;
+        if (this.loopValue) index = (index + this.items.length) % this.items.length;
+        if (index >= 0 && index < this.items.length) void this.show(index);
+    }
+
+    zoomIn() {
+        this.zoomTo(this.geometry?.scale * 1.25, undefined, undefined, true);
+    }
+    zoomOut() {
+        this.zoomTo(this.geometry?.scale / 1.25, undefined, undefined, true);
+    }
+    zoomTo(scale, x, y, animate = false) {
+        if (!this.geometry) return;
+        this.geometry = zoomImage(this.geometry, scale, x, y);
+        this.render({ animate });
+    }
+
+    reset() {
+        if (!this.geometry) return;
+        this.cancelPointers();
+        const { viewportWidth, viewportHeight, naturalWidth, naturalHeight } = this.geometry;
+        this.geometry = fitImage(viewportWidth, viewportHeight, naturalWidth, naturalHeight, this.geometry);
+        this.render({ animate: true });
+    }
+
+    rotateLeft() {
+        this.transformImage(rotateImage, -90);
+    }
+    rotateRight() {
+        this.transformImage(rotateImage, 90);
+    }
+    flipHorizontal() {
+        this.transformImage(flipImage, "horizontal");
+    }
+    flipVertical() {
+        this.transformImage(flipImage, "vertical");
+    }
+    transformImage(operation, value) {
+        if (!this.geometry) return;
+        this.cancelPointers();
+        this.geometry = operation(this.geometry, value);
+        this.render({ animate: true, rotation: operation === rotateImage ? value : 0 });
+    }
+
+    keydown(event) {
+        if (!this.overlay?.isOpen || !this.overlay.isTop || !this.dialogTarget.contains(event.target)) return;
+        if (event.target === this.captionTarget) return;
+        if (
+            event.isComposing ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.altKey ||
+            event.target.closest("input, textarea, select, [contenteditable]")
+        )
+            return;
+        const focusedThumbnail = this.thumbnails?.indexOf(event.target) ?? -1;
+        if (focusedThumbnail >= 0 && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            const rtl = getComputedStyle(this.thumbnails.element).direction === "rtl";
+            const step = (event.key === "ArrowRight" ? 1 : -1) * (rtl ? -1 : 1);
+            let index =
+                event.key === "Home" ? 0 : event.key === "End" ? this.items.length - 1 : focusedThumbnail + step;
+            index = this.loopValue
+                ? (index + this.items.length) % this.items.length
+                : Math.max(0, Math.min(this.items.length - 1, index));
+            if (index !== this.items.indexOf(this.active)) void this.show(index);
+            this.thumbnails.focus(index);
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+        const directions = { ArrowLeft: [-40, 0], ArrowRight: [40, 0], ArrowUp: [0, -40], ArrowDown: [0, 40] };
+        if (!this.atFit && event.target === this.viewportTarget && directions[event.key]) {
+            this.geometry = panImage(this.geometry, ...directions[event.key]);
+            this.render();
+        } else if (event.key === "ArrowLeft") this.navigate(this.navigationStep(-1));
+        else if (event.key === "ArrowRight") this.navigate(this.navigationStep(1));
+        else if (event.key === "Home") void this.show(0);
+        else if (event.key === "End") void this.show(this.items.length - 1);
+        else if (["+", "="].includes(event.key)) this.zoomIn();
+        else if (event.key === "-") this.zoomOut();
+        else if (event.key === "0") this.reset();
+        else return;
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    point(event) {
+        const rect = this.viewportTarget.getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    navigationStep(step) {
+        return step * (getComputedStyle(this.dialogTarget).direction === "rtl" ? -1 : 1);
+    }
+
+    // Measure layout pixels so the panel's enter/exit scale never changes image fit.
+    viewportDimensions() {
+        return { width: this.viewportTarget.clientWidth, height: this.viewportTarget.clientHeight };
+    }
+
+    pointerdown(event) {
+        if (
+            !this.geometry ||
+            !this.overlay?.isTop ||
+            this.overlay.isOpening ||
+            (event.pointerType === "mouse" && (event.button !== 0 || event.ctrlKey))
+        )
+            return;
+        event.preventDefault();
+        this.imageMotion?.finish();
+        const point = this.point(event);
+        if (!this.pointers.size) this.drag = { ...point, swipe: this.atFit && event.pointerType === "touch" };
+        this.pointers.set(event.pointerId, point);
+        if (this.pointers.size > 1) this.drag.swipe = false;
+        this.viewportTarget.setPointerCapture(event.pointerId);
+        this.syncPanState();
+    }
+
+    pointermove(event) {
+        if (!this.geometry || !this.pointers.has(event.pointerId)) return;
+        event.preventDefault();
+        const before = [...this.pointers.values()];
+        this.pointers.set(event.pointerId, this.point(event));
+        const after = [...this.pointers.values()];
+        if (after.length > 1) {
+            const center = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 });
+            const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+            const oldCenter = center(before);
+            const newCenter = center(after);
+            const oldDistance = distance(before);
+            if (oldDistance > 0)
+                this.geometry = zoomImage(
+                    this.geometry,
+                    (this.geometry.scale * distance(after)) / oldDistance,
+                    oldCenter.x,
+                    oldCenter.y,
+                );
+            this.geometry = panImage(this.geometry, newCenter.x - oldCenter.x, newCenter.y - oldCenter.y);
+        } else if (!this.drag?.swipe) {
+            this.geometry = panImage(this.geometry, after[0].x - before[0].x, after[0].y - before[0].y);
+        }
+        this.render();
+    }
+
+    pointerup(event) {
+        if (!this.pointers.has(event.pointerId)) return;
+        const last = this.point(event);
+        this.pointers.delete(event.pointerId);
+        if (this.viewportTarget.hasPointerCapture(event.pointerId))
+            this.viewportTarget.releasePointerCapture(event.pointerId);
+        if (!this.pointers.size && this.drag?.swipe) {
+            const dx = last.x - this.drag.x;
+            const dy = last.y - this.drag.y;
+            if (
+                Math.abs(dx) > Math.max(50, Math.min(120, this.geometry.viewportWidth * 0.15)) &&
+                Math.abs(dx) > Math.abs(dy) * 1.5
+            ) {
+                this.navigate(this.navigationStep(dx > 0 ? -1 : 1));
+            }
+        }
+        if (!this.pointers.size) this.drag = null;
+        this.syncPanState();
+    }
+
+    lostCapture(event) {
+        if (this.pointers.has(event.pointerId)) this.cancelPointers();
+    }
+
+    cancelPointers() {
+        const ids = [...this.pointers.keys()];
+        this.pointers.clear();
+        this.drag = null;
+        this.gestureScale = null;
+        for (const id of ids) {
+            if (this.shell?.viewport.hasPointerCapture(id)) this.shell.viewport.releasePointerCapture(id);
+        }
+        this.syncPanState();
+    }
+
+    wheel(event) {
+        if (!this.geometry || !this.overlay?.isTop || this.overlay.isOpening) return;
+        event.preventDefault();
+        if (this.gestureScale !== null && this.gestureScale !== undefined) return;
+        const delta =
+            event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.geometry.viewportHeight : 1);
+        const point = this.point(event);
+        this.zoomTo(this.geometry.scale * Math.exp(-Math.max(-100, Math.min(100, delta)) * 0.002), point.x, point.y);
+    }
+
+    doubleClick(event) {
+        if (!this.geometry || this.overlay?.isOpening) return;
+        event.preventDefault();
+        const point = this.point(event);
+        this.zoomTo(
+            this.atFit ? Math.max(1, this.geometry.minScale * 2) : this.geometry.minScale,
+            point.x,
+            point.y,
+            true,
+        );
+    }
+
+    gesture(event) {
+        if (!this.geometry || !this.overlay?.isTop || this.overlay.isOpening) return;
+        event.preventDefault();
+        if (this.pointers.size > 1) return;
+        if (event.type === "gesturestart") this.gestureScale = this.geometry.scale;
+        if (event.type === "gesturechange" && this.gestureScale) this.zoomTo(this.gestureScale * event.scale);
+        if (event.type === "gestureend") this.gestureScale = null;
+    }
+}

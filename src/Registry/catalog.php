@@ -37,6 +37,7 @@ use Emaia\LaravelHotwire\Components\FrameOrPage\Frame as FrameOrPageFrame;
 use Emaia\LaravelHotwire\Components\FrameOrPage\Page as FrameOrPagePage;
 use Emaia\LaravelHotwire\Components\HoverCard;
 use Emaia\LaravelHotwire\Components\Icon;
+use Emaia\LaravelHotwire\Components\ImageViewer;
 use Emaia\LaravelHotwire\Components\Input;
 use Emaia\LaravelHotwire\Components\InputGroup;
 use Emaia\LaravelHotwire\Components\InputOtp;
@@ -574,6 +575,15 @@ return [
                     ['class' => Icon::class],
                 ],
             ],
+        ],
+        'image-viewer' => [
+            'class' => ImageViewer::class,
+            'view' => 'hotwire::component-views.image-viewer',
+            'docs' => 'docs/components/image-viewer.md',
+            'category' => 'overlay',
+            'description' => 'Windowed or full-viewport image viewer with zoom, pan, pinch, keyboard navigation, Turbo updates and optional side arrows, rotation, flips, thumbnails and original downloads',
+            'controllers' => ['image-viewer'],
+            'styling' => ['slots' => [['class' => ImageViewer::class]]],
         ],
         'input' => [
             'class' => Input::class,
@@ -1435,6 +1445,12 @@ return [
             'category' => 'overlay',
             'description' => 'Shows a delayed floating preview on hover or focus with Escape dismissal',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
+        ],
+        'image-viewer' => [
+            'source' => 'resources/js/controllers/image_viewer_controller.js',
+            'docs' => 'docs/controllers/image-viewer.md',
+            'category' => 'overlay',
+            'description' => 'Enhances image galleries with zoom, pan, pinch gestures, rotation/flips, keyboard, side-arrow and thumbnail navigation, and automatic updates after Turbo renders',
         ],
         'input-mask' => [
             'source' => 'resources/js/controllers/input_mask_controller.js',

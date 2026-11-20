@@ -1,0 +1,269 @@
+# Image Viewer
+
+Display existing image links in a viewer with zoom, pan, pinch gestures, keyboard navigation and optional original
+downloads. Source HTML remains server-rendered and can be updated by Turbo without reconnecting the viewer.
+
+## Quick example
+
+```blade
+<hw:image-viewer label="Product photos" download>
+    <a href="/photos/original.jpg" data-turbo="false">
+        <img src="/photos/thumbnail.jpg"
+             data-original="/photos/original.jpg"
+             data-image-key="photo-42"
+             data-caption="Rear panel"
+             alt="Rear panel of the camera">
+    </a>
+</hw:image-viewer>
+```
+
+The default slot owns the source HTML and its layout. Keep real links for no-JavaScript fallback. Normal clicks open the
+viewer; modified clicks, links with `download`, and links targeting another browsing context retain native behavior.
+The component does not fetch a JSON gallery or generate source thumbnails.
+
+## Props
+
+| Prop | Default | Description |
+| --- | --- | --- |
+| `id` | generated | Stable component root id |
+| `label` | `Image viewer` | Accessible dialog and controls group name |
+| `download` | `false` | Include an original download link |
+| `loop` | `false` | Wrap previous/next navigation |
+| `thumbnails` | `false` | Show a thumbnail strip inside the open viewer |
+| `arrows` | `false` | Move previous/next controls from the toolbar to the sides of the image area |
+| `rotate` | `false` | Show controls for 90° left/right rotation |
+| `flip` | `false` | Show horizontal/vertical mirror controls |
+| `size` | `default` | Use `full` for an edge-to-edge viewer; `default` retains the windowed presentation |
+| `motion` | `default` | Preset-driven shell and image motion; `none` disables animation |
+| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
+| `stimulus` | `null` | Additional Stimulus attributes on the root |
+
+Other attributes, including `class`, apply to the root. The internal `data-image-viewer-*` namespace is protected.
+There is no controller override prop; compose application controllers and the viewer's events instead.
+
+Translate individual controls through `labels`. The `reset` label names both the fit button and the selector's
+Fit option; its current fit percentage is appended automatically.
+
+```blade
+<hw:image-viewer
+    label="Fotos do produto"
+    :labels="['reset' => __('Ajustar imagem'), 'zoom' => __('Nível de zoom'), 'close' => __('Fechar')]"
+>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Produto"></a>
+</hw:image-viewer>
+```
+
+## Image metadata
+
+Attributes belong to each source `<img>`, not the wrapper.
+
+| Attribute | Purpose |
+| --- | --- |
+| `data-original` | Full image URL; falls back to the enclosing link, then the declared image `src` |
+| `data-image-key` | Unique stable identity across morph/reordering; falls back to image id, then DOM identity |
+| `alt` | Accessible description of the displayed image |
+| `data-caption` | Plain-text caption; falls back to `alt`, never interpreted as HTML |
+| `data-download-url` | Optional download endpoint; otherwise uses the original URL |
+| `data-download-name` | Suggested filename; the server/browser may override it |
+
+Thumbnail `srcset`/`sizes` are not inherited by the full image. Images from nested viewer controllers are not included.
+Without `data-original` or an enclosing link, the original and download use the declared `src`, not the responsive
+candidate selected by the browser. Resizing a responsive source does not change the original or reset zoom.
+Only HTTP(S), blob and image data URLs are accepted. This URL check is not authorization: protect private media on the server.
+Source `crossorigin` and `referrerpolicy` apply to both the original loader and the displayed image, before assigning
+their source URL. Each image's policies replace the previous image's policies.
+
+## Interaction and Turbo
+
+- Fit does not upscale small originals. Zoom ranges from fit to 400% of natural dimensions.
+- The zoom selector offers Fit, 25%, 50%, 75%, 100%, 150%, 200%, 300% and 400%; 100% means natural image dimensions.
+  Percentages below fit are disabled. Wheel, pinch and zoom buttons may produce intermediate values, which the selector displays.
+  Arrow keys on the native selector change its zoom choice rather than navigating the gallery.
+- Wheel zooms within the image viewport. Double click toggles fit/natural-size zoom. Pinch zooms and a single pointer pans.
+- The viewport uses the default cursor when the image cannot pan, `grab` when it can pan and `grabbing` during a drag.
+- At fit, a horizontal touch swipe navigates; after pinch, the remaining finger pans rather than navigating.
+- `+`/`-` zoom, `0` fits, Home/End select first/last. Left/Right navigate in the dialog's reading direction:
+  Right selects next in LTR and previous in RTL. Swiping left selects next in LTR and previous in RTL.
+  When the zoomed viewport itself is focused, arrow-key pan remains physical, independent of reading direction.
+  Escape closes only the top overlay. Ctrl/Meta browser zoom shortcuts are not intercepted.
+- Opening focuses the named dialog, not an arbitrary button. Tab enters the available controls and remains trapped
+  inside the top overlay; closing returns focus to the exact opening control when it still exists.
+- Source additions, removal, reordering and metadata changes update a surviving controller automatically. Stable keys
+  preserve selection; removing the active image selects the nearest remaining index. Empty galleries close.
+- Morphing the presentation for the same image and request preserves zoom, pan and loading/error feedback without
+  restarting the request.
+  Navigating to the current selection is a no-op, including loop navigation with one image and Home/End at a boundary.
+- If a keyed source replacement retains the opening image, closing returns focus to its replacement control, not to a
+  different image selected later. Changing only a fallback link's `href` also updates an open viewer.
+- Late loads cannot replace a more recent selection. Failed originals show an error rather than silently enlarging a thumbnail.
+- Loading and error feedback is centered in the image area, pairing a decorative spinner or unavailable-image icon with
+  the translated `labels.loading` or `labels.error` message. Status text remains available to assistive technology.
+  During loading, `aria-busy` applies only to the image, not to an ancestor of the live status messages.
+  Reduced motion replaces spinner rotation with the shared status pulse; `motion="none"` keeps the icon static.
+- Captions have no character limit or silent truncation. Official presets currently cap their height at 20dvh and scroll
+  the full text; this is a layout choice, not a content-length standard. Overflowing captions enter the tab order and
+  retain native scrolling keys rather than triggering gallery navigation.
+- Cache preparation closes immediately without restoring focus; disconnect releases observers, pointer capture, loads and overlay effects.
+- Opening and closing animate the backdrop/panel through the shared Presence lifecycle. Reduced motion and `motion="none"`
+  disable those transitions. Image fit uses untransformed viewport dimensions while the panel enters; zoom/pan do not inherit panel transitions.
+
+Magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed media are not supported.
+
+## Rotation and flip
+
+```blade
+<hw:image-viewer rotate flip thumbnails download
+    :labels="['rotateLeft' => __('Girar à esquerda'), 'rotateRight' => __('Girar à direita'),
+              'flipHorizontal' => __('Espelhar horizontalmente'), 'flipVertical' => __('Espelhar verticalmente')]"
+>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`rotate` and `flip` independently opt into their toolbar controls. Rotation uses 90° steps; flips mirror the currently
+displayed image across the screen's horizontal or vertical axis, regardless of rotation or reading direction.
+Rotating a mirrored image still turns it in the requested direction. Flip controls are momentary actions, not toggles:
+they do not expose `aria-pressed` or a persistent selected style, since equivalent orientations can have different
+rotation/reflection decompositions.
+
+Fit uses the rotated image's bounds, without upscaling small originals. At fit, rotating refits automatically.
+While zoomed, rotation/flip retain natural-scale zoom and the source point at the viewport center when the pan limits
+allow it. Pan, wheel, pinch, the zoom selector and viewport resizing all use the oriented bounds.
+Controls are disabled while the image is loading or unavailable.
+
+**Fit image**, `0` and the selector's Fit option only adjust the current view: they preserve rotation and flips.
+Navigation, reopening, or loading a changed original starts at the original orientation. Morphs of the same image and
+request preserve orientation, zoom and pan, including replacement of the viewer shell.
+These are presentation-only transforms: source thumbnails, original downloads and file metadata are unchanged.
+
+## Full viewport presentation
+
+```blade
+<hw:image-viewer size="full" thumbnails download>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`size="full"` fills the browser viewport without the window's outer spacing. Nova and Bloom also remove its border,
+rounded corners and shadow, using an opacity-only transition so it stays edge-to-edge while opening and closing.
+The toolbar, optional thumbnails and caption remain available; image fit uses the space left by these controls.
+The surface stays edge-to-edge while its content respects `env(safe-area-inset-*)`, protecting controls from notches and
+home indicators when the application uses `viewport-fit=cover`. These physical insets also apply in RTL layouts.
+Omit `size` for the existing windowed presentation. Unsupported values fall back to `default`.
+
+This is a layout option, not the browser's Fullscreen API: browser chrome stays visible, no fullscreen permission is
+requested, and Escape closes the viewer as usual. Custom presets can style the dialog's `data-size="full"` hook.
+
+## Thumbnail navigation
+
+```blade
+<hw:image-viewer label="Product photos" thumbnails loop download>
+    @foreach ($photos as $photo)
+        <a href="{{ $photo->original_url }}" data-turbo="false">
+            <img src="{{ $photo->thumbnail_url }}"
+                 data-original="{{ $photo->original_url }}"
+                 data-image-key="{{ $photo->id }}"
+                 alt="{{ $photo->description }}">
+        </a>
+    @endforeach
+</hw:image-viewer>
+```
+
+The strip uses the source thumbnail, not the full original. Its selected button has `aria-current="true"` and remains
+in view after navigation. Tab enters the strip at that button; Left/Right select and focus an adjacent image in the
+strip's reading direction, and Home/End select first/last. The button's accessible label includes its position and
+the source image's `alt`. Customize `labels.thumbnail` using `:index` and `:total` placeholders.
+
+Short strips are centered by the official presets. When thumbnails exceed the available width, the strip falls back
+to a horizontally scrollable row so both ends remain reachable. The active thumbnail scrolls into view when navigation
+changes selection. `loop` wraps previous/next and thumbnail arrow-key navigation from last to first and first to last;
+omit it to stop at the ends.
+
+Thumbnail images load lazily, but their buttons are not virtualized. For very large collections, paginate or limit the
+source gallery in the application rather than rendering thousands of image controls.
+
+Stable image keys preserve thumbnail buttons and keyboard focus across source updates. Additions, removal, reordering,
+responsive thumbnail loads and changed thumbnail URLs update the strip without reconnecting the controller.
+Full morphs preserve the generated strip and its focused button. When a morph replaces the viewer shell, focus returns
+to the same keyed thumbnail (or the current selection if that image was removed). Replacing the thumbnail template
+also retains the focused image. Responsive loads update only the corresponding strip image, not the whole gallery.
+Thumbnail markup comes from an internal Blade template; no carousel dependency is needed. This is direct navigation,
+not autoplay. With `thumbnails` omitted, existing presentation is unchanged.
+
+The caption appears directly below the image area and above the thumbnail strip. It retains its height limit and
+keyboard scrolling for long text; larger thumbnails remain closely spaced and horizontally scrollable.
+
+## Side navigation and motion
+
+```blade
+<hw:image-viewer arrows thumbnails rotate flip>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`arrows` replaces the toolbar's previous/next buttons with accessible side buttons in the image area. Their placement
+follows reading direction. They share the same labels, boundary/loop behavior and keyboard navigation, but sit outside
+the gesture viewport so clicks do not start pan or pinch.
+Navigation chevrons mirror in RTL in both the toolbar and the side buttons.
+Presets set their distance from the stage edges through `--image-viewer-arrow-inset` on the arrow buttons.
+
+Official presets animate rotate/flip, zoom buttons, the zoom selector, double-click zoom and Fit. New successful image
+loads fade in; failed or superseded loads do not animate a stale image. This is a fade-in, not a crossfade or slide.
+Repeated discrete commands replace the current effect from its displayed pose and opacity rather than building a queue.
+Pan, pinch and wheel stay immediate; direct gestures settle any pending discrete effect before applying input.
+Morph, resize, close, cache preparation and disconnect cancel presentation effects without changing authoritative geometry.
+Reduced motion and `motion="none"` disable these image effects, including when the preference changes while animating.
+
+Presets own the timing through `--image-viewer-transform-duration` and `--image-viewer-fade-duration` on
+`[data-slot="image-viewer-image"]`. Values use `ms` or `s`; `0ms` disables the corresponding effect. Without those
+properties, a custom preset keeps image operations immediate. Avoid adding global CSS transitions to the bitmap.
+
+## Download
+
+`download` is opt-in. It downloads the original file, not the current zoom/pan presentation. For private media, provide
+an authorized endpoint with `Content-Disposition: attachment`. Cross-origin URLs may ignore the HTML download attribute;
+the component does not fetch files into Blob memory or bypass CORS. Download links disable Turbo.
+
+## Events
+
+`image-viewer:opened`, `image-viewer:closed` and `image-viewer:changed` bubble from the wrapper.
+`changed` fires after a successful image load with `{ index, image }`, where `image` is the source element.
+
+## Styling hooks
+
+- `data-slot="image-viewer"`: structural root.
+- `data-slot="image-viewer-source"`: structural source region; layout remains application-owned.
+- `data-slot="image-viewer-overlay"`: transparent full-screen top-layer root; `hidden`, `inert`, `data-state` follow the shared overlay lifecycle. The backdrop, not this root, dims the page.
+- `data-slot="image-viewer-backdrop"`: backdrop.
+- `data-slot="image-viewer-dialog"`: viewer panel; `data-size="default|full"` selects its presentation.
+- `data-slot="image-viewer-stage"`: structural container for the viewport and optional side arrows.
+- `data-slot="image-viewer-arrow"`: previous/next side buttons, distinguished by `data-side="previous|next"`.
+- `data-slot="image-viewer-toolbar"`: controls group.
+- `data-slot="image-viewer-actions"`: structural trailing group for controls and zoom level; the selection counter stays separate at the leading edge.
+- `data-slot="image-viewer-button"`: navigation, zoom, reset, download and close controls; native `disabled` where applicable.
+- `data-slot="image-viewer-counter"`: selection count.
+- `data-slot="image-viewer-zoom"`: native zoom percentage selector with Fit and current intermediate scale.
+- `data-slot="image-viewer-zoom-control"`: structural native selector wrapper and decorative inset chevron.
+- `data-slot="image-viewer-caption"`: text caption.
+- `data-slot="image-viewer-status"`: loading/error feedback, controlled by `hidden`.
+- `data-slot="image-viewer-loading-icon"`: decorative loading spinner.
+- `data-slot="image-viewer-error-icon"`: decorative unavailable-image icon.
+- `data-slot="image-viewer-viewport"`: structural clipped interaction area; `data-pan-state="ready|dragging"` indicates available or active pan, and is absent when the image cannot pan.
+- `data-slot="image-viewer-image"`: structural displayed image.
+- `data-slot="image-viewer-icon"`: structural decorative icon.
+- `data-slot="image-viewer-thumbnails"`: optional horizontally scrollable strip.
+- `data-slot="image-viewer-thumbnail"`: native selection button; `aria-current="true"` marks the selected image.
+- `data-slot="image-viewer-thumbnail-image"`: structural thumbnail content inside its button.
+
+These names are emitted as `data-slot`. Nova and Bloom share the same anatomy. Geometry is supplied by the private
+`--image-viewer-width`, `--image-viewer-height`, `--image-viewer-x`, `--image-viewer-y`, `--image-viewer-rotation`,
+`--image-viewer-flip-x` and `--image-viewer-flip-y` properties on the displayed image;
+do not override those runtime values in a preset.
+The image's x/y translation is deliberately physical, measured from the viewport's top-left corner regardless of RTL
+reading direction; it must not mirror the bitmap or the pointer pivot.
+
+## Implementation boundary
+
+`_image_viewport.js` owns DOM-free fit/zoom/pan calculations. The controller owns loading, gestures and source
+reconciliation. Blade owns all UI markup; the existing overlay helpers own focus, stacking, top layer and scroll lock.
+`_image_thumbnails.js` reconciles the Blade-authored thumbnail buttons while retaining their identity and keyboard focus.
