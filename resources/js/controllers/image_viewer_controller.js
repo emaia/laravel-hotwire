@@ -4,6 +4,7 @@ import { createOverlay } from "./_overlay.js";
 import { rememberSnapshotState } from "./_snapshot.js";
 import { fitImage, flipImage, imageBounds, panImage, resizeImage, rotateImage, zoomImage } from "./_image_viewport.js";
 import { createImageThumbnails } from "./_image_thumbnails.js";
+import { createImageMotion } from "./_image_motion.js";
 
 export default class extends Controller {
     static targets = [
@@ -111,6 +112,9 @@ export default class extends Controller {
     sourceTargetConnected() {
         this.queueRefresh();
     }
+    loopValueChanged() {
+        if (this.connected) this.syncControls();
+    }
     sourceTargetDisconnected() {
         this.queueRefresh();
     }
@@ -144,15 +148,19 @@ export default class extends Controller {
     rotateLeftTargetConnected() {
         this.queueRefresh();
     }
+    previousTargetConnected() {
+        this.queueRefresh();
+    }
+    nextTargetConnected() {
+        this.queueRefresh();
+    }
     rotateRightTargetConnected() {
         this.queueRefresh();
     }
-    flipHorizontalTargetConnected(button) {
-        rememberSnapshotState(button, { attributes: ["aria-pressed"] });
+    flipHorizontalTargetConnected() {
         this.queueRefresh();
     }
-    flipVerticalTargetConnected(button) {
-        rememberSnapshotState(button, { attributes: ["aria-pressed"] });
+    flipVerticalTargetConnected() {
         this.queueRefresh();
     }
 
@@ -290,6 +298,7 @@ export default class extends Controller {
 
     setupShell() {
         this.shell = { overlay: this.overlayTarget, viewport: this.viewportTarget, image: this.imageTarget };
+        this.imageMotion = createImageMotion(this.imageTarget, this.overlayTarget);
         this.shellListeners = new AbortController();
         const listen = (name, handler, options = {}) =>
             this.viewportTarget.addEventListener(name, handler.bind(this), {
@@ -365,6 +374,8 @@ export default class extends Controller {
         this.cancelPointers();
         this.shellListeners?.abort();
         this.resizeObserver?.disconnect();
+        this.imageMotion?.destroy();
+        this.imageMotion = null;
         this.thumbnails?.clear();
         this.thumbnails = null;
         this.overlay?.cleanup();
@@ -418,6 +429,7 @@ export default class extends Controller {
     }
 
     cancelLoad() {
+        this.imageMotion?.reset();
         this.generation++;
         if (this.loader) {
             this.loader.onload = this.loader.onerror = null;
@@ -450,7 +462,7 @@ export default class extends Controller {
             loader.onload = loader.onerror = null;
             if (!this.geometry) return this.loadFailed();
             this.loadState = "ready";
-            this.render();
+            this.render({ fade: true });
             this.dispatch("changed", { detail: { index: this.items.indexOf(this.active), image: this.active.node } });
         };
         loader.onerror = () => {
@@ -550,10 +562,10 @@ export default class extends Controller {
     syncControls() {
         const focused = this.element.ownerDocument.activeElement;
         const index = this.items.indexOf(this.active);
-        if (this.hasPreviousTarget)
-            this.previousTarget.disabled = this.items.length < 2 || (!this.loopValue && index <= 0);
-        if (this.hasNextTarget)
-            this.nextTarget.disabled = this.items.length < 2 || (!this.loopValue && index >= this.items.length - 1);
+        for (const button of this.previousTargets)
+            button.disabled = this.items.length < 2 || (!this.loopValue && index <= 0);
+        for (const button of this.nextTargets)
+            button.disabled = this.items.length < 2 || (!this.loopValue && index >= this.items.length - 1);
         if (this.hasZoomInTarget)
             this.zoomInTarget.disabled = !this.geometry || this.geometry.scale >= this.geometry.maxScale;
         if (this.hasZoomOutTarget) this.zoomOutTarget.disabled = !this.geometry || this.atFit;
@@ -565,22 +577,17 @@ export default class extends Controller {
             ...this.flipVerticalTargets,
         ])
             button.disabled = !this.geometry;
-        for (const button of this.flipHorizontalTargets)
-            button.setAttribute("aria-pressed", String(this.geometry?.flipX ?? false));
-        for (const button of this.flipVerticalTargets)
-            button.setAttribute("aria-pressed", String(this.geometry?.flipY ?? false));
         if (this.hasZoomLabelTarget)
             this.zoomLabelTarget.textContent = this.geometry ? `${Math.round(this.geometry.scale * 100)}%` : "";
         this.syncZoomSelect();
         if (focused?.disabled && this.overlay?.isOpen && this.overlay.isTop && this.dialogTarget.contains(focused)) {
-            const preferred =
-                focused === this.nextTargets[0]
-                    ? this.previousTargets[0]
-                    : focused === this.previousTargets[0]
-                      ? this.nextTargets[0]
-                      : focused === this.zoomInTargets[0]
-                        ? this.zoomOutTargets[0]
-                        : this.zoomInTargets[0];
+            const preferred = this.nextTargets.includes(focused)
+                ? this.previousTargets[0]
+                : this.previousTargets.includes(focused)
+                  ? this.nextTargets[0]
+                  : focused === this.zoomInTargets[0]
+                    ? this.zoomOutTargets[0]
+                    : this.zoomInTargets[0];
             const available = [
                 preferred,
                 ...this.previousTargets,
@@ -624,10 +631,10 @@ export default class extends Controller {
     changeZoom(event) {
         const value = event.target.value;
         if (value === "fit") this.reset();
-        else if (value !== "current") this.zoomTo(Number(value));
+        else if (value !== "current") this.zoomTo(Number(value), undefined, undefined, true);
     }
 
-    render() {
+    render(motion = {}) {
         this.loadingTarget.hidden = this.loadState !== "loading";
         this.errorTarget.hidden = this.loadState !== "error";
         this.imageTarget.hidden = this.loadState !== "ready" || !this.geometry;
@@ -651,6 +658,7 @@ export default class extends Controller {
             style.setProperty("--image-viewer-rotation", `${state.rotation}deg`);
             style.setProperty("--image-viewer-flip-x", state.flipX ? "-1" : "1");
             style.setProperty("--image-viewer-flip-y", state.flipY ? "-1" : "1");
+            this.imageMotion?.sync(state, motion);
         }
         this.syncPanState();
         this.syncControls();
@@ -687,15 +695,15 @@ export default class extends Controller {
     }
 
     zoomIn() {
-        this.zoomTo(this.geometry?.scale * 1.25);
+        this.zoomTo(this.geometry?.scale * 1.25, undefined, undefined, true);
     }
     zoomOut() {
-        this.zoomTo(this.geometry?.scale / 1.25);
+        this.zoomTo(this.geometry?.scale / 1.25, undefined, undefined, true);
     }
-    zoomTo(scale, x, y) {
+    zoomTo(scale, x, y, animate = false) {
         if (!this.geometry) return;
         this.geometry = zoomImage(this.geometry, scale, x, y);
-        this.render();
+        this.render({ animate });
     }
 
     reset() {
@@ -703,7 +711,7 @@ export default class extends Controller {
         this.cancelPointers();
         const { viewportWidth, viewportHeight, naturalWidth, naturalHeight } = this.geometry;
         this.geometry = fitImage(viewportWidth, viewportHeight, naturalWidth, naturalHeight, this.geometry);
-        this.render();
+        this.render({ animate: true });
     }
 
     rotateLeft() {
@@ -722,7 +730,7 @@ export default class extends Controller {
         if (!this.geometry) return;
         this.cancelPointers();
         this.geometry = operation(this.geometry, value);
-        this.render();
+        this.render({ animate: true, rotation: operation === rotateImage ? value : 0 });
     }
 
     keydown(event) {
@@ -786,6 +794,7 @@ export default class extends Controller {
         )
             return;
         event.preventDefault();
+        this.imageMotion?.finish();
         const point = this.point(event);
         if (!this.pointers.size) this.drag = { ...point, swipe: this.atFit && event.pointerType === "touch" };
         this.pointers.set(event.pointerId, point);
@@ -869,7 +878,12 @@ export default class extends Controller {
         if (!this.geometry || this.overlay?.isOpening) return;
         event.preventDefault();
         const point = this.point(event);
-        this.zoomTo(this.atFit ? Math.max(1, this.geometry.minScale * 2) : this.geometry.minScale, point.x, point.y);
+        this.zoomTo(
+            this.atFit ? Math.max(1, this.geometry.minScale * 2) : this.geometry.minScale,
+            point.x,
+            point.y,
+            true,
+        );
     }
 
     gesture(event) {

@@ -125,8 +125,9 @@ it('exposes rotation and flip controls independently as opt-ins', function (bool
         expect($xpath->query('//button[@data-image-viewer-target="'.$action.'" and @data-action="image-viewer#'.$action.'" and @aria-label="'.$label.'" and @title="'.$label.'"]')->count())->toBe($rotate ? 1 : 0);
     }
     foreach (['flipHorizontal' => 'Espelhar horizontalmente', 'flipVertical' => 'Espelhar verticalmente'] as $action => $label) {
-        expect($xpath->query('//button[@data-image-viewer-target="'.$action.'" and @data-action="image-viewer#'.$action.'" and @aria-label="'.$label.'" and @title="'.$label.'" and @aria-pressed="false"]')->count())->toBe($flip ? 1 : 0);
+        expect($xpath->query('//button[@data-image-viewer-target="'.$action.'" and @data-action="image-viewer#'.$action.'" and @aria-label="'.$label.'" and @title="'.$label.'"]')->count())->toBe($flip ? 1 : 0);
     }
+    expect($xpath->query('//button[@aria-pressed]')->count())->toBe(0);
 })->with([
     'neither' => [false, false],
     'rotation only' => [true, false],
@@ -144,6 +145,29 @@ it('renders opt-in thumbnails from a Blade-authored button template', function (
     expect($xpath->query('//*[@data-slot="image-viewer-thumbnails" and @aria-label="Escolher imagem"]')->count())->toBe(1)
         ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//button[@data-action="image-viewer#selectThumbnail"]')->count())->toBe(1)
         ->and($xpath->query('//template[@data-image-viewer-target="thumbnailTemplate"]//img[@alt=""]')->count())->toBe(1);
+});
+
+it('places the caption next to the image and before the thumbnail strip', function () {
+    $view = $this->blade('<x-hw::image-viewer thumbnails />');
+    $xpath = new DOMXPath(dom((string) $view));
+
+    expect($xpath->query('//*[@data-slot="image-viewer-stage"]/following-sibling::*[1][@data-image-viewer-target="caption"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-image-viewer-target="caption"]/following-sibling::*[1][@data-image-viewer-target="thumbnails"]')->count())->toBe(1);
+});
+
+it('opts into side arrows instead of duplicating toolbar navigation', function () {
+    $default = $this->blade('<x-hw::image-viewer />');
+    $default->assertDontSee('data-slot="image-viewer-arrow"', false);
+    $view = $this->blade('<x-hw::image-viewer arrows :labels="$labels" />', [
+        'labels' => ['previous' => 'Imagem anterior', 'next' => 'Próxima imagem'],
+    ]);
+    $xpath = new DOMXPath(dom((string) $view));
+
+    expect($xpath->query('//*[@data-slot="image-viewer-toolbar"]//*[@data-image-viewer-target="previous" or @data-image-viewer-target="next"]')->count())->toBe(0)
+        ->and($xpath->query('//*[@data-slot="image-viewer-stage"]/button[@data-slot="image-viewer-arrow" and @type="button"]')->count())->toBe(2)
+        ->and($xpath->query('//*[@data-image-viewer-target="viewport"]//button[@data-slot="image-viewer-arrow"]')->count())->toBe(0)
+        ->and($xpath->query('//button[@data-slot="image-viewer-arrow" and @data-image-viewer-target="previous" and @aria-label="Imagem anterior"]')->count())->toBe(1)
+        ->and($xpath->query('//button[@data-slot="image-viewer-arrow" and @data-image-viewer-target="next" and @aria-label="Próxima imagem"]')->count())->toBe(1);
 });
 
 it('names the viewport group and toolbar independently of the dialog', function () {

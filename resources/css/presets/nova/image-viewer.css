@@ -1,4 +1,8 @@
 @layer components {
+    [data-slot="image-viewer-image"] {
+        --image-viewer-transform-duration: 180ms;
+        --image-viewer-fade-duration: 140ms;
+    }
     [data-slot="image-viewer-overlay"] {
         @apply text-foreground;
     }
@@ -29,14 +33,15 @@
     [data-slot="image-viewer-toolbar"] {
         @apply gap-1 p-2 border-b border-border;
     }
+    [data-slot="image-viewer-arrow"] {
+        --image-viewer-arrow-inset: 0.75rem;
+        @apply inline-flex items-center justify-center size-11 rounded-full bg-background/80 text-foreground border border-border shadow-sm cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-default;
+    }
     [data-slot="image-viewer-button"] {
         @apply inline-flex items-center justify-center size-9 rounded-md cursor-pointer text-foreground hover:bg-accent hover:text-accent-foreground;
     }
     [data-slot="image-viewer-button"]:disabled {
         @apply opacity-40 cursor-default;
-    }
-    [data-slot="image-viewer-button"][aria-pressed="true"] {
-        @apply bg-accent text-accent-foreground;
     }
     [data-slot="image-viewer-counter"] {
         @apply text-xs text-muted-foreground tabular-nums px-2;
@@ -60,11 +65,11 @@
         @apply animate-spin;
     }
     [data-slot="image-viewer-thumbnails"] {
-        @apply gap-2 px-3 py-2 border-t border-border;
+        @apply gap-1 px-3 py-2 border-t border-border;
         justify-content: safe center;
     }
     [data-slot="image-viewer-thumbnail"] {
-        @apply h-12 w-16 rounded-md border-2 border-transparent p-0 bg-muted cursor-pointer opacity-60 hover:opacity-100;
+        @apply h-16 w-20 rounded-md border-2 border-transparent p-0 bg-muted cursor-pointer opacity-60 hover:opacity-100 focus-visible:opacity-100;
     }
     [data-slot="image-viewer-thumbnail"][aria-current="true"] {
         @apply border-primary opacity-100;

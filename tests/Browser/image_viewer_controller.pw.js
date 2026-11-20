@@ -21,7 +21,7 @@ function markup(
     items = item("one") + item("two", image(800, 1200, "blue")),
     thumbnails = false,
     size = "default",
-    { rotate = false, flip = false } = {},
+    { rotate = false, flip = false, arrows = false } = {},
 ) {
     return `<div id="gallery" data-controller="image-viewer">
         <div id="sources" data-image-viewer-target="source">${items}</div>
@@ -31,8 +31,12 @@ function markup(
                 <div data-slot="image-viewer-toolbar" role="group" aria-label="Image controls">
                     <span data-slot="image-viewer-counter" data-image-viewer-target="counter"></span>
                     <div data-slot="image-viewer-actions">
-                        <button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
-                        <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>
+                        ${
+                            arrows
+                                ? ""
+                                : `<button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
+                        <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>`
+                        }
                         <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
                         <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
                         <button id="reset" data-image-viewer-target="reset" data-action="image-viewer#reset">Reset</button>
@@ -47,8 +51,8 @@ function markup(
                         ${
                             flip
                                 ? `
-                            <button id="flip-horizontal" data-image-viewer-target="flipHorizontal" data-action="image-viewer#flipHorizontal" aria-pressed="false">Flip horizontally</button>
-                            <button id="flip-vertical" data-image-viewer-target="flipVertical" data-action="image-viewer#flipVertical" aria-pressed="false">Flip vertically</button>
+                            <button id="flip-horizontal" data-image-viewer-target="flipHorizontal" data-action="image-viewer#flipHorizontal">Flip horizontally</button>
+                            <button id="flip-vertical" data-image-viewer-target="flipVertical" data-action="image-viewer#flipVertical">Flip vertically</button>
                         `
                                 : ""
                         }
@@ -69,6 +73,7 @@ function markup(
                         <button id="close" data-action="image-viewer#close">Close</button>
                     </div>
                 </div>
+                <div data-slot="image-viewer-stage">
                 <div data-slot="image-viewer-viewport" data-image-viewer-target="viewport" role="group" tabindex="0" aria-label="Image">
                     <img data-slot="image-viewer-image" data-image-viewer-target="image" alt="" hidden>
                     <div data-slot="image-viewer-status" data-image-viewer-target="loading" role="status" aria-atomic="true" hidden>
@@ -81,6 +86,16 @@ function markup(
                     </div>
                 </div>
                 ${
+                    arrows
+                        ? `
+                    <button id="prev" data-slot="image-viewer-arrow" data-side="previous" data-image-viewer-target="previous" data-action="image-viewer#previous" aria-label="Previous">‹</button>
+                    <button id="next" data-slot="image-viewer-arrow" data-side="next" data-image-viewer-target="next" data-action="image-viewer#next" aria-label="Next">›</button>
+                `
+                        : ""
+                }
+                </div>
+                <p data-slot="image-viewer-caption" data-image-viewer-target="caption"></p>
+                ${
                     thumbnails
                         ? `
                     <div data-slot="image-viewer-thumbnails" data-image-viewer-target="thumbnails" role="group" aria-label="Choose image"></div>
@@ -92,25 +107,179 @@ function markup(
                 `
                         : ""
                 }
-                <p data-slot="image-viewer-caption" data-image-viewer-target="caption"></p>
             </section>
         </div>
     </div>`;
 }
 
-async function start(page, items, { thumbnails = false, size = "default", rotate = false, flip = false } = {}) {
+async function start(
+    page,
+    items,
+    { thumbnails = false, size = "default", rotate = false, flip = false, arrows = false } = {},
+) {
     await page.setContent(`<base href="https://gallery.test/"><style>${readFileSync("resources/css/structural.css", "utf8")}
         [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
         [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
         #sources img { width:80px; height:60px }
         [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
-    </style>${markup(items, thumbnails, size, { rotate, flip })}`);
+    </style>${markup(items, thumbnails, size, { rotate, flip, arrows })}`);
     await page.addScriptTag({ content: bundle });
     await page.waitForFunction(() => window.viewer()?.connected);
 }
 
 const overlay = (page) => page.locator('[data-image-viewer-target="overlay"]');
 const displayed = (page) => page.locator('[data-image-viewer-target="image"]');
+
+for (const direction of ["ltr", "rtl"]) {
+    test(`side arrows navigate without capturing image gestures and caption precedes thumbnails in ${direction}`, async ({
+        page,
+    }) => {
+        await start(page, item("one") + item("two"), { arrows: true, thumbnails: true });
+        await page.addStyleTag({ content: '[data-slot="image-viewer-arrow"] { --image-viewer-arrow-inset: 12px; }' });
+        await page.locator("#gallery").evaluate((root, dir) => (root.dir = dir), direction);
+        await page.locator("#one").click();
+        await expect(displayed(page)).toBeVisible();
+        const prev = page.locator("#prev");
+        const next = page.locator("#next");
+        await expect(prev).toBeDisabled();
+        expect(await next.evaluate((node) => node.closest('[data-image-viewer-target="viewport"]') === null)).toBe(
+            true,
+        );
+        const viewport = await page.locator('[data-image-viewer-target="viewport"]').boundingBox();
+        const arrow = await next.boundingBox();
+        expect(arrow.y + arrow.height / 2).toBeCloseTo(viewport.y + viewport.height / 2, 1);
+        if (direction === "ltr") expect(arrow.x + arrow.width).toBeCloseTo(viewport.x + viewport.width - 12, 1);
+        else expect(arrow.x).toBeCloseTo(viewport.x + 12, 1);
+        await next.click();
+        await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 2");
+        await expect(prev).toBeFocused();
+        expect(await page.evaluate(() => window.viewer().pointers.size)).toBe(0);
+        await page.locator("#gallery").evaluate((root) => (root.dataset.imageViewerLoopValue = "true"));
+        await expect(next).toBeEnabled();
+        await next.click();
+        await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("1 / 2");
+        const caption = await page.locator('[data-image-viewer-target="caption"]').boundingBox();
+        const thumbnails = await page.locator('[data-image-viewer-target="thumbnails"]').boundingBox();
+        expect(caption.y + caption.height).toBeLessThanOrEqual(thumbnails.y);
+    });
+}
+
+async function motionFixture(page) {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await start(page, undefined, { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.evaluate(() => window.viewer().overlay.settled);
+    await page.addStyleTag({
+        content:
+            '[data-slot="image-viewer-image"] { --image-viewer-transform-duration: 1s; --image-viewer-fade-duration: 1s; }',
+    });
+}
+
+test("discrete motion rotates across zero in the requested direction and retargets from the displayed pose", async ({
+    page,
+}) => {
+    await motionFixture(page);
+    // Reach 270° without motion, then enable it for the wraparound.
+    await page.locator('[data-image-viewer-target="overlay"]').evaluate((node) => (node.dataset.motion = "none"));
+    for (let i = 0; i < 3; i++) await page.locator("#rotate-right").click();
+    await page.locator("#flip-horizontal").click();
+    await page.locator('[data-image-viewer-target="overlay"]').evaluate((node) => delete node.dataset.motion);
+    await page.locator("#rotate-right").click();
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+    const result = await displayed(page).evaluate((img) => {
+        const animation = img.getAnimations()[0];
+        animation.pause();
+        animation.currentTime = 500;
+        const previous = getComputedStyle(img).transform;
+        const keyframes = animation.effect.getKeyframes();
+        window.viewer().rotateRight();
+        const replacement = img.getAnimations()[0];
+        replacement.pause();
+        replacement.currentTime = 0;
+        return {
+            previous,
+            current: getComputedStyle(img).transform,
+            end: keyframes.at(-1).transform,
+            count: img.getAnimations().length,
+        };
+    });
+    expect(result.end).toContain("rotate(360deg)");
+    expect(result.current).toBe(result.previous);
+    expect(result.count).toBe(1);
+    await displayed(page).evaluate((img) => img.getAnimations()[0].finish());
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(0);
+    const state = await page.evaluate(() => window.viewer().geometry);
+    const box = await displayed(page).boundingBox();
+    expect(box.width).toBeCloseTo(state.naturalHeight * state.scale, 1);
+    expect(box.height).toBeCloseTo(state.naturalWidth * state.scale, 1);
+});
+
+test("direct wheel input finishes discrete motion immediately and morph cancels presentation effects", async ({
+    page,
+}) => {
+    await motionFixture(page);
+    await page.locator("#zoom").click();
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+    const viewport = await page.locator('[data-image-viewer-target="viewport"]').boundingBox();
+    await page.mouse.move(viewport.x + viewport.width / 2, viewport.y + viewport.height / 2);
+    await page.mouse.wheel(0, -30);
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(0);
+    await page.locator("#rotate-left").click();
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+    const geometry = await page.evaluate(() => ({ ...window.viewer().geometry }));
+    await page.evaluate(
+        (html) => {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            window.Turbo.morphElements(document.querySelector("#gallery"), template.content.firstElementChild);
+        },
+        markup(undefined, false, "default", { rotate: true, flip: true }),
+    );
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(0);
+    expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
+});
+
+for (const preference of ["reduce", "none"]) {
+    test(`image motion cancels when ${preference} is enabled and stays off for new actions`, async ({ page }) => {
+        await motionFixture(page);
+        await page.locator("#zoom").click();
+        await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+        if (preference === "reduce") await page.emulateMedia({ reducedMotion: "reduce" });
+        else
+            await page
+                .locator('[data-image-viewer-target="overlay"]')
+                .evaluate((node) => (node.dataset.motion = "none"));
+        await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(0);
+        await page.locator("#rotate-right").click();
+        await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(0);
+    });
+}
+
+test("navigation fades only the current successful load and cleanup retires its effects", async ({ page }) => {
+    await motionFixture(page);
+    await displayed(page).evaluate((img) => (img.style.opacity = "0.4"));
+    await page.locator("#next").click();
+    await expect(displayed(page)).toHaveAttribute("src", image(800, 1200, "blue"));
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+    expect(await displayed(page).evaluate((img) => img.getAnimations()[0].effect.getKeyframes()[0].opacity)).toBe("0");
+    expect(await displayed(page).evaluate((img) => img.getAnimations()[0].effect.getKeyframes().at(-1).opacity)).toBe(
+        "0.4",
+    );
+    await page.locator("#prev").click();
+    await expect(displayed(page)).toHaveAttribute("src", image());
+    await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+    await page.evaluate(() => {
+        window.retiredImage = document.querySelector('[data-image-viewer-target="image"]');
+        document.dispatchEvent(new Event("turbo:before-cache"));
+    });
+    expect(await page.evaluate(() => window.retiredImage.getAnimations().length)).toBe(0);
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#zoom").click();
+    await page.evaluate(() => document.querySelector("#gallery").remove());
+    expect(await page.evaluate(() => window.retiredImage.getAnimations().length)).toBe(0);
+});
 
 test("rotation and screen-axis flips render the fitted bitmap without reloading the original", async ({ page }) => {
     await start(page, item("one", image(1600, 800)) + item("two"), { rotate: true, flip: true });
@@ -131,7 +300,7 @@ test("rotation and screen-axis flips render the fitted bitmap without reloading 
     expect(box.width).toBeCloseTo(800 * state.scale, 1);
     expect(box.height).toBeCloseTo(1600 * state.scale, 1);
     await page.locator("#flip-horizontal").click();
-    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
     const matrix = await displayed(page).evaluate((img) => {
         const matrix = new DOMMatrix(getComputedStyle(img).transform);
         return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
@@ -141,11 +310,35 @@ test("rotation and screen-axis flips render the fitted bitmap without reloading 
     expect(matrix.c).toBeCloseTo(1);
     expect(matrix.d).toBeCloseTo(0);
     await page.locator("#rotate-right").click();
-    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
-    await expect(page.locator("#flip-vertical")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
+    await expect(page.locator("#flip-vertical")).not.toHaveAttribute("aria-pressed");
     await expect(page.locator("#rotate-right")).toBeFocused();
     expect(await page.evaluate(() => window.orientationChanges)).toBe(0);
     await expect(page.locator('[data-image-viewer-target="download"]')).toHaveAttribute("href", image(1600, 800));
+});
+
+test("equivalent double flips and a half turn expose momentary actions, not conflicting toggle states", async ({
+    page,
+}) => {
+    await start(page, item("one"), { rotate: true, flip: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#flip-horizontal").click();
+    await page.locator("#flip-vertical").click();
+    const readMatrix = (img) => {
+        const matrix = new DOMMatrix(getComputedStyle(img).transform);
+        return [matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f];
+    };
+    const flipped = await displayed(page).evaluate(readMatrix);
+    await page.keyboard.press("Escape");
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.locator("#rotate-right").click();
+    await page.locator("#rotate-right").click();
+    const rotated = await displayed(page).evaluate(readMatrix);
+    for (let index = 0; index < 6; index++) expect(rotated[index]).toBeCloseTo(flipped[index], 5);
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
+    await expect(page.locator("#flip-vertical")).not.toHaveAttribute("aria-pressed");
 });
 
 test("fit preserves rotation and flips while navigation and reopening reset them", async ({ page }) => {
@@ -173,11 +366,11 @@ test("fit preserves rotation and flips while navigation and reopening reset them
     await page.keyboard.press("Escape");
     await page.locator("#two").click();
     await expect(displayed(page)).toBeVisible();
-    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
     expect(await page.evaluate(() => window.viewer().geometry.rotation)).toBe(0);
 });
 
-test("transformed geometry and toggle state survive morphs, shell replacement and snapshot normalization", async ({
+test("transformed geometry and momentary controls survive morphs, shell replacement and snapshot normalization", async ({
     page,
 }) => {
     const sources = item("one") + item("two");
@@ -196,7 +389,7 @@ test("transformed geometry and toggle state survive morphs, shell replacement an
         },
         markup(sources, false, "default", { rotate: true, flip: true }),
     );
-    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
     expect(await page.evaluate(() => window.viewer().geometry)).toEqual(geometry);
     const box = await displayed(page).boundingBox();
     expect(box.width).toBeCloseTo(geometry.naturalHeight * geometry.scale, 1);
@@ -217,7 +410,7 @@ test("transformed geometry and toggle state survive morphs, shell replacement an
                 pressed: copy.querySelector("#flip-horizontal").getAttribute("aria-pressed"),
             };
         }),
-    ).toEqual({ angle: "", flip: "", pressed: "false" });
+    ).toEqual({ angle: "", flip: "", pressed: null });
 });
 
 test("wheel, drag, keyboard and pinch use the oriented bounds without reversing screen-space pan", async ({
@@ -289,7 +482,7 @@ test("rotation and flip controls disable during a replacement load and after fai
     for (const id of ["rotate-left", "rotate-right", "flip-horizontal", "flip-vertical"]) {
         await expect(page.locator(`#${id}`)).toBeDisabled();
     }
-    await expect(page.locator("#flip-horizontal")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#flip-horizontal")).not.toHaveAttribute("aria-pressed");
     release();
     await expect(page.locator('[data-image-viewer-target="error"]')).toBeVisible();
     for (const id of ["rotate-left", "rotate-right", "flip-horizontal", "flip-vertical"]) {

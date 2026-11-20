@@ -30,10 +30,11 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 | `download` | `false` | Include an original download link |
 | `loop` | `false` | Wrap previous/next navigation |
 | `thumbnails` | `false` | Show a thumbnail strip inside the open viewer |
+| `arrows` | `false` | Move previous/next controls from the toolbar to the sides of the image area |
 | `rotate` | `false` | Show controls for 90° left/right rotation |
 | `flip` | `false` | Show horizontal/vertical mirror controls |
 | `size` | `default` | Use `full` for an edge-to-edge viewer; `default` retains the windowed presentation |
-| `motion` | `default` | Preset-driven enter/exit transitions; `none` disables them |
+| `motion` | `default` | Preset-driven shell and image motion; `none` disables animation |
 | `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
 | `stimulus` | `null` | Additional Stimulus attributes on the root |
 
@@ -117,8 +118,9 @@ Magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed
 
 `rotate` and `flip` independently opt into their toolbar controls. Rotation uses 90° steps; flips mirror the currently
 displayed image across the screen's horizontal or vertical axis, regardless of rotation or reading direction.
-Rotating a mirrored image still turns it in the requested direction. The flip buttons expose their current screen-axis
-state through `aria-pressed`; those states exchange axes on a quarter turn.
+Rotating a mirrored image still turns it in the requested direction. Flip controls are momentary actions, not toggles:
+they do not expose `aria-pressed` or a persistent selected style, since equivalent orientations can have different
+rotation/reflection decompositions.
 
 Fit uses the rotated image's bounds, without upscaling small originals. At fit, rotating refits automatically.
 While zoomed, rotation/flip retain natural-scale zoom and the source point at the viewport center when the pan limits
@@ -184,6 +186,33 @@ also retains the focused image. Responsive loads update only the corresponding s
 Thumbnail markup comes from an internal Blade template; no carousel dependency is needed. This is direct navigation,
 not autoplay. With `thumbnails` omitted, existing presentation is unchanged.
 
+The caption appears directly below the image area and above the thumbnail strip. It retains its height limit and
+keyboard scrolling for long text; larger thumbnails remain closely spaced and horizontally scrollable.
+
+## Side navigation and motion
+
+```blade
+<hw:image-viewer arrows thumbnails rotate flip>
+    <a href="/photos/original.jpg"><img src="/photos/thumbnail.jpg" alt="Product"></a>
+</hw:image-viewer>
+```
+
+`arrows` replaces the toolbar's previous/next buttons with accessible side buttons in the image area. Their placement
+follows reading direction. They share the same labels, boundary/loop behavior and keyboard navigation, but sit outside
+the gesture viewport so clicks do not start pan or pinch.
+Presets set their distance from the stage edges through `--image-viewer-arrow-inset` on the arrow buttons.
+
+Official presets animate rotate/flip, zoom buttons, the zoom selector, double-click zoom and Fit. New successful image
+loads fade in; failed or superseded loads do not animate a stale image. This is a fade-in, not a crossfade or slide.
+Repeated discrete commands replace the current effect from its displayed pose rather than building a queue.
+Pan, pinch and wheel stay immediate; direct gestures settle any pending discrete effect before applying input.
+Morph, resize, close, cache preparation and disconnect cancel presentation effects without changing authoritative geometry.
+Reduced motion and `motion="none"` disable these image effects, including when the preference changes while animating.
+
+Presets own the timing through `--image-viewer-transform-duration` and `--image-viewer-fade-duration` on
+`[data-slot="image-viewer-image"]`. Values use `ms` or `s`; `0ms` disables the corresponding effect. Without those
+properties, a custom preset keeps image operations immediate. Avoid adding global CSS transitions to the bitmap.
+
 ## Download
 
 `download` is opt-in. It downloads the original file, not the current zoom/pan presentation. For private media, provide
@@ -202,6 +231,8 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-overlay"`: transparent full-screen top-layer root; `hidden`, `inert`, `data-state` follow the shared overlay lifecycle. The backdrop, not this root, dims the page.
 - `data-slot="image-viewer-backdrop"`: backdrop.
 - `data-slot="image-viewer-dialog"`: viewer panel; `data-size="default|full"` selects its presentation.
+- `data-slot="image-viewer-stage"`: structural container for the viewport and optional side arrows.
+- `data-slot="image-viewer-arrow"`: previous/next side buttons, distinguished by `data-side="previous|next"`.
 - `data-slot="image-viewer-toolbar"`: controls group.
 - `data-slot="image-viewer-actions"`: structural trailing group for controls and zoom level; the selection counter stays separate at the leading edge.
 - `data-slot="image-viewer-button"`: navigation, zoom, reset, download and close controls; native `disabled` where applicable.

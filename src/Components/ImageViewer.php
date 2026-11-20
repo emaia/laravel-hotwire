@@ -25,6 +25,8 @@ class ImageViewer extends BaseComponent
         'loading-icon' => ['name' => 'image-viewer-loading-icon', 'kind' => 'visual'],
         'error-icon' => ['name' => 'image-viewer-error-icon', 'kind' => 'visual'],
         'viewport' => ['name' => 'image-viewer-viewport', 'kind' => 'structural'],
+        'stage' => ['name' => 'image-viewer-stage', 'kind' => 'structural'],
+        'arrow' => ['name' => 'image-viewer-arrow', 'kind' => 'visual'],
         'image' => ['name' => 'image-viewer-image', 'kind' => 'structural'],
         'icon' => ['name' => 'image-viewer-icon', 'kind' => 'structural'],
         'thumbnails' => ['name' => 'image-viewer-thumbnails', 'kind' => 'visual'],
@@ -47,6 +49,7 @@ class ImageViewer extends BaseComponent
         public string $size = 'default',
         public bool $rotate = false,
         public bool $flip = false,
+        public bool $arrows = false,
     ) {
         $this->resolvedId = $id ?? app(ComponentId::class)->next('hw-image-viewer');
         $this->motion = $motion === 'none' ? 'none' : 'default';

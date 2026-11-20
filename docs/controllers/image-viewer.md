@@ -42,8 +42,10 @@ This is a CSS presentation option, not native browser fullscreen.
 
 An optional `zoomSelect` target offers `fit`, numeric natural-scale values (`1` = 100%) and a disabled `current` option
 for intermediate values. The `fit` option can carry a translated `data-label`.
-Rotation and flip controls use their matching action/target names. Flip buttons start with `aria-pressed="false"`;
-the controller synchronizes their toggle states and disables orientation controls while no image is ready.
+Rotation and flip controls use their matching action/target names. Flip buttons are momentary actions without
+`aria-pressed`; orientation controls are disabled while no image is ready.
+Side arrows reuse `previous`/`next` targets and actions outside the gesture viewport, without duplicating toolbar controls.
+Put the caption before the thumbnail strip. The component owns the structural stage around the viewport and arrows.
 
 Optional thumbnail navigation uses a `thumbnails` target and a `thumbnailTemplate` target. Supply both together:
 the list is controller-owned and starts empty; the template contains one native button with an image,

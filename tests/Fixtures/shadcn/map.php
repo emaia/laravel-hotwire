@@ -1579,6 +1579,7 @@ return [
         'image-viewer-overlay' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-backdrop' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-dialog' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
+        'image-viewer-arrow' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-toolbar' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-button' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],
         'image-viewer-counter' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no image inspection viewer.'],

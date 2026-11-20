@@ -855,6 +855,32 @@ html[data-reveal="off"] [data-reveal-armed] {
     pointer-events: none;
 }
 
+[data-slot="image-viewer-stage"] {
+    position: relative;
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+}
+
+[data-slot="image-viewer-arrow"] {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+}
+
+[data-slot="image-viewer-arrow"][data-side="previous"] {
+    inset-inline-start: var(--image-viewer-arrow-inset, 0px);
+}
+
+[data-slot="image-viewer-arrow"][data-side="next"] {
+    inset-inline-end: var(--image-viewer-arrow-inset, 0px);
+}
+
+[data-slot="image-viewer-arrow"]:dir(rtl) > svg {
+    rotate: 180deg;
+}
+
 [data-slot="image-viewer-viewport"] {
     position: relative;
     overflow: hidden;
@@ -927,6 +953,7 @@ html[data-reveal="off"] [data-reveal-armed] {
 }
 
 [data-slot="image-viewer-button"]:focus-visible,
+[data-slot="image-viewer-arrow"]:focus-visible,
 [data-slot="image-viewer-thumbnail"]:focus-visible,
 [data-slot="image-viewer-zoom"]:focus-visible,
 [data-slot="image-viewer-caption"]:focus-visible,
@@ -937,6 +964,7 @@ html[data-reveal="off"] [data-reveal-armed] {
 
 @media (forced-colors: active) {
     [data-slot="image-viewer-button"]:focus-visible,
+    [data-slot="image-viewer-arrow"]:focus-visible,
     [data-slot="image-viewer-thumbnail"]:focus-visible,
     [data-slot="image-viewer-zoom"]:focus-visible,
     [data-slot="image-viewer-caption"]:focus-visible,
