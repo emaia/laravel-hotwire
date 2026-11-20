@@ -35,7 +35,7 @@
     }
     [data-slot="image-viewer-arrow"] {
         --image-viewer-arrow-inset: 1rem;
-        @apply inline-flex items-center justify-center size-12 rounded-full bg-card/90 text-card-foreground border border-border shadow-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-default;
+        @apply inline-flex items-center justify-center size-12 rounded-[var(--radius-action)] bg-card/90 text-card-foreground border border-border shadow-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-default;
     }
     [data-slot="image-viewer-button"] {
         @apply inline-flex items-center justify-center size-10 rounded-xl cursor-pointer text-foreground hover:bg-accent hover:text-accent-foreground;
