@@ -49,6 +49,7 @@ it('separates the leading counter from the trailing toolbar controls', function 
     $xpath = new DOMXPath(dom((string) $view));
 
     expect($xpath->query('//*[@data-slot="image-viewer-toolbar"]/*[1][@data-image-viewer-target="counter"]')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-slot="image-viewer-toolbar"]//button[@data-side="previous" or @data-side="next"]')->count())->toBe(2)
         ->and($xpath->query('//*[@data-slot="image-viewer-actions"]/button')->count())->toBe(6)
         ->and($xpath->query('//*[@data-slot="image-viewer-actions"]//*[@data-image-viewer-target="zoomSelect"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-slot="image-viewer-actions"]/*[@data-image-viewer-target="download"]')->count())->toBe(1);

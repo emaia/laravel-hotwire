@@ -26,6 +26,8 @@ export function createImageMotion(image, overlay) {
     function sync(state, { animate = false, rotation = 0, fade = false } = {}) {
         if (destroyed) return;
         const start = sample();
+        // Retain composited alpha before retiring a fade or its continuation.
+        const opacity = animation ? view.getComputedStyle(image).opacity : null;
         const bounds = imageBounds(state);
         const angle =
             rotation && pose
@@ -46,7 +48,12 @@ export function createImageMotion(image, overlay) {
         const duration = milliseconds(
             style.getPropertyValue(fade ? "--image-viewer-fade-duration" : "--image-viewer-transform-duration"),
         );
-        if (!duration || (!fade && (!start || Object.keys(next).every((key) => next[key] === start[key])))) return;
+        const continueOpacity = opacity !== null && opacity !== style.opacity;
+        if (
+            !duration ||
+            (!fade && (!start || (!continueOpacity && Object.keys(next).every((key) => next[key] === start[key]))))
+        )
+            return;
         from = fade ? next : start;
         to = next;
         const frame = (point) => ({
@@ -56,6 +63,10 @@ export function createImageMotion(image, overlay) {
             transform: `translate(${point.x - state.naturalWidth / 2}px, ${point.y - state.naturalHeight / 2}px) rotate(${point.angle}deg) scale(${point.sx}, ${point.sy})`,
         });
         const keyframes = fade ? [{ opacity: 0 }, { opacity: style.opacity }] : [frame(from), frame(to)];
+        if (!fade && continueOpacity) {
+            keyframes[0].opacity = opacity;
+            keyframes[1].opacity = style.opacity;
+        }
         const current = image.animate(keyframes, { duration, easing: "ease-out", fill: "both" });
         animation = current;
         current.finished.then(

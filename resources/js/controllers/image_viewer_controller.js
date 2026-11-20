@@ -342,6 +342,7 @@ export default class extends Controller {
             modalTarget: this.overlayTarget,
             backdropTarget: this.backdropTarget,
             dialogTarget: this.dialogTarget,
+            initialFocus: "dialog",
             lockScrollClasses: ["overflow-hidden"],
             // A source gallery can live inside a Dropdown whose bubble-phase Escape handler closes its menu.
             escapeCapture: true,
@@ -763,8 +764,8 @@ export default class extends Controller {
         if (!this.atFit && event.target === this.viewportTarget && directions[event.key]) {
             this.geometry = panImage(this.geometry, ...directions[event.key]);
             this.render();
-        } else if (event.key === "ArrowLeft") this.previous();
-        else if (event.key === "ArrowRight") this.next();
+        } else if (event.key === "ArrowLeft") this.navigate(this.navigationStep(-1));
+        else if (event.key === "ArrowRight") this.navigate(this.navigationStep(1));
         else if (event.key === "Home") void this.show(0);
         else if (event.key === "End") void this.show(this.items.length - 1);
         else if (["+", "="].includes(event.key)) this.zoomIn();
@@ -778,6 +779,10 @@ export default class extends Controller {
     point(event) {
         const rect = this.viewportTarget.getBoundingClientRect();
         return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    navigationStep(step) {
+        return step * (getComputedStyle(this.dialogTarget).direction === "rtl" ? -1 : 1);
     }
 
     // Measure layout pixels so the panel's enter/exit scale never changes image fit.
@@ -842,7 +847,7 @@ export default class extends Controller {
                 Math.abs(dx) > Math.max(50, Math.min(120, this.geometry.viewportWidth * 0.15)) &&
                 Math.abs(dx) > Math.abs(dy) * 1.5
             ) {
-                this.navigate(dx > 0 ? -1 : 1);
+                this.navigate(this.navigationStep(dx > 0 ? -1 : 1));
             }
         }
         if (!this.pointers.size) this.drag = null;

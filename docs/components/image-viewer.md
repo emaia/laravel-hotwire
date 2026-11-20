@@ -82,8 +82,12 @@ their source URL. Each image's policies replace the previous image's policies.
 - Wheel zooms within the image viewport. Double click toggles fit/natural-size zoom. Pinch zooms and a single pointer pans.
 - The viewport uses the default cursor when the image cannot pan, `grab` when it can pan and `grabbing` during a drag.
 - At fit, a horizontal touch swipe navigates; after pinch, the remaining finger pans rather than navigating.
-- `+`/`-` zoom, `0` fits, Home/End select first/last. Left/Right navigate, except while the zoomed viewport itself is
-  focused, where all arrow keys pan. Escape closes only the top overlay. Ctrl/Meta browser zoom shortcuts are not intercepted.
+- `+`/`-` zoom, `0` fits, Home/End select first/last. Left/Right navigate in the dialog's reading direction:
+  Right selects next in LTR and previous in RTL. Swiping left selects next in LTR and previous in RTL.
+  When the zoomed viewport itself is focused, arrow-key pan remains physical, independent of reading direction.
+  Escape closes only the top overlay. Ctrl/Meta browser zoom shortcuts are not intercepted.
+- Opening focuses the named dialog, not an arbitrary button. Tab enters the available controls and remains trapped
+  inside the top overlay; closing returns focus to the exact opening control when it still exists.
 - Source additions, removal, reordering and metadata changes update a surviving controller automatically. Stable keys
   preserve selection; removing the active image selects the nearest remaining index. Empty galleries close.
 - Morphing the presentation for the same image and request preserves zoom, pan and loading/error feedback without
@@ -200,11 +204,12 @@ keyboard scrolling for long text; larger thumbnails remain closely spaced and ho
 `arrows` replaces the toolbar's previous/next buttons with accessible side buttons in the image area. Their placement
 follows reading direction. They share the same labels, boundary/loop behavior and keyboard navigation, but sit outside
 the gesture viewport so clicks do not start pan or pinch.
+Navigation chevrons mirror in RTL in both the toolbar and the side buttons.
 Presets set their distance from the stage edges through `--image-viewer-arrow-inset` on the arrow buttons.
 
 Official presets animate rotate/flip, zoom buttons, the zoom selector, double-click zoom and Fit. New successful image
 loads fade in; failed or superseded loads do not animate a stale image. This is a fade-in, not a crossfade or slide.
-Repeated discrete commands replace the current effect from its displayed pose rather than building a queue.
+Repeated discrete commands replace the current effect from its displayed pose and opacity rather than building a queue.
 Pan, pinch and wheel stay immediate; direct gestures settle any pending discrete effect before applying input.
 Morph, resize, close, cache preparation and disconnect cancel presentation effects without changing authoritative geometry.
 Reduced motion and `motion="none"` disable these image effects, including when the preference changes while animating.

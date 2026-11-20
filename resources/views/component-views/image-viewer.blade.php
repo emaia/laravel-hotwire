@@ -64,6 +64,9 @@
                             data-action="image-viewer#{{ $action }}"
                             aria-label="{{ $labels[$action] }}"
                             title="{{ $labels[$action] }}"
+                            @if (in_array($action, ['previous', 'next'], true))
+                                data-side="{{ $action }}"
+                            @endif
                         >
                             <svg
                                 data-slot="{{ $slotNames['icon'] }}"

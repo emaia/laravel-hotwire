@@ -877,7 +877,11 @@ html[data-reveal="off"] [data-reveal-armed] {
     inset-inline-end: var(--image-viewer-arrow-inset, 0px);
 }
 
-[data-slot="image-viewer-arrow"]:dir(rtl) > svg {
+:is(
+    [data-slot="image-viewer-arrow"],
+    [data-slot="image-viewer-button"][data-side="previous"],
+    [data-slot="image-viewer-button"][data-side="next"]
+):where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) > svg {
     rotate: 180deg;
 }
 

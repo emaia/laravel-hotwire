@@ -34,8 +34,8 @@ function markup(
                         ${
                             arrows
                                 ? ""
-                                : `<button id="prev" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
-                        <button id="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>`
+                                : `<button id="prev" data-side="previous" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
+                        <button id="next" data-side="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>`
                         }
                         <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
                         <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
@@ -130,6 +130,110 @@ async function start(
 const overlay = (page) => page.locator('[data-image-viewer-target="overlay"]');
 const displayed = (page) => page.locator('[data-image-viewer-target="image"]');
 
+for (const arrows of [false, true]) {
+    for (const direction of ["ltr", "rtl"]) {
+        test(`${direction} navigation agrees across dialog, viewport, toolbar, thumbnails and swipe with arrows ${arrows}`, async ({
+            page,
+            context,
+        }) => {
+            await start(page, item("one") + item("two") + item("three"), { arrows, thumbnails: true });
+            await page.locator("#gallery").evaluate((root, dir) => (root.dir = dir), direction);
+            await page.locator("#prev, #next").evaluateAll((buttons) => {
+                for (const button of buttons) {
+                    button.dataset.slot ??= "image-viewer-button";
+                    button.insertAdjacentHTML(
+                        "beforeend",
+                        '<svg data-slot="image-viewer-icon" aria-hidden="true"><path d="M3 3h1"/></svg>',
+                    );
+                }
+            });
+            await page.locator("#two").click();
+            await expect(displayed(page)).toBeVisible();
+            for (const id of ["prev", "next"])
+                await expect(page.locator(`#${id} svg`)).toHaveCSS("rotate", direction === "rtl" ? "180deg" : "none");
+            const thumbnails = page.locator('[data-slot="image-viewer-thumbnail"]');
+            const counter = page.locator('[data-image-viewer-target="counter"]');
+            const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
+            const previousKey = direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+            for (const target of [
+                '[data-image-viewer-target="dialog"]',
+                '[data-image-viewer-target="viewport"]',
+                "#close",
+                '[data-slot="image-viewer-thumbnail"][aria-current="true"]',
+            ]) {
+                await thumbnails.nth(1).click();
+                await page.locator(target).focus();
+                await page.keyboard.press(nextKey);
+                await expect(counter).toHaveText("3 / 3");
+                await thumbnails.nth(1).click();
+                await page.locator(target).focus();
+                await page.keyboard.press(previousKey);
+                await expect(counter).toHaveText("1 / 3");
+            }
+            await thumbnails.nth(1).click();
+            const box = await page.locator('[data-image-viewer-target="viewport"]').boundingBox();
+            const x = box.x + box.width / 2;
+            const y = box.y + box.height / 2;
+            const session = await context.newCDPSession(page);
+            for (const [dx, expected] of [
+                [200, direction === "rtl" ? "3 / 3" : "1 / 3"],
+                [-200, direction === "rtl" ? "1 / 3" : "3 / 3"],
+            ]) {
+                await thumbnails.nth(1).click();
+                await expect(displayed(page)).toBeVisible();
+                await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+                await session.send("Input.dispatchTouchEvent", {
+                    type: "touchMove",
+                    touchPoints: [{ x: x + dx, y, id: 1 }],
+                });
+                await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+                await expect(counter).toHaveText(expected);
+            }
+            await thumbnails.nth(1).click();
+            await page.getByRole("combobox", { name: "Zoom level" }).selectOption("2");
+            const viewport = page.locator('[data-image-viewer-target="viewport"]');
+            await viewport.focus();
+            const before = await page.evaluate(() => window.viewer().geometry.x);
+            await page.keyboard.press("ArrowRight");
+            expect(await page.evaluate(() => window.viewer().geometry.x)).toBeCloseTo(before + 40);
+            await expect(counter).toHaveText("2 / 3");
+            await thumbnails.nth(0).click();
+            await page.locator("#gallery").evaluate((root) => (root.dataset.imageViewerLoopValue = "true"));
+            await expect(page.locator("#prev")).toBeEnabled();
+            await page.locator('[data-image-viewer-target="dialog"]').focus();
+            await page.keyboard.press(previousKey);
+            await expect(counter).toHaveText("3 / 3");
+            await page.keyboard.press(nextKey);
+            await expect(counter).toHaveText("1 / 3");
+        });
+    }
+}
+
+test("opening focuses the dialog rather than a control, with predictable Tab and focus return", async ({ page }) => {
+    let release;
+    await page.route("https://gallery.test/focus-pending.svg", async (route) => {
+        await new Promise((resolve) => (release = resolve));
+        await route.fulfill({
+            contentType: "image/svg+xml",
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"/>',
+        });
+    });
+    await start(page, item("one", "/focus-pending.svg"), { arrows: true, thumbnails: true, rotate: true, flip: true });
+    await page.locator("#one").click();
+    const dialog = page.locator('[data-image-viewer-target="dialog"]');
+    await expect(dialog).toBeFocused();
+    await expect.poll(() => Boolean(release)).toBe(true);
+    release();
+    await expect(displayed(page)).toBeVisible();
+    await expect(dialog).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#zoom")).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#one")).toBeFocused();
+});
+
 for (const direction of ["ltr", "rtl"]) {
     test(`side arrows navigate without capturing image gestures and caption precedes thumbnails in ${direction}`, async ({
         page,
@@ -173,6 +277,35 @@ async function motionFixture(page) {
     await page.addStyleTag({
         content:
             '[data-slot="image-viewer-image"] { --image-viewer-transform-duration: 1s; --image-viewer-fade-duration: 1s; }',
+    });
+}
+
+for (const operation of ["zoomIn", "rotateRight", "flipHorizontal", "reset"]) {
+    test(`${operation} preserves displayed opacity when interrupting an image fade`, async ({ page }) => {
+        await motionFixture(page);
+        await displayed(page).evaluate((img) => (img.style.opacity = "0.4"));
+        await page.locator("#next").click();
+        await expect.poll(() => displayed(page).evaluate((img) => img.getAnimations().length)).toBe(1);
+        const result = await displayed(page).evaluate((img, action) => {
+            const fade = img.getAnimations()[0];
+            fade.pause();
+            fade.currentTime = 300;
+            const before = Number(getComputedStyle(img).opacity);
+            window.viewer()[action]();
+            const animation = img.getAnimations()[0];
+            if (!animation) return { before, after: Number(getComputedStyle(img).opacity), end: null };
+            animation.pause();
+            animation.currentTime = 0;
+            return {
+                before,
+                after: Number(getComputedStyle(img).opacity),
+                end: animation.effect.getKeyframes().at(-1).opacity,
+            };
+        }, operation);
+        expect(result.before).toBeGreaterThan(0);
+        expect(result.before).toBeLessThan(0.4);
+        expect(result.after).toBeCloseTo(result.before, 6);
+        expect(result.end).toBe("0.4");
     });
 }
 
@@ -1003,6 +1136,8 @@ test("keeps keyboard navigation on toolbar controls at both gallery boundaries",
     await start(page, item("one") + item("two") + item("three"));
     await page.locator("#one").click();
     await expect(displayed(page)).toBeVisible();
+    await expect(page.locator('[data-image-viewer-target="dialog"]')).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(page.locator("#next")).toBeFocused();
     await page.keyboard.press("ArrowRight");
     await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 3");
