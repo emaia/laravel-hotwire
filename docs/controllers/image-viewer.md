@@ -19,6 +19,7 @@ See [Image Viewer](../components/image-viewer.md) for image metadata, interactio
 | `zoomIn`, `zoomOut` | Zoom around the viewport center |
 | `changeZoom` | Apply the native zoom selector's percentage or Fit value |
 | `selectThumbnail` | Select the image identified by the thumbnail button's `index` action parameter |
+| `toggleTools` | Expand or collapse the `tools` group and update `aria-expanded` on `toolsToggle` |
 | `reset` | Fit the current orientation without upscaling or clearing rotation/flips |
 | `rotateLeft`, `rotateRight` | Rotate the displayed image 90° in the requested direction |
 | `flipHorizontal`, `flipVertical` | Mirror the displayed image across the corresponding screen axis |
@@ -33,9 +34,10 @@ connected automatically. Application event handlers can wire the actions without
 Use the Blade component for the supported presentation. When using the controller directly, provide the same
 server-rendered anatomy: `source`, `overlay`, `backdrop`, `dialog`, `viewport`, `image`, `caption`, `counter`, `loading`,
 and `error` targets. Optional targets are `previous`, `next`, `zoomIn`, `zoomOut`, `reset`, `zoomLabel`, `zoomSelect`,
-`rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, and `download`.
+`rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `download`, `tools` and `toolsToggle`.
 The overlay starts `hidden inert`; the dialog needs an accessible name, dialog semantics and `tabindex="-1"`.
-Opening focuses this dialog rather than its first control. Keyboard/swipe navigation uses its reading direction;
+Opening focuses this dialog rather than its first control; the shipped CSS removes its focus outline because the
+dialog is not an operable control. Keyboard/swipe navigation uses its reading direction;
 arrow-key pan inside a zoomed viewport remains physical.
 The displayed image starts hidden with no source.
 The controller marks only that image `aria-busy` while loading; keep live status messages outside the busy subtree.
@@ -47,6 +49,15 @@ for intermediate values. The `fit` option can carry a translated `data-label`.
 Rotation and flip controls use their matching action/target names. Flip buttons are momentary actions without
 `aria-pressed`; orientation controls are disabled while no image is ready.
 Side arrows reuse `previous`/`next` targets and actions outside the gesture viewport, without duplicating toolbar controls.
+
+A touch or pen tap on the viewport toggles `data-controls="hidden"` on the dialog after a short double-tap window;
+a double tap toggles zoom instead, and the browser's emulated `dblclick` is ignored for those pointers. Swipes, drags
+and pinches never toggle. Opening clears the attribute, and focus entering the dialog outside the viewport clears it too.
+The optional `tools` target wraps zoom and orientation controls behind a `toolsToggle` disclosure button
+(`aria-controls` naming the group); the controller sets `data-state="open|closed"` on the group and collapses it when
+the controls hide or the viewer opens. Structural CSS shows the trigger and collapses the group only on touch screens.
+The optional `zoomLabel` target receives the current percentage; the component draws it over a narrower zoom selector
+on touch screens.
 Put the caption before the thumbnail strip. The component owns the structural stage around the viewport and arrows.
 
 Optional thumbnail navigation uses a `thumbnails` target and a `thumbnailTemplate` target. Supply both together:

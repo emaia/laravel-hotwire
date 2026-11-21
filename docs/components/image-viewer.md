@@ -35,7 +35,7 @@ The component does not fetch a JSON gallery or generate source thumbnails.
 | `flip` | `false` | Show horizontal/vertical mirror controls |
 | `size` | `default` | Use `full` for an edge-to-edge viewer; `default` retains the windowed presentation |
 | `motion` | `default` | Preset-driven shell and image motion; `none` disables animation |
-| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `thumbnails`, `thumbnail` |
+| `labels` | English labels | Control labels keyed by `previous`, `next`, `zoomIn`, `zoomOut`, `zoom`, `reset`, `rotateLeft`, `rotateRight`, `flipHorizontal`, `flipVertical`, `close`, `download`, `loading`, `error`, `viewport`, `controls`, `tools`, `thumbnails`, `thumbnail` |
 | `stimulus` | `null` | Additional Stimulus attributes on the root |
 
 Other attributes, including `class`, apply to the root. The internal `data-image-viewer-*` namespace is protected.
@@ -108,6 +108,28 @@ their source URL. Each image's policies replace the previous image's policies.
   disable those transitions. Image fit uses untransformed viewport dimensions while the panel enters; zoom/pan do not inherit panel transitions.
 
 Magnifier, automatic slideshow, native browser fullscreen, inline mode and mixed media are not supported.
+
+## Touch screens
+
+On touch screens (`(hover: none) and (pointer: coarse)`), the viewer fills the screen at either `size`, and the
+toolbar, caption and thumbnails float over the image area instead of taking space from it. The image fits the whole
+screen, and showing or hiding the controls never refits it.
+
+- A single tap on the image hides the toolbar, side arrows, caption and thumbnails; another tap shows them again.
+  The controls stay hidden while navigating and reappear each time the viewer opens.
+- A double tap toggles zoom like a double click. Taps wait briefly for a possible second tap, so a double tap never
+  flashes the controls. Swipes, drags and pinches never toggle them.
+- Hidden controls remain in the focus order and accessibility tree. Focus reaching one of them, from Tab or a screen
+  reader, shows the controls again; hiding them moves focus that was on a control back to the dialog.
+- Zoom, Fit, the zoom selector and the optional rotate/flip buttons collapse behind a **More controls** button
+  (`labels.tools`), since pinch and double tap cover zooming. It expands them on a second toolbar row and collapses
+  when the controls hide. Navigation, download and close stay in the main row. To keep that row short, the zoom
+  selector shows only the current percentage; its picker still lists Fit and every percentage, and assistive
+  technology still reads the selected option. The separate Fit button is hidden on touch screens, since the selector's
+  Fit option and a double tap already return to the fit, so the tools stay on one row down to 360px-wide screens.
+
+With a mouse, nothing changes: clicking the image does not hide the controls, and the zoom and orientation buttons
+stay inline. Reduced motion and `motion="none"` disable the controls' fade.
 
 ## Rotation and flip
 
@@ -235,15 +257,18 @@ the component does not fetch files into Blob memory or bypass CORS. Download lin
 - `data-slot="image-viewer-source"`: structural source region; layout remains application-owned.
 - `data-slot="image-viewer-overlay"`: transparent full-screen top-layer root; `hidden`, `inert`, `data-state` follow the shared overlay lifecycle. The backdrop, not this root, dims the page.
 - `data-slot="image-viewer-backdrop"`: backdrop.
-- `data-slot="image-viewer-dialog"`: viewer panel; `data-size="default|full"` selects its presentation.
+- `data-slot="image-viewer-dialog"`: viewer panel; `data-size="default|full"` selects its presentation and `data-controls="hidden"` marks controls hidden by a tap.
 - `data-slot="image-viewer-stage"`: structural container for the viewport and optional side arrows.
 - `data-slot="image-viewer-arrow"`: previous/next side buttons, distinguished by `data-side="previous|next"`.
 - `data-slot="image-viewer-toolbar"`: controls group.
 - `data-slot="image-viewer-actions"`: structural trailing group for controls and zoom level; the selection counter stays separate at the leading edge.
 - `data-slot="image-viewer-button"`: navigation, zoom, reset, download and close controls; native `disabled` where applicable.
+- `data-slot="image-viewer-tools"`: structural group of zoom, Fit, zoom level and orientation controls; `data-state="open|closed"` follows its trigger on touch screens, where the Fit button inside it is hidden.
+- `data-slot="image-viewer-tools-trigger"`: **More controls** disclosure button shown only on touch screens, with `aria-expanded`.
 - `data-slot="image-viewer-counter"`: selection count.
 - `data-slot="image-viewer-zoom"`: native zoom percentage selector with Fit and current intermediate scale.
 - `data-slot="image-viewer-zoom-control"`: structural native selector wrapper and decorative inset chevron.
+- `data-slot="image-viewer-zoom-value"`: decorative current percentage drawn over the selector on touch screens; hidden elsewhere.
 - `data-slot="image-viewer-caption"`: text caption.
 - `data-slot="image-viewer-status"`: loading/error feedback, controlled by `hidden`.
 - `data-slot="image-viewer-loading-icon"`: decorative loading spinner.

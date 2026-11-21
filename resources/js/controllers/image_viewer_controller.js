@@ -6,6 +6,12 @@ import { fitImage, flipImage, imageBounds, panImage, resizeImage, rotateImage, z
 import { createImageThumbnails } from "./_image_thumbnails.js";
 import { createImageMotion } from "./_image_motion.js";
 
+// A touch that stays this close and short is a tap; two within the delay are a double tap.
+const TAP_SLOP = 10;
+const TAP_DURATION = 300;
+const DOUBLE_TAP_DELAY = 250;
+const DOUBLE_TAP_SLOP = 30;
+
 export default class extends Controller {
     static targets = [
         "source",
@@ -32,11 +38,14 @@ export default class extends Controller {
         "download",
         "thumbnails",
         "thumbnailTemplate",
+        "tools",
+        "toolsToggle",
     ];
     static values = { loop: { type: Boolean, default: false } };
 
     initialize() {
         this.pointers = new Map();
+        this.tapPointers = new Set();
         this.items = [];
         this.loadState = "idle";
         this.captionTabIndexes = new WeakMap();
@@ -308,7 +317,7 @@ export default class extends Controller {
         listen("pointerdown", this.pointerdown);
         listen("pointermove", this.pointermove);
         listen("pointerup", this.pointerup);
-        listen("pointercancel", this.cancelPointers);
+        listen("pointercancel", this.pointercancel);
         listen("lostpointercapture", this.lostCapture);
         listen("wheel", this.wheel, { passive: false });
         listen("dblclick", this.doubleClick);
@@ -316,6 +325,9 @@ export default class extends Controller {
         listen("gesturestart", this.gesture, { passive: false });
         listen("gesturechange", this.gesture, { passive: false });
         listen("gestureend", this.gesture, { passive: false });
+        this.dialogTarget.addEventListener("focusin", this.revealForFocus.bind(this), {
+            signal: this.shellListeners.signal,
+        });
         this.backdropTarget.addEventListener(
             "click",
             () => {
@@ -336,6 +348,7 @@ export default class extends Controller {
             ],
         });
         rememberSnapshotState(this.viewportTarget, { attributes: ["data-pan-state"] });
+        rememberSnapshotState(this.dialogTarget, { attributes: ["data-controls"] });
         rememberSnapshotState(this.loadingTarget, { attributes: ["hidden"] });
         rememberSnapshotState(this.errorTarget, { attributes: ["hidden"] });
         this.overlay = createOverlay(this, {
@@ -356,6 +369,7 @@ export default class extends Controller {
             onClose: () => {
                 this.cancelLoad();
                 this.cancelPointers();
+                this.cancelTap();
                 this.dispatch("closed");
             },
         });
@@ -373,6 +387,7 @@ export default class extends Controller {
     teardownShell() {
         this.cancelLoad();
         this.cancelPointers();
+        this.cancelTap();
         this.shellListeners?.abort();
         this.resizeObserver?.disconnect();
         this.imageMotion?.destroy();
@@ -410,6 +425,7 @@ export default class extends Controller {
         if (!item || !this.overlay) return;
         if (item === this.active && this.overlay.isOpen) return this.overlay.settled;
         this.cancelLoad();
+        if (!this.overlay.isOpen) this.setControlsHidden(false);
         this.active = item;
         this.syncMetadata();
         const opening = this.overlay.open();
@@ -420,12 +436,14 @@ export default class extends Controller {
     close() {
         this.cancelLoad();
         this.cancelPointers();
+        this.cancelTap();
         return this.overlay?.close();
     }
 
     closeForCache() {
         this.cancelLoad();
         this.cancelPointers();
+        this.cancelTap();
         this.overlay?.closeNow({ restoreFocus: false });
     }
 
@@ -683,6 +701,100 @@ export default class extends Controller {
         return !this.geometry || this.geometry.scale <= this.geometry.minScale + 0.0001;
     }
 
+    toggleTools() {
+        this.setToolsOpen(!this.toolsOpen);
+    }
+
+    setToolsOpen(open) {
+        this.toolsOpen = open;
+        for (const tools of this.toolsTargets) tools.dataset.state = open ? "open" : "closed";
+        for (const toggle of this.toolsToggleTargets) toggle.setAttribute("aria-expanded", String(open));
+    }
+
+    setControlsHidden(hidden) {
+        this.setToolsOpen(false);
+        if (!this.hasDialogTarget) return;
+        const dialog = this.dialogTarget;
+        if (!hidden) {
+            dialog.removeAttribute("data-controls");
+            return;
+        }
+        dialog.dataset.controls = "hidden";
+        const focused = dialog.ownerDocument.activeElement;
+        if (focused !== dialog && dialog.contains(focused) && !this.viewportTarget.contains(focused)) {
+            dialog.focus({ preventScroll: true });
+        }
+    }
+
+    get controlsHidden() {
+        return this.hasDialogTarget && this.dialogTarget.dataset.controls === "hidden";
+    }
+
+    revealForFocus(event) {
+        if (this.controlsHidden && event.target !== this.dialogTarget && !this.viewportTarget.contains(event.target))
+            this.setControlsHidden(false);
+    }
+
+    // Taps are tracked apart from pan/pinch so they work while an image is loading or has failed.
+    tapStart(event) {
+        this.lastPointerType = event.pointerType;
+        if (event.pointerType === "mouse") return;
+        this.tapPointers.add(event.pointerId);
+        if (this.tapPointers.size > 1 || !this.overlay?.isTop || this.overlay.isOpening) {
+            this.tap = null;
+            this.cancelPendingTap();
+            return;
+        }
+        this.tap = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp };
+    }
+
+    tapMove(event) {
+        if (this.tap?.id !== event.pointerId) return;
+        if (Math.hypot(event.clientX - this.tap.x, event.clientY - this.tap.y) > TAP_SLOP) {
+            this.tap = null;
+            this.cancelPendingTap();
+        }
+    }
+
+    tapEnd(event) {
+        if (!this.tapPointers.delete(event.pointerId)) return;
+        const tap = this.tap;
+        if (tap?.id !== event.pointerId) return;
+        this.tap = null;
+        if (event.timeStamp - tap.time > TAP_DURATION) return;
+        const pending = this.pendingTap;
+        this.cancelPendingTap();
+        if (
+            pending &&
+            event.timeStamp - pending.time < DOUBLE_TAP_DELAY &&
+            Math.hypot(tap.x - pending.x, tap.y - pending.y) < DOUBLE_TAP_SLOP
+        ) {
+            this.toggleZoom(this.point(event));
+            return;
+        }
+        // Wait for a possible second tap so a double-tap zoom never flashes the controls.
+        this.pendingTap = {
+            x: tap.x,
+            y: tap.y,
+            time: event.timeStamp,
+            timer: setTimeout(() => {
+                this.pendingTap = null;
+                this.setControlsHidden(!this.controlsHidden);
+            }, DOUBLE_TAP_DELAY),
+        };
+    }
+
+    cancelPendingTap() {
+        if (this.pendingTap) clearTimeout(this.pendingTap.timer);
+        this.pendingTap = null;
+    }
+
+    cancelTap() {
+        this.tapPointers.clear();
+        this.tap = null;
+        this.cancelPendingTap();
+    }
+
     previous() {
         this.navigate(-1);
     }
@@ -791,6 +903,7 @@ export default class extends Controller {
     }
 
     pointerdown(event) {
+        this.tapStart(event);
         if (
             !this.geometry ||
             !this.overlay?.isTop ||
@@ -809,6 +922,7 @@ export default class extends Controller {
     }
 
     pointermove(event) {
+        this.tapMove(event);
         if (!this.geometry || !this.pointers.has(event.pointerId)) return;
         event.preventDefault();
         const before = [...this.pointers.values()];
@@ -835,6 +949,7 @@ export default class extends Controller {
     }
 
     pointerup(event) {
+        this.tapEnd(event);
         if (!this.pointers.has(event.pointerId)) return;
         const last = this.point(event);
         this.pointers.delete(event.pointerId);
@@ -852,6 +967,11 @@ export default class extends Controller {
         }
         if (!this.pointers.size) this.drag = null;
         this.syncPanState();
+    }
+
+    pointercancel(event) {
+        if (this.tapPointers.delete(event.pointerId) && this.tap?.id === event.pointerId) this.tap = null;
+        this.cancelPointers();
     }
 
     lostCapture(event) {
@@ -880,9 +1000,15 @@ export default class extends Controller {
     }
 
     doubleClick(event) {
+        // Touch and pen double taps are recognized from pointer events; ignore the browser's emulated dblclick.
+        if (this.lastPointerType && this.lastPointerType !== "mouse") return;
         if (!this.geometry || this.overlay?.isOpening) return;
         event.preventDefault();
-        const point = this.point(event);
+        this.toggleZoom(this.point(event));
+    }
+
+    toggleZoom(point) {
+        if (!this.geometry || this.overlay?.isOpening) return;
         this.zoomTo(
             this.atFit ? Math.max(1, this.geometry.minScale * 2) : this.geometry.minScale,
             point.x,
