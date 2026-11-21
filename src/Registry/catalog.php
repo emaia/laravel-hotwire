@@ -213,8 +213,8 @@ return [
             'view' => 'hotwire::component-views.breadcrumb',
             'docs' => 'docs/components/breadcrumb.md',
             'category' => 'navigation',
-            'description' => 'Semantic navigation trail with composable items, ellipses and Turbo Frame targets',
-            'controllers' => [],
+            'description' => 'Semantic navigation trail with composable items, an optional compact menu and Turbo Frame targets',
+            'controllers' => ['dropdown'],
             'styling' => [
                 'slots' => [
                     ['class' => Breadcrumb::class],

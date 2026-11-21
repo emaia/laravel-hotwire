@@ -166,7 +166,7 @@ return [
         'avatar' => $module(['avatar']),
         'back-to-top' => $module(['back-to-top']),
         'badge' => $module(['badge']),
-        'breadcrumb' => $module(['breadcrumb']),
+        'breadcrumb' => $module(['breadcrumb'], dependencies: ['dropdown', 'floating-presence']),
         'button-surfaces' => $module([
             'button',
             'attachment',

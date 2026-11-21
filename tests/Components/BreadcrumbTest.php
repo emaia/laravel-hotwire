@@ -150,7 +150,7 @@ it('registers breadcrumb in the component catalog and subcomponent aliases', fun
     $breadcrumb = HotwireRegistry::make()->component('breadcrumb');
 
     expect($breadcrumb->key)->toBe('breadcrumb')
-        ->and($breadcrumb->controllers)->toBe([])
+        ->and($breadcrumb->controllers)->toBe(['dropdown'])
         ->and($breadcrumb->docs)->toBe('docs/components/breadcrumb.md');
 
     expect(ComponentAliases::subComponents())
@@ -360,4 +360,54 @@ it('composes a dropdown of collapsed pages inside a breadcrumb item', function (
         ->and($html)->toContain('data-slot="breadcrumb-ellipsis"')
         ->and($html)->toContain('href="/projects"')
         ->and(substr_count($html, 'aria-current="page"'))->toBe(1);
+});
+
+// --- Responsive trail ---
+
+it('collapses actionable items into a labeled menu without changing Turbo targets', function () {
+    $items = [
+        ['label' => 'Projects', 'href' => '/projects'],
+        ['type' => 'ellipsis'],
+        ['label' => 'Current project', 'current' => true, 'href' => '/current'],
+        ['label' => 'Archived', 'href' => '/archived', 'frame' => false],
+        ['label' => 'Recent', 'href' => '/recent', 'frame' => '_top'],
+    ];
+    $html = (string) $this->blade(<<<'BLADE'
+        <x-hw::breadcrumb :items="$items" collapse-below="md" compact-label="Project"
+            ellipsis-label="Show other pages" frame="content" id="trail" label="Project path" />
+    BLADE, compact('items'));
+    $document = new DOMDocument;
+    $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+    $xpath = new DOMXPath($document);
+    $compact = '//*[@data-breadcrumb-layout="compact"]';
+    $links = $compact.'//a';
+
+    expect($xpath->query('//nav[@id="trail" and @aria-label="Project path" and @data-collapse-below="md"]'))->toHaveCount(1)
+        ->and($xpath->query($links))->toHaveCount(3)
+        ->and($xpath->evaluate('string(('.$links.')[1][@href="/projects"]/@data-turbo-frame)'))->toBe('content')
+        ->and($xpath->query('('.$links.')[2][@href="/archived" and not(@data-turbo-frame)]'))->toHaveCount(1)
+        ->and($xpath->evaluate('string(('.$links.')[3][@href="/recent"]/@data-turbo-frame)'))->toBe('_top')
+        ->and($xpath->query($compact.'//button[@aria-label="Show other pages"]'))->toHaveCount(1)
+        ->and($xpath->evaluate('normalize-space('.$compact.'//span[@aria-current="page"])'))->toBe('Project')
+        ->and($xpath->evaluate('normalize-space(//*[@data-breadcrumb-layout="expanded"]//span[@aria-current="page"])'))->toBe('Current project');
+});
+
+it('does not mount a dropdown without both a current page and links', function (array $items) {
+    $this->blade('<x-hw::breadcrumb :items="$items" collapse-below="md" />', compact('items'))
+        ->assertDontSee('data-controller="dropdown"', false)
+        ->assertDontSee('data-breadcrumb-layout=', false);
+})->with([
+    'current only' => [[['label' => 'Home']]],
+    'links only' => [[['label' => 'Home', 'href' => '/']]],
+    'ellipsis without links' => [[['type' => 'ellipsis'], ['label' => 'Home']]],
+]);
+
+it('rejects an unsupported responsive breakpoint', function () {
+    expect(fn () => new Breadcrumb(collapseBelow: 'small'))
+        ->toThrow(InvalidArgumentException::class, 'Breadcrumb [collapse-below]');
+});
+
+it('rejects responsive mode on a manually composed trail', function () {
+    expect(fn () => (string) $this->blade('<x-hw::breadcrumb collapse-below="md">Custom trail</x-hw::breadcrumb>'))
+        ->toThrow(ViewException::class, 'Breadcrumb [collapse-below] requires generated items');
 });
