@@ -895,9 +895,24 @@ html[data-reveal="off"] [data-reveal-armed] {
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
+/* Opening focuses the dialog to anchor the modal context; it is not an operable control. */
+[data-slot="image-viewer-dialog"]:focus {
+    outline: none;
+}
+
 [data-slot="image-viewer-toolbar"] {
     display: flex;
     align-items: center;
+}
+
+[data-slot="image-viewer-tools"] {
+    display: contents;
+}
+
+@media not all and (hover: none) and (pointer: coarse) {
+    [data-slot="image-viewer-tools-trigger"] {
+        display: none;
+    }
 }
 
 [data-slot="image-viewer-toolbar"] > [data-slot="image-viewer-counter"] {
@@ -921,6 +936,10 @@ html[data-reveal="off"] [data-reveal-armed] {
 [data-slot="image-viewer-zoom-control"] {
     position: relative;
     display: inline-flex;
+}
+
+[data-slot="image-viewer-zoom-value"] {
+    display: none;
 }
 
 [data-slot="image-viewer-zoom-control"] > [data-slot="image-viewer-icon"] {
@@ -1032,6 +1051,111 @@ html[data-reveal="off"] [data-reveal-armed] {
     height: 100%;
     object-fit: cover;
     pointer-events: none;
+}
+
+/* Hidden controls stay focusable so keyboard and assistive focus can bring them back. */
+[data-slot="image-viewer-dialog"][data-controls="hidden"] :is(
+    [data-slot="image-viewer-toolbar"],
+    [data-slot="image-viewer-arrow"],
+    [data-slot="image-viewer-caption"],
+    [data-slot="image-viewer-thumbnails"]
+) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/*
+ * Touch screens fill the viewport and float the controls over a stage that never resizes,
+ * so hiding them does not refit the image under the person's finger.
+ */
+@media (hover: none) and (pointer: coarse) {
+    [data-slot="image-viewer-dialog"] {
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    }
+
+    [data-slot="image-viewer-stage"] {
+        grid-row: 1 / -1;
+        grid-column: 1;
+    }
+
+    :is(
+        [data-slot="image-viewer-toolbar"],
+        [data-slot="image-viewer-caption"],
+        [data-slot="image-viewer-thumbnails"]
+    ) {
+        position: relative;
+        z-index: 1;
+        grid-column: 1;
+    }
+
+    [data-slot="image-viewer-toolbar"] {
+        grid-row: 1;
+        align-self: start;
+        flex-wrap: wrap;
+    }
+
+    [data-slot="image-viewer-toolbar"] > [data-slot="image-viewer-counter"] {
+        margin-inline-end: auto;
+    }
+
+    [data-slot="image-viewer-caption"] {
+        grid-row: 3;
+    }
+
+    [data-slot="image-viewer-caption"]:empty {
+        display: none;
+    }
+
+    [data-slot="image-viewer-thumbnails"] {
+        grid-row: 4;
+    }
+
+    /* The expanded tools wrap onto their own toolbar row below the counter and primary actions. */
+    [data-slot="image-viewer-actions"] {
+        display: contents;
+    }
+
+    [data-slot="image-viewer-tools"] {
+        display: flex;
+        flex: 1 0 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        order: 1;
+    }
+
+    [data-slot="image-viewer-tools"]:not([data-state="open"]) {
+        display: none;
+    }
+
+    /* The zoom selector's Fit option and a double tap already restore the fit, so the row keeps its width for 360px screens. */
+    [data-slot="image-viewer-tools"] > [data-image-viewer-target="reset"] {
+        display: none;
+    }
+
+    /*
+     * A native select is as wide as its longest option, so the touch row shows only the current
+     * percentage over a narrower selector; the picker and accessible value keep the full options.
+     */
+    [data-slot="image-viewer-zoom"] {
+        color: transparent;
+    }
+
+    [data-slot="image-viewer-zoom"] option {
+        color: CanvasText;
+    }
+
+    [data-slot="image-viewer-zoom-value"] {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 0;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
 }
 
 [data-slot="image-viewer-button"]:focus-visible,
@@ -1378,6 +1502,15 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
         animation: none !important;
     }
 
+    [data-slot="image-viewer-overlay"][data-motion="none"] :is(
+        [data-slot="image-viewer-toolbar"],
+        [data-slot="image-viewer-arrow"],
+        [data-slot="image-viewer-caption"],
+        [data-slot="image-viewer-thumbnails"]
+    ) {
+        transition: none !important;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         :is(
             [data-slot="dropdown-menu"],
@@ -1388,6 +1521,10 @@ html[data-color-scheme-transitioning]::view-transition-new(root) {
             [data-slot="modal-backdrop"],
             [data-slot="image-viewer-backdrop"],
             [data-slot="image-viewer-dialog"],
+            [data-slot="image-viewer-toolbar"],
+            [data-slot="image-viewer-arrow"],
+            [data-slot="image-viewer-caption"],
+            [data-slot="image-viewer-thumbnails"],
             [data-slot="modal-positioner"],
             [data-slot="alert-dialog-backdrop"],
             [data-slot="alert-dialog-panel"],

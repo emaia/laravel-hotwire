@@ -37,8 +37,11 @@
         --image-viewer-arrow-inset: 1rem;
         @apply inline-flex items-center justify-center size-12 rounded-[var(--radius-action)] bg-card/90 text-card-foreground border border-border shadow-md cursor-pointer hover:bg-accent hover:text-accent-foreground disabled:opacity-40 disabled:cursor-default;
     }
-    [data-slot="image-viewer-button"] {
+    :is([data-slot="image-viewer-button"], [data-slot="image-viewer-tools-trigger"]) {
         @apply inline-flex items-center justify-center size-10 rounded-xl cursor-pointer text-foreground hover:bg-accent hover:text-accent-foreground;
+    }
+    [data-slot="image-viewer-tools-trigger"][aria-expanded="true"] {
+        @apply bg-accent text-accent-foreground;
     }
     [data-slot="image-viewer-button"]:disabled {
         @apply opacity-40 cursor-default;
@@ -73,5 +76,46 @@
     }
     [data-slot="image-viewer-thumbnail"][aria-current="true"] {
         @apply border-primary opacity-100;
+    }
+    :is(
+        [data-slot="image-viewer-toolbar"],
+        [data-slot="image-viewer-arrow"],
+        [data-slot="image-viewer-caption"],
+        [data-slot="image-viewer-thumbnails"]
+    ) {
+        transition: opacity 150ms ease-out;
+    }
+    @media (hover: none) and (pointer: coarse) {
+        [data-slot="image-viewer-dialog"]:is([data-size], :not([data-size])) {
+            @apply border-0 rounded-none translate-y-0;
+            box-shadow: none;
+            scale: 1;
+            transition-property: opacity;
+        }
+        :is(
+            [data-slot="image-viewer-toolbar"],
+            [data-slot="image-viewer-caption"],
+            [data-slot="image-viewer-thumbnails"]
+        ) {
+            @apply bg-card/85 backdrop-blur-sm;
+        }
+        [data-slot="image-viewer-zoom"] {
+            @apply w-20;
+        }
+        [data-slot="image-viewer-zoom-value"] {
+            @apply ps-3 text-sm text-foreground tabular-nums;
+        }
+        [data-slot="image-viewer-zoom"]:disabled + [data-slot="image-viewer-icon"] + [data-slot="image-viewer-zoom-value"] {
+            @apply opacity-40;
+        }
+        [data-slot="image-viewer-tools"] {
+            @apply gap-1;
+        }
+        [data-slot="image-viewer-tools"] > [data-slot="image-viewer-button"] {
+            @apply size-9;
+        }
+        [data-slot="image-viewer-thumbnail"] {
+            @apply h-14 w-18;
+        }
     }
 }

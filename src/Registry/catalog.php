@@ -581,7 +581,7 @@ return [
             'view' => 'hotwire::component-views.image-viewer',
             'docs' => 'docs/components/image-viewer.md',
             'category' => 'overlay',
-            'description' => 'Windowed or full-viewport image viewer with zoom, pan, pinch, keyboard navigation, Turbo updates and optional side arrows, rotation, flips, thumbnails and original downloads',
+            'description' => 'Windowed or full-viewport image viewer with zoom, pan, pinch, keyboard navigation, Turbo updates, a full-screen touch layout whose controls hide on tap, and optional side arrows, rotation, flips, thumbnails and original downloads',
             'controllers' => ['image-viewer'],
             'styling' => ['slots' => [['class' => ImageViewer::class]]],
         ],
@@ -1450,7 +1450,7 @@ return [
             'source' => 'resources/js/controllers/image_viewer_controller.js',
             'docs' => 'docs/controllers/image-viewer.md',
             'category' => 'overlay',
-            'description' => 'Enhances image galleries with zoom, pan, pinch gestures, rotation/flips, keyboard, side-arrow and thumbnail navigation, and automatic updates after Turbo renders',
+            'description' => 'Enhances image galleries with zoom, pan, pinch and double-tap gestures, rotation/flips, keyboard, side-arrow and thumbnail navigation, tap-to-hide controls on touch screens, and automatic updates after Turbo renders',
         ],
         'input-mask' => [
             'source' => 'resources/js/controllers/input_mask_controller.js',

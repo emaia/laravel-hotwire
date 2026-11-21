@@ -21,8 +21,13 @@ function markup(
     items = item("one") + item("two", image(800, 1200, "blue")),
     thumbnails = false,
     size = "default",
-    { rotate = false, flip = false, arrows = false } = {},
+    { rotate = false, flip = false, arrows = false, tools = false } = {},
 ) {
+    // The touch tools fixture mirrors the component's icon buttons so preset measurements stay realistic.
+    const control = (id, target, label) =>
+        tools
+            ? `<button ${id ? `id="${id}"` : ""} data-slot="image-viewer-button" data-image-viewer-target="${target}" data-action="image-viewer#${target}" aria-label="${label}"><svg data-slot="image-viewer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/></svg></button>`
+            : `<button ${id ? `id="${id}"` : ""} data-image-viewer-target="${target}" data-action="image-viewer#${target}">${label}</button>`;
     return `<div id="gallery" data-controller="image-viewer">
         <div id="sources" data-image-viewer-target="source">${items}</div>
         <div data-slot="image-viewer-overlay" data-image-viewer-target="overlay" hidden inert>
@@ -37,26 +42,32 @@ function markup(
                                 : `<button id="prev" data-side="previous" data-image-viewer-target="previous" data-action="image-viewer#previous">Previous</button>
                         <button id="next" data-side="next" data-image-viewer-target="next" data-action="image-viewer#next">Next</button>`
                         }
-                        <button id="zoom" data-image-viewer-target="zoomIn" data-action="image-viewer#zoomIn">Zoom in</button>
-                        <button data-image-viewer-target="zoomOut" data-action="image-viewer#zoomOut">Zoom out</button>
-                        <button id="reset" data-image-viewer-target="reset" data-action="image-viewer#reset">Reset</button>
+                        ${
+                            tools
+                                ? `<button id="tools-toggle" data-slot="image-viewer-tools-trigger" data-image-viewer-target="toolsToggle" data-action="image-viewer#toggleTools" aria-expanded="false" aria-controls="tools" aria-label="More controls">More</button>
+                        <div id="tools" data-slot="image-viewer-tools" data-image-viewer-target="tools" data-state="closed">`
+                                : ""
+                        }
+                        ${control("zoom", "zoomIn", "Zoom in")}
+                        ${control("", "zoomOut", "Zoom out")}
+                        ${control("reset", "reset", "Reset")}
                         ${
                             rotate
                                 ? `
-                            <button id="rotate-left" data-image-viewer-target="rotateLeft" data-action="image-viewer#rotateLeft">Rotate left</button>
-                            <button id="rotate-right" data-image-viewer-target="rotateRight" data-action="image-viewer#rotateRight">Rotate right</button>
+                            ${control("rotate-left", "rotateLeft", "Rotate left")}
+                            ${control("rotate-right", "rotateRight", "Rotate right")}
                         `
                                 : ""
                         }
                         ${
                             flip
                                 ? `
-                            <button id="flip-horizontal" data-image-viewer-target="flipHorizontal" data-action="image-viewer#flipHorizontal">Flip horizontally</button>
-                            <button id="flip-vertical" data-image-viewer-target="flipVertical" data-action="image-viewer#flipVertical">Flip vertically</button>
+                            ${control("flip-horizontal", "flipHorizontal", "Flip horizontally")}
+                            ${control("flip-vertical", "flipVertical", "Flip vertically")}
                         `
                                 : ""
                         }
-                        <span data-image-viewer-target="zoomLabel"></span>
+                        ${tools ? `<span data-slot="image-viewer-zoom-control">` : `<span data-image-viewer-target="zoomLabel"></span>`}
                         <select data-slot="image-viewer-zoom" data-image-viewer-target="zoomSelect" data-action="change->image-viewer#changeZoom" aria-label="Zoom level" disabled>
                             <option value="fit" data-label="Fit image">Fit image</option>
                             <option value="0.25">25%</option>
@@ -69,6 +80,7 @@ function markup(
                             <option value="4">400%</option>
                             <option value="current" disabled hidden></option>
                         </select>
+                        ${tools ? `<span id="zoom-value" data-slot="image-viewer-zoom-value" data-image-viewer-target="zoomLabel" aria-hidden="true"></span></span></div>` : ""}
                         <a data-image-viewer-target="download" data-turbo="false" download>Download</a>
                         <button id="close" data-action="image-viewer#close">Close</button>
                     </div>
@@ -115,14 +127,22 @@ function markup(
 async function start(
     page,
     items,
-    { thumbnails = false, size = "default", rotate = false, flip = false, arrows = false } = {},
+    { thumbnails = false, size = "default", rotate = false, flip = false, arrows = false, tools = false } = {},
 ) {
-    await page.setContent(`<base href="https://gallery.test/"><style>${readFileSync("resources/css/structural.css", "utf8")}
-        [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
-        [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
-        #sources img { width:80px; height:60px }
-        [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
-    </style>${markup(items, thumbnails, size, { rotate, flip, arrows })}`);
+    await page.setContent(`<meta name="viewport" content="width=device-width, initial-scale=1"><base href="https://gallery.test/"><style>
+        /*
+         * Mirror the application build's layer order before structural.css names its layers: the stand-ins
+         * stay lowest and Tailwind's preflight stays below the preset compiled into later tests.
+         */
+        @layer fixture, properties, theme, base, components, utilities, hotwire-accessibility;
+        ${readFileSync("resources/css/structural.css", "utf8")}
+        @layer fixture {
+            [data-slot="image-viewer-toolbar"] { display:flex; gap:8px; padding:8px }
+            [data-slot="image-viewer-dialog"] { background:Canvas; color:CanvasText }
+            #sources img { width:80px; height:60px }
+            [data-slot="image-viewer-thumbnail"] { flex-shrink:0; width:64px; height:48px }
+        }
+    </style>${markup(items, thumbnails, size, { rotate, flip, arrows, tools })}`);
     await page.addScriptTag({ content: bundle });
     await page.waitForFunction(() => window.viewer()?.connected);
 }
@@ -232,6 +252,219 @@ test("opening focuses the dialog rather than a control, with predictable Tab and
     await expect(page.locator('[data-slot="image-viewer-thumbnail"]')).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(page.locator("#one")).toBeFocused();
+    // The dialog receives focus only to anchor the modal context; it is not a control and shows no ring.
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeFocused();
+    await expect(dialog).toHaveCSS("outline-style", "none");
+});
+
+test.describe("touch presentation", () => {
+    test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+    const center = async (locator) => {
+        const box = await locator.boundingBox();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    const dialog = (page) => page.locator('[data-image-viewer-target="dialog"]');
+    const viewport = (page) => page.locator('[data-image-viewer-target="viewport"]');
+    const toolbar = (page) => page.locator('[data-slot="image-viewer-toolbar"]');
+    const tap = async (page, locator = viewport(page)) => {
+        const point = await center(locator);
+        await page.touchscreen.tap(point.x, point.y);
+    };
+    const open = async (page, options = {}) => {
+        await start(page, item("one") + item("two") + item("three"), {
+            arrows: true,
+            thumbnails: true,
+            rotate: true,
+            flip: true,
+            tools: true,
+            ...options,
+        });
+        await page.locator("#one img").tap();
+        await expect(displayed(page)).toBeVisible();
+        await page.evaluate(() => window.viewer().overlay.settled);
+    };
+
+    test("overlays the controls on a full-viewport stage and collapses zoom and orientation tools", async ({
+        page,
+    }) => {
+        await open(page);
+        expect(await dialog(page).boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 });
+        expect(await viewport(page).boundingBox()).toEqual(await dialog(page).boundingBox());
+        const bar = await toolbar(page).boundingBox();
+        expect(bar.y).toBe(0);
+        expect(
+            await page.locator('[data-image-viewer-target="thumbnails"]').evaluate((node) => {
+                const box = node.getBoundingClientRect();
+                return box.bottom;
+            }),
+        ).toBe(844);
+        const trigger = page.locator("#tools-toggle");
+        await expect(trigger).toBeVisible();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        for (const id of ["#zoom", "#reset", "#rotate-left", "#flip-vertical"])
+            await expect(page.locator(id)).toBeHidden();
+        await expect(page.getByRole("combobox", { name: "Zoom level" })).toBeHidden();
+        expect(bar.height).toBeLessThan(80);
+        await trigger.tap();
+        await expect(trigger).toHaveAttribute("aria-expanded", "true");
+        await expect(page.locator("#tools")).toHaveAttribute("data-state", "open");
+        for (const id of ["#zoom", "#rotate-left", "#flip-vertical"]) await expect(page.locator(id)).toBeVisible();
+        // Fit stays reachable through the zoom selector and a double tap, so its button gives way on touch.
+        await expect(page.locator("#reset")).toBeHidden();
+        await expect(page.getByRole("combobox", { name: "Zoom level" }).locator('option[value="fit"]')).toHaveText(
+            /^Fit image/,
+        );
+        await page.locator("#zoom").tap();
+        await expect.poll(() => page.evaluate(() => window.viewer().atFit)).toBe(false);
+        await trigger.tap();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await expect(page.locator("#zoom")).toBeHidden();
+    });
+
+    test("the zoom selector shows only the current percentage while keeping its options and name", async ({ page }) => {
+        await open(page);
+        await page.locator("#tools-toggle").tap();
+        const select = page.getByRole("combobox", { name: "Zoom level" });
+        const value = page.locator("#zoom-value");
+        const percentage = () => page.evaluate(() => `${Math.round(window.viewer().geometry.scale * 100)}%`);
+        await expect(select).toBeVisible();
+        await expect(select).toHaveCSS("color", "rgba(0, 0, 0, 0)");
+        await expect(value).toBeVisible();
+        await expect(value).toHaveAttribute("aria-hidden", "true");
+        await expect(value).toHaveText(await percentage());
+        await expect(select.locator('option[value="fit"]')).toHaveText(`Fit image (${await percentage()})`);
+        expect(
+            await select.locator('option[value="fit"]').evaluate((option) => getComputedStyle(option).color),
+        ).not.toBe("rgba(0, 0, 0, 0)");
+        const selectBox = await select.boundingBox();
+        const valueBox = await value.boundingBox();
+        expect(valueBox.x).toBeGreaterThanOrEqual(selectBox.x);
+        expect(valueBox.x + valueBox.width).toBeLessThanOrEqual(selectBox.x + selectBox.width);
+        expect(valueBox.y).toBeGreaterThanOrEqual(selectBox.y);
+        expect(valueBox.y + valueBox.height).toBeLessThanOrEqual(selectBox.y + selectBox.height);
+        await select.selectOption("2");
+        await expect(value).toHaveText("200%");
+    });
+
+    test("a tap toggles the controls without refitting the image, a double tap zooms instead", async ({ page }) => {
+        await open(page);
+        const geometry = () => page.evaluate(() => ({ ...window.viewer().geometry }));
+        const fitted = await geometry();
+        await page.locator("#tools-toggle").tap();
+        await tap(page);
+        await expect(dialog(page)).toHaveAttribute("data-controls", "hidden");
+        await expect(page.locator("#tools-toggle")).toHaveAttribute("aria-expanded", "false");
+        for (const selector of [
+            '[data-slot="image-viewer-toolbar"]',
+            '[data-slot="image-viewer-arrow"][data-side="next"]',
+            '[data-slot="image-viewer-caption"]',
+            '[data-slot="image-viewer-thumbnails"]',
+        ]) {
+            await expect(page.locator(selector)).toHaveCSS("opacity", "0");
+            await expect(page.locator(selector)).toHaveCSS("pointer-events", "none");
+        }
+        expect(await geometry()).toEqual(fitted);
+        // A tap where the hidden arrow sits reaches the image and restores the controls rather than navigating.
+        await tap(page, page.locator("#next"));
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+        await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("1 / 3");
+        expect(await geometry()).toEqual(fitted);
+
+        const point = await center(viewport(page));
+        await page.touchscreen.tap(point.x, point.y);
+        await page.touchscreen.tap(point.x, point.y);
+        await expect.poll(() => page.evaluate(() => window.viewer().atFit)).toBe(false);
+        const zoomed = (await geometry()).scale;
+        await page.waitForTimeout(400);
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+        expect((await geometry()).scale).toBe(zoomed);
+        await page.touchscreen.tap(point.x, point.y);
+        await page.touchscreen.tap(point.x, point.y);
+        await expect.poll(() => page.evaluate(() => window.viewer().atFit)).toBe(true);
+        await page.waitForTimeout(400);
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+    });
+
+    test("swipes, drags and pinches never toggle the controls", async ({ page, context }) => {
+        await open(page);
+        const session = await context.newCDPSession(page);
+        const { x, y } = await center(viewport(page));
+        await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+        await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x - 200, y, id: 1 }] });
+        await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        await expect(page.locator('[data-image-viewer-target="counter"]')).toHaveText("2 / 3");
+        await expect(displayed(page)).toBeVisible();
+        await session.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [
+                { x: x - 20, y, id: 1 },
+                { x: x + 20, y, id: 2 },
+            ],
+        });
+        await session.send("Input.dispatchTouchEvent", {
+            type: "touchMove",
+            touchPoints: [
+                { x: x - 22, y, id: 1 },
+                { x: x + 22, y, id: 2 },
+            ],
+        });
+        await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+        await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y + 40, id: 1 }] });
+        await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        await page.waitForTimeout(400);
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+    });
+
+    test("hidden controls return on focus, while loading or failing, and on every opening", async ({ page }) => {
+        await page.route("https://gallery.test/broken.svg", (route) => route.fulfill({ status: 404, body: "" }));
+        await open(page);
+        await page.locator("#next").tap();
+        await expect(page.locator("#next")).toBeFocused();
+        await tap(page);
+        await expect(dialog(page)).toHaveAttribute("data-controls", "hidden");
+        // Focus must not stay on a control the person can no longer see.
+        await expect(dialog(page)).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+
+        await page.locator("#three img").evaluate((node) => (node.dataset.original = "/broken.svg"));
+        await page.locator("#next").tap();
+        await expect(page.locator('[data-image-viewer-target="error"]')).toBeVisible();
+        await tap(page);
+        await expect(dialog(page)).toHaveAttribute("data-controls", "hidden");
+        await tap(page);
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+
+        await page.locator("#tools-toggle").tap();
+        await tap(page);
+        await expect(dialog(page)).toHaveAttribute("data-controls", "hidden");
+        await page.keyboard.press("Escape");
+        await expect(overlay(page)).toBeHidden();
+        await page.locator("#one img").tap();
+        await expect(displayed(page)).toBeVisible();
+        await expect(dialog(page)).not.toHaveAttribute("data-controls");
+        await expect(page.locator("#tools-toggle")).toHaveAttribute("aria-expanded", "false");
+    });
+});
+
+test("a mouse click on the image keeps the controls and the tools inline", async ({ page }) => {
+    await start(page, item("one") + item("two"), { tools: true });
+    await page.locator("#one").click();
+    await expect(displayed(page)).toBeVisible();
+    await page.evaluate(() => window.viewer().overlay.settled);
+    await expect(page.locator("#tools-toggle")).toBeHidden();
+    await expect(page.locator("#zoom")).toBeVisible();
+    await expect(page.locator("#reset")).toBeVisible();
+    await expect(page.locator("#zoom-value")).toBeHidden();
+    await expect(page.getByRole("combobox", { name: "Zoom level" })).not.toHaveCSS("color", "rgba(0, 0, 0, 0)");
+    await page.locator('[data-image-viewer-target="viewport"]').click();
+    await page.waitForTimeout(400);
+    await expect(page.locator('[data-image-viewer-target="dialog"]')).not.toHaveAttribute("data-controls");
+    await page.locator('[data-image-viewer-target="viewport"]').dblclick();
+    await expect.poll(() => page.evaluate(() => window.viewer().atFit)).toBe(false);
 });
 
 for (const direction of ["ltr", "rtl"]) {
@@ -1678,6 +1911,64 @@ test.describe("preset presentation", () => {
                 await expect(page.locator("#one")).toBeFocused();
             });
         }
+
+        test.describe(`${preset} touch layout`, () => {
+            test.use({ hasTouch: true, isMobile: true });
+
+            for (const [orientation, size] of [
+                ["portrait", { width: 390, height: 844 }],
+                ["narrow portrait", { width: 360, height: 780 }],
+                ["landscape", { width: 844, height: 390 }],
+            ]) {
+                test(`${preset} fills the ${orientation} screen and overlays hideable controls`, async ({
+                    page,
+                }, testInfo) => {
+                    await page.setViewportSize(size);
+                    await start(page, item("one", image(2400, 1600)) + item("two") + item("three"), {
+                        arrows: true,
+                        thumbnails: true,
+                        rotate: true,
+                        flip: true,
+                        tools: true,
+                    });
+                    await page.addStyleTag({ content: css[preset] });
+                    await page.locator("#one img").tap();
+                    await expect(displayed(page)).toBeVisible();
+                    await page.evaluate(() => window.viewer().overlay.settled);
+                    const dialog = page.locator('[data-image-viewer-target="dialog"]');
+                    const viewport = page.locator('[data-image-viewer-target="viewport"]');
+                    expect(await dialog.boundingBox()).toEqual({ x: 0, y: 0, ...size });
+                    expect(await viewport.boundingBox()).toEqual({ x: 0, y: 0, ...size });
+                    await expect(dialog).toHaveCSS("border-top-width", "0px");
+                    await expect(page.locator("#tools-toggle")).toBeVisible();
+                    await expect(page.locator("#zoom")).toBeHidden();
+                    const shot = (state) =>
+                        page.screenshot({ path: testInfo.outputPath(`${preset}-${orientation}-${state}.png`) });
+                    await shot("controls");
+                    await page.locator("#tools-toggle").tap();
+                    await expect(page.locator("#zoom")).toBeVisible();
+                    // Every tool, including the zoom selector, fits one row below the primary actions.
+                    const rows = await page.locator("#tools > *").evaluateAll((nodes) => [
+                        ...new Set(
+                            nodes
+                                .filter((node) => node.getClientRects().length)
+                                .map((node) => {
+                                    const box = node.getBoundingClientRect();
+                                    return Math.round(box.top + box.height / 2);
+                                }),
+                        ),
+                    ]);
+                    expect(rows).toHaveLength(1);
+                    await expect(page.locator("#zoom-value")).toHaveText(/^\d+%$/);
+                    await shot("tools");
+                    const box = await viewport.boundingBox();
+                    await page.touchscreen.tap(box.width / 2, box.height / 2);
+                    await expect(dialog).toHaveAttribute("data-controls", "hidden");
+                    await expect(page.locator('[data-slot="image-viewer-toolbar"]')).toHaveCSS("opacity", "0");
+                    await shot("hidden");
+                });
+            }
+        });
 
         for (const direction of ["ltr", "rtl"]) {
             test(`${preset} keeps both ends of an overflowing thumbnail strip reachable in ${direction}`, async ({

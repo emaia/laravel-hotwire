@@ -50,16 +50,37 @@ it('separates the leading counter from the trailing toolbar controls', function 
 
     expect($xpath->query('//*[@data-slot="image-viewer-toolbar"]/*[1][@data-image-viewer-target="counter"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-slot="image-viewer-toolbar"]//button[@data-side="previous" or @data-side="next"]')->count())->toBe(2)
-        ->and($xpath->query('//*[@data-slot="image-viewer-actions"]/button')->count())->toBe(6)
+        ->and($xpath->query('//*[@data-slot="image-viewer-actions"]//button[@data-slot="image-viewer-button"]')->count())->toBe(6)
         ->and($xpath->query('//*[@data-slot="image-viewer-actions"]//*[@data-image-viewer-target="zoomSelect"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-slot="image-viewer-actions"]/*[@data-image-viewer-target="download"]')->count())->toBe(1);
 });
 
-it('wraps native zoom selection with an unfocusable decorative chevron', function () {
+it('groups zoom and orientation tools behind a disclosure trigger that touch layouts collapse', function () {
+    $view = $this->blade('<x-hw::image-viewer id="photos" rotate flip download :labels="$labels" />', [
+        'labels' => ['tools' => 'Mais controles'],
+    ]);
+    $xpath = new DOMXPath(dom((string) $view));
+    $tools = '//*[@data-slot="image-viewer-actions"]/*[@id="photos-tools" and @data-slot="image-viewer-tools" and @data-image-viewer-target="tools" and @data-state="closed"]';
+
+    expect($xpath->query('//*[@data-slot="image-viewer-actions"]/button[@data-slot="image-viewer-tools-trigger" and @data-image-viewer-target="toolsToggle" and @data-action="image-viewer#toggleTools" and @aria-expanded="false" and @aria-controls="photos-tools" and @aria-label="Mais controles"]/following-sibling::*[1][@id="photos-tools"]')->count())->toBe(1)
+        ->and($xpath->query($tools)->count())->toBe(1);
+
+    foreach (['zoomOut', 'zoomIn', 'rotateLeft', 'rotateRight', 'flipHorizontal', 'flipVertical', 'reset', 'zoomSelect'] as $target) {
+        expect($xpath->query($tools.'//*[@data-image-viewer-target="'.$target.'"]')->count())->toBe(1);
+    }
+
+    foreach (['previous', 'next', 'download'] as $target) {
+        expect($xpath->query($tools.'//*[@data-image-viewer-target="'.$target.'"]')->count())->toBe(0)
+            ->and($xpath->query('//*[@data-slot="image-viewer-actions"]/*[@data-image-viewer-target="'.$target.'"]')->count())->toBe(1);
+    }
+});
+
+it('wraps native zoom selection with a decorative chevron and touch percentage', function () {
     $view = $this->blade('<x-hw::image-viewer motion="none" />');
     $xpath = new DOMXPath(dom((string) $view));
 
     expect($xpath->query('//*[@data-slot="image-viewer-zoom-control"]/select')->count())->toBe(1)
+        ->and($xpath->query('//*[@data-slot="image-viewer-zoom-control"]/span[@data-slot="image-viewer-zoom-value" and @data-image-viewer-target="zoomLabel" and @aria-hidden="true"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-slot="image-viewer-zoom-control"]/svg[@aria-hidden="true" and @focusable="false"]')->count())->toBe(1)
         ->and($xpath->query('//*[@data-image-viewer-target="overlay" and @data-motion="none"]')->count())->toBe(1);
 });

@@ -11,23 +11,25 @@
         'previous' => 'm15 18-6-6 6-6',
         'next' => 'm9 18 6-6-6-6',
     ];
-    $controls = ($arrows ? [] : $navigation) + [
+    $toolbarNavigation = $arrows ? [] : $navigation;
+    $tools = [
         'zoomOut' => 'M5 12h14',
         'zoomIn' => 'M5 12h14M12 5v14',
     ];
     if ($rotate) {
-        $controls += [
+        $tools += [
             'rotateLeft' => 'M3 11a9 9 0 1 1 2.64 6.36M3 4v7h7',
             'rotateRight' => 'M21 11a9 9 0 1 0-2.64 6.36M21 4v7h-7',
         ];
     }
     if ($flip) {
-        $controls += [
+        $tools += [
             'flipHorizontal' => 'M12 3v18M3 7l5 5-5 5V7Zm18 0-5 5 5 5V7Z',
             'flipVertical' => 'M3 12h18M7 3l5 5 5-5H7Zm0 18 5-5 5 5H7Z',
         ];
     }
-    $controls['reset'] = 'M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6';
+    $tools['reset'] = 'M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6';
+    $toolsId = $resolvedId.'-tools';
 @endphp
 
 <div {{ $viewerAttributes }}>
@@ -56,17 +58,15 @@
                     aria-live="polite"
                 ></span>
                 <div data-slot="{{ $slotNames['actions'] }}">
-                    @foreach ($controls as $action => $path)
+                    @foreach ($toolbarNavigation as $action => $path)
                         <button
                             type="button"
                             data-slot="{{ $slotNames['button'] }}"
                             data-image-viewer-target="{{ $action }}"
                             data-action="image-viewer#{{ $action }}"
+                            data-side="{{ $action }}"
                             aria-label="{{ $labels[$action] }}"
                             title="{{ $labels[$action] }}"
-                            @if (in_array($action, ['previous', 'next'], true))
-                                data-side="{{ $action }}"
-                            @endif
                         >
                             <svg
                                 data-slot="{{ $slotNames['icon'] }}"
@@ -83,21 +83,16 @@
                         </button>
                     @endforeach
 
-                    <span data-slot="{{ $slotNames['zoom-control'] }}">
-                        <select
-                            data-slot="{{ $slotNames['zoom'] }}"
-                            data-image-viewer-target="zoomSelect"
-                            data-action="change->image-viewer#changeZoom"
-                            aria-label="{{ $labels['zoom'] }}"
-                            disabled
-                        >
-                            <option value="fit" data-label="{{ $labels['reset'] }}">{{ $labels['reset'] }}</option>
-                            @foreach ([25, 50, 75, 100, 150, 200, 300, 400] as $percentage)
-                                <option value="{{ $percentage / 100 }}">{{ $percentage }}%</option>
-                            @endforeach
-
-                            <option value="current" disabled hidden></option>
-                        </select>
+                    <button
+                        type="button"
+                        data-slot="{{ $slotNames['tools-trigger'] }}"
+                        data-image-viewer-target="toolsToggle"
+                        data-action="image-viewer#toggleTools"
+                        aria-expanded="false"
+                        aria-controls="{{ $toolsId }}"
+                        aria-label="{{ $labels['tools'] }}"
+                        title="{{ $labels['tools'] }}"
+                    >
                         <svg
                             data-slot="{{ $slotNames['icon'] }}"
                             viewBox="0 0 24 24"
@@ -105,13 +100,77 @@
                             stroke="currentColor"
                             stroke-width="2"
                             stroke-linecap="round"
-                            stroke-linejoin="round"
                             aria-hidden="true"
-                            focusable="false"
                         >
-                            <path d="m6 9 6 6 6-6" />
+                            <path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0M11 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0M18 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
                         </svg>
-                    </span>
+                    </button>
+                    <div
+                        id="{{ $toolsId }}"
+                        data-slot="{{ $slotNames['tools'] }}"
+                        data-image-viewer-target="tools"
+                        data-state="closed"
+                    >
+                        @foreach ($tools as $action => $path)
+                            <button
+                                type="button"
+                                data-slot="{{ $slotNames['button'] }}"
+                                data-image-viewer-target="{{ $action }}"
+                                data-action="image-viewer#{{ $action }}"
+                                aria-label="{{ $labels[$action] }}"
+                                title="{{ $labels[$action] }}"
+                            >
+                                <svg
+                                    data-slot="{{ $slotNames['icon'] }}"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="{{ $path }}" />
+                                </svg>
+                            </button>
+                        @endforeach
+
+                        <span data-slot="{{ $slotNames['zoom-control'] }}">
+                            <select
+                                data-slot="{{ $slotNames['zoom'] }}"
+                                data-image-viewer-target="zoomSelect"
+                                data-action="change->image-viewer#changeZoom"
+                                aria-label="{{ $labels['zoom'] }}"
+                                disabled
+                            >
+                                <option value="fit" data-label="{{ $labels['reset'] }}">{{ $labels['reset'] }}</option>
+                                @foreach ([25, 50, 75, 100, 150, 200, 300, 400] as $percentage)
+                                    <option value="{{ $percentage / 100 }}">{{ $percentage }}%</option>
+                                @endforeach
+
+                                <option value="current" disabled hidden></option>
+                            </select>
+                            <svg
+                                data-slot="{{ $slotNames['icon'] }}"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                                focusable="false"
+                            >
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                            <span
+                                data-slot="{{ $slotNames['zoom-value'] }}"
+                                data-image-viewer-target="zoomLabel"
+                                aria-hidden="true"
+                            ></span>
+                        </span>
+                    </div>
+
                     @if ($download)
                         <a
                             data-slot="{{ $slotNames['button'] }}"
