@@ -31,6 +31,84 @@
         display: block;
     }
 
+    [data-slot="breadcrumb"][data-collapse-below] {
+        --hotwire-breadcrumb-expanded: flex;
+        --hotwire-breadcrumb-compact: none;
+        min-inline-size: 0;
+
+        > [data-breadcrumb-layout="expanded"] {
+            overflow-wrap: anywhere;
+        }
+
+        > [data-breadcrumb-layout="compact"] {
+            display: none;
+        }
+
+        /* Keep real links visible until the compact menu can actually be opened. */
+        &:has(> [data-breadcrumb-layout="compact"] > [data-slot="breadcrumb-item"] > [data-dropdown-ready]) {
+            > [data-breadcrumb-layout="expanded"] {
+                display: var(--hotwire-breadcrumb-expanded, flex);
+            }
+
+            > [data-breadcrumb-layout="compact"] {
+                display: var(--hotwire-breadcrumb-compact, none);
+            }
+
+            > [data-breadcrumb-layout] {
+                flex-wrap: nowrap;
+            }
+
+            > [data-breadcrumb-layout] > [data-slot="breadcrumb-item"] {
+                min-inline-size: 0;
+            }
+
+            > [data-breadcrumb-layout="compact"] > [data-slot="breadcrumb-item"]:has(> [data-dropdown-ready]),
+            > [data-breadcrumb-layout] > [data-slot="breadcrumb-separator"] {
+                flex-shrink: 0;
+            }
+
+            > [data-breadcrumb-layout] > [data-slot="breadcrumb-item"] > :is([data-slot="breadcrumb-link"], [data-slot="breadcrumb-page"]) {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+
+        > [data-breadcrumb-layout="compact"] [data-slot="dropdown-menu"] {
+            inline-size: max-content;
+            min-inline-size: min(14rem, calc(100vw - 2rem));
+            max-inline-size: calc(100vw - 2rem);
+        }
+
+        > [data-breadcrumb-layout="compact"] [data-slot="dropdown-item"] {
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        /* Match Breadcrumb::COLLAPSE_WIDTHS so the dropdown can close when its trigger disappears. */
+        &[data-collapse-below="sm"] {
+            @media (width < 40em) {
+                --hotwire-breadcrumb-expanded: none;
+                --hotwire-breadcrumb-compact: flex;
+            }
+        }
+
+        &[data-collapse-below="md"] {
+            @media (width < 48em) {
+                --hotwire-breadcrumb-expanded: none;
+                --hotwire-breadcrumb-compact: flex;
+            }
+        }
+
+        &[data-collapse-below="lg"] {
+            @media (width < 64em) {
+                --hotwire-breadcrumb-expanded: none;
+                --hotwire-breadcrumb-compact: flex;
+            }
+        }
+    }
+
     [data-slot="aspect-ratio"] {
         position: relative;
         aspect-ratio: var(--ratio);

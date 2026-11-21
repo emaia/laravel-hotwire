@@ -41,6 +41,29 @@ composed trail. Breadcrumb owns the `<ol>` when it generates items, so the two c
 render through the same `breadcrumb.list`, `breadcrumb.item`, `breadcrumb.link`, `breadcrumb.page` and
 `breadcrumb.ellipsis` subcomponents used in manual composition.
 
+## Compact trail on small screens
+
+Opt in with `collapse-below` when a full path would take up too much space in a header:
+
+```blade
+<hw:breadcrumb :items="[
+    ['label' => 'Dashboard', 'href' => route('dashboard')],
+    ['label' => 'Projects', 'href' => route('projects.index')],
+    ['label' => $project->name, 'href' => route('projects.show', $project)],
+    ['label' => 'Edit'],
+]" collapse-below="md" compact-label="Edit project" ellipsis-label="Show previous pages" />
+```
+
+Choose `sm` (40em), `md` (48em) or `lg` (64em). Below that viewport width, the current page stays visible and the
+ellipsis opens a keyboard-accessible Dropdown. All other links keep their order and Turbo Frame targets; decorative
+ellipsis items do not become menu entries. The full trail remains above the breakpoint and when JavaScript is
+unavailable. Long labels truncate in the responsive trail alongside other header controls; give the parent flex or grid
+item a shrinkable width (for example, `min-width: 0`).
+
+This option uses generated `items`, not manually composed slots. It only renders a Dropdown when there is a current page
+and at least one link. Existing trails that omit `collapse-below` keep their original markup and do not mount a Dropdown.
+If using a selective JavaScript loader, include the `dropdown` controller for this option.
+
 ## Ellipsis
 
 In `items`, an ellipsis is visual and accessible only — it marks that the trail was shortened, without offering the
@@ -57,9 +80,7 @@ pages it hides.
 
 ### Collapsed pages in a dropdown
 
-When the ellipsis should open the pages it collapsed, compose the trail and put a `<hw:dropdown>` in the item. This is
-composition-only on purpose: `items` stays declarative and Breadcrumb ships no JavaScript of its own, so the Dropdown
-controller is a cost only the trails that need a menu pay.
+For a custom menu that is not tied to a responsive breakpoint, compose the trail and put a `<hw:dropdown>` in the item.
 
 ```blade
 <hw:breadcrumb>
@@ -103,8 +124,10 @@ drop `<hw:breadcrumb.ellipsis>` entirely.
 |-----------------------|-----------------|--------------|--------------------------------------------------------------------------------|
 | `breadcrumb`          | `label`         | `Breadcrumb` | Accessible label for the root `nav`.                                           |
 | `breadcrumb`          | `items`         | `[]`         | Array of breadcrumb items. Use composed subcomponents for per-item attributes. |
-| `breadcrumb`          | `ellipsisLabel` | `More pages` | Fallback label for `type => 'ellipsis'` items.                                 |
+| `breadcrumb`          | `ellipsisLabel` | `More pages` | Fallback label for ellipsis items and accessible name of the compact menu trigger. |
 | `breadcrumb`          | `frame`         | `null`       | Turbo Frame target inherited by generated links.                              |
+| `breadcrumb`          | `collapse-below` | `null`      | Opt in to a compact menu below `sm`, `md` or `lg`.                             |
+| `breadcrumb`          | `compact-label` | `null`       | Override the current page label in the compact trail only.                    |
 | `breadcrumb.link`     | `href`          | `null`       | Link destination.                                                              |
 | `breadcrumb.link`     | `frame`         | `null`       | Turbo Frame target when the composed link has an `href`.                      |
 | `breadcrumb.ellipsis` | `label`         | `More pages` | Accessible label for the ellipsis.                                             |

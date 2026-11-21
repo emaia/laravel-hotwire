@@ -10,6 +10,8 @@ use Stringable;
 
 class Breadcrumb extends Component
 {
+    private const array COLLAPSE_WIDTHS = ['sm' => '40em', 'md' => '48em', 'lg' => '64em'];
+
     public const array SLOTS = [
         'root' => ['name' => 'breadcrumb', 'kind' => 'visual'],
         'list' => ['name' => 'breadcrumb-list', 'kind' => 'visual'],
@@ -28,7 +30,13 @@ class Breadcrumb extends Component
         public array $items = [],
         public string $ellipsisLabel = 'More pages',
         public string|object|bool|null $frame = null,
+        public ?string $collapseBelow = null,
+        public ?string $compactLabel = null,
     ) {
+        if ($this->collapseBelow !== null && ! isset(self::COLLAPSE_WIDTHS[$this->collapseBelow])) {
+            throw new InvalidArgumentException('Breadcrumb [collapse-below] must be sm, md or lg.');
+        }
+
         $this->guardItems($items);
 
         $this->frame = FrameTarget::normalize($this->frame);
@@ -36,8 +44,28 @@ class Breadcrumb extends Component
 
     public function render()
     {
+        $items = $this->normalizedItems();
+        $current = null;
+        $links = [];
+
+        if ($this->collapseBelow !== null) {
+            foreach ($items as $item) {
+                if ($item['current']) {
+                    $current = $item;
+                } elseif ($item['type'] === 'item') {
+                    $links[] = $item;
+                }
+            }
+        }
+
+        $responsive = $current !== null && $links !== [];
+
         return view('hotwire::component-views.breadcrumb', [
             'slotName' => self::SLOTS['root']['name'],
+            'trailItems' => $items,
+            'compactPage' => $responsive ? $current : null,
+            'compactLinks' => $links,
+            'compactMedia' => $responsive ? '(width < '.self::COLLAPSE_WIDTHS[$this->collapseBelow].')' : null,
         ]);
     }
 
@@ -46,6 +74,10 @@ class Breadcrumb extends Component
     {
         if ($this->items !== [] && trim((string) $slot) !== '') {
             throw new InvalidArgumentException('Breadcrumb cannot combine [items] with slot composition. Use one or the other.');
+        }
+
+        if ($this->collapseBelow !== null && trim((string) $slot) !== '') {
+            throw new InvalidArgumentException('Breadcrumb [collapse-below] requires generated items, not slot composition.');
         }
     }
 

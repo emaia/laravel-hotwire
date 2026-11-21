@@ -9,6 +9,7 @@ import { rememberSnapshotState } from "./_snapshot.js";
 
 const MOBILE_QUERY = "(max-width: 767px)";
 const TRIGGER_KEY_ATTRIBUTE = "data-hotwire-dropdown-trigger-key";
+const READY_ATTRIBUTE = "data-dropdown-ready";
 
 export default class extends Controller {
     static targets = ["trigger", "menu"];
@@ -31,7 +32,12 @@ export default class extends Controller {
     };
 
     initialize() {
-        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope"] });
+        rememberSnapshotState(this.element, { attributes: [`data-${this.identifier}-open-value`, "data-hotwire-escape-scope", READY_ATTRIBUTE] });
+        this.preserveReady = (event) => {
+            if (event.target === this.element && event.detail?.attributeName === READY_ATTRIBUTE && event.detail.mutationType === "remove") {
+                event.preventDefault();
+            }
+        };
         this.onOutsideClick = this.onOutsideClick.bind(this);
         this.onInternalClick = this.onInternalClick.bind(this);
         this.onTriggerClick = this.onTriggerClick.bind(this);
@@ -60,6 +66,7 @@ export default class extends Controller {
         this.element.addEventListener("click", this.onInternalClick, true);
         this.element.addEventListener("click", this.onTriggerClick);
         this.element.addEventListener("hotwire:focus-return", this.onFocusReturn);
+        this.element.addEventListener("turbo:before-morph-attribute", this.preserveReady);
         document.addEventListener("click", this.onOutsideClick);
         document.addEventListener("keydown", this.onKeydown);
         document.addEventListener("focusin", this.onDocumentFocusIn);
@@ -67,12 +74,15 @@ export default class extends Controller {
         this.connectMediaQuery();
         this.syncState();
         if (this.hasMenuTarget && this.presenceElement !== this.menuTarget) this.setupMenu(this.menuTarget);
+        this.element.setAttribute(READY_ATTRIBUTE, "");
     }
 
     disconnect() {
         this.element.removeEventListener("click", this.onInternalClick, true);
         this.element.removeEventListener("click", this.onTriggerClick);
         this.element.removeEventListener("hotwire:focus-return", this.onFocusReturn);
+        this.element.removeEventListener("turbo:before-morph-attribute", this.preserveReady);
+        this.element.removeAttribute(READY_ATTRIBUTE);
         document.removeEventListener("click", this.onOutsideClick);
         document.removeEventListener("keydown", this.onKeydown);
         document.removeEventListener("focusin", this.onDocumentFocusIn);
@@ -307,6 +317,11 @@ export default class extends Controller {
     }
 
     onMediaChange() {
+        if (this.openValue && this.currentTrigger?.checkVisibility?.() === false) {
+            this.closeForCache();
+            return;
+        }
+
         this.syncState();
         if (!this.openValue) {
             this.floatingProfile = null;
