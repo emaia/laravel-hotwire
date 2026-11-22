@@ -41,7 +41,8 @@ for (const preset of ["nova", "bloom"]) {
 
         await trigger.press("Enter");
         const menu = trail.locator('[data-slot="dropdown-menu"]');
-        await expect(menu).toBeVisible();
+        // During positioning the menu is visible but inert.
+        await expect(menu).toHaveAttribute("data-state", "open");
         await page.keyboard.press("Tab");
         await expect(menu.getByRole("link", { name: "Dashboard" })).toBeFocused();
         await expect(menu.getByRole("link", { name: "Projects" })).toHaveAttribute("data-turbo-frame", "results");
