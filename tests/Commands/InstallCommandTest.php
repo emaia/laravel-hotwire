@@ -290,6 +290,57 @@ it('does not modify package.json when core deps already present (--core-only)', 
     expect(File::get($this->packageJsonPath))->toBe($content);
 });
 
+it('copies the configured Turbo reference verbatim on a JS-only install without running the package manager', function (string $reference) {
+    $installer = fakePackageInstaller('bun');
+    $packageManifest = dirname(__DIR__, 2).'/package.json';
+    $this->partialMock(Filesystem::class, function ($mock) use ($packageManifest, $reference) {
+        $mock->shouldReceive('get')->with($packageManifest)->andReturn(json_encode([
+            'dependencies' => [
+                '@emaia/stimulus-lazy-loader' => '^2.0.0',
+                '@hotwired/stimulus' => '^3.2.2',
+                '@hotwired/turbo' => $reference,
+            ],
+        ]));
+    });
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        'devDependencies' => new stdClass,
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --only=js --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    expect(json_decode(File::get($this->packageJsonPath), true)['devDependencies']['@hotwired/turbo'])->toBe($reference)
+        ->and(File::get($this->packageJsonPath))->toContain('"@hotwired/turbo": "'.$reference.'"')
+        ->and($installer->installed)->toBe([]);
+})->with([
+    'version range' => '^8.0.30',
+    'release tarball' => 'https://example.test/releases/turbo-111111111111/hotwired-turbo-111111111111.tgz',
+]);
+
+it('preserves a Turbo reference the app already declares', function (string $section, string $reference) {
+    File::put($this->packageJsonPath, json_encode([
+        'name' => 'test',
+        $section => ['@hotwired/turbo' => $reference],
+    ], JSON_PRETTY_PRINT));
+
+    $this->artisan('hotwire:install --core-only --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json[$section]['@hotwired/turbo'])->toBe($reference);
+
+    if ($section === 'dependencies') {
+        expect($json['devDependencies'] ?? [])->not->toHaveKey('@hotwired/turbo');
+    }
+})->with(['devDependencies', 'dependencies'])->with([
+    'semver' => '^8.0.13',
+    'release tarball' => 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-000000000000/hotwired-turbo-000000000000.tgz',
+    'local file' => 'file:../turbo/hotwired-turbo-local.tgz',
+    'git' => 'github:hotwired/turbo#main',
+]);
+
 it('rejects an incompatible lazy loader before installing files', function (string $section) {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',

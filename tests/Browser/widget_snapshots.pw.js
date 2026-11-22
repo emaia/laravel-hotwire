@@ -8,9 +8,9 @@ test.beforeAll(() => {
     bundle = execFileSync("bun", ["tests/Browser/fixtures/build_widget_snapshots.js"], { maxBuffer: 15 * 1024 * 1024 }).toString();
 });
 
-for (const upstream of [false, true]) {
-    test(`normalizes cached search state before lazy reconnection (${upstream ? "1555" : "published"})`, async ({ page }) => {
-        const requests = await start(page, { upstream, search: true });
+for (const pinned of [false, true]) {
+    test(`normalizes cached search state before lazy reconnection (${pinned ? "pinned" : "published"})`, async ({ page }) => {
+        const requests = await start(page, { pinned, search: true });
         const input = page.locator("#search-input");
         const clear = page.locator("#search-clear");
         await input.fill("Local search");
@@ -60,9 +60,9 @@ for (const upstream of [false, true]) {
     });
 }
 
-for (const output of ["html", "json"]) for (const upstream of [false, true]) for (const inside of [false, true]) {
-    test(`restores ${output} draft ${inside ? "inside" : "outside"} frame (${upstream ? "1555" : "published"})`, async ({ page }) => {
-        const requests = await start(page, { output, upstream, inside });
+for (const output of ["html", "json"]) for (const pinned of [false, true]) for (const inside of [false, true]) {
+    test(`restores ${output} draft ${inside ? "inside" : "outside"} frame (${pinned ? "pinned" : "published"})`, async ({ page }) => {
+        const requests = await start(page, { output, pinned, inside });
         await expect(page.locator(".ProseMirror")).toHaveCount(1);
         await page.locator(".ProseMirror").fill("Local draft");
         await expect(page.locator("textarea")).toHaveValue(/Local draft/);
@@ -126,7 +126,7 @@ test("discards orphan tooltips and only their ARIA tokens from detached snapshot
 });
 
 test("restores transient overlays closed and releases only package-owned body effects", async ({ page }) => {
-    await start(page, { upstream: true });
+    await start(page, { pinned: true });
     await page.evaluate(async () => {
         await window.widget("modal", "modal").overlay.open();
         window.widget("dropdown", "dropdown").open();
@@ -159,7 +159,7 @@ test("restores transient overlays closed and releases only package-owned body ef
 
 for (const [direction, side, priority] of [["ltr", "right", ""], ["rtl", "left", "important"]]) {
     test(`restores ${direction} body padding precedence after caching an open overlay`, async ({ page }) => {
-        await start(page, { upstream: true });
+        await start(page, { pinned: true });
         await page.evaluate(({ direction, side, priority }) => {
             document.documentElement.dir = direction;
             Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: innerWidth - 20 });
@@ -199,7 +199,7 @@ test("reconstructs ECharts and Embla without duplicate generated UI", async ({ p
 });
 
 test("normalizes morph-guard claims without removing application permanent", async ({ page }) => {
-    await start(page, { upstream: true });
+    await start(page, { pinned: true });
     await expect(page.locator("#guard-frame")).toHaveAttribute("data-turbo-permanent", "");
     const state = await page.evaluate(() => {
         const clone = document.body.cloneNode(true);
@@ -229,7 +229,7 @@ test("does not restore an orphan opening cloned from a reusable overlay host", a
 });
 
 test("keeps a sibling upload running and hydrates only completed attachments from cache", async ({ page }) => {
-    await start(page, { upstream: true });
+    await start(page, { pinned: true });
     let pending;
     await page.route("http://snapshots.test/upload", (route) => { pending = route; });
     await page.locator('#upload input[type="file"]').setInputFiles({ name: "new.txt", mimeType: "text/plain", buffer: Buffer.from("draft") });
@@ -247,7 +247,7 @@ test("keeps a sibling upload running and hydrates only completed attachments fro
 });
 
 test("retains snapshot ownership through morph without replacing a live editor", async ({ page }) => {
-    await start(page, { upstream: true });
+    await start(page, { pinned: true });
     const state = await page.evaluate(() => {
         const controller = window.widget("editor", "custom-editor");
         const instance = controller.instance;
@@ -292,7 +292,7 @@ test("normal Drive restores the cached draft with a single editable instance", a
 });
 
 test("replace keeps the draft when returning Forward to the replacement entry", async ({ page }) => {
-    await start(page, { action: "replace", upstream: true, previous: true });
+    await start(page, { action: "replace", pinned: true, previous: true });
     await page.locator(".ProseMirror").fill("Replace draft");
     await expect(page.locator("textarea")).toHaveValue(/Replace draft/);
     await promote(page);
@@ -306,7 +306,7 @@ test("replace keeps the draft when returning Forward to the replacement entry", 
     await expect(page.locator(".ProseMirror")).toContainText("Replace draft");
 });
 
-async function start(page, { output = "html", upstream = false, inside = false, action = "advance", previous = false, search = false } = {}) {
+async function start(page, { output = "html", pinned = false, inside = false, action = "advance", previous = false, search = false } = {}) {
     const searchCss = search ? await compileCssFixture(packageSourceEntrypoint("../../vendor/emaia/laravel-hotwire/resources/css/presets/nova.css")) : "";
     let requests = 0;
     await page.route("http://snapshots.test/**", (route) => {
@@ -368,7 +368,7 @@ async function start(page, { output = "html", upstream = false, inside = false, 
         window.loadedPaths = [];
         document.addEventListener("turbo:load", () => window.loadedPaths.push(location.pathname));
     });
-    await page.addScriptTag({ content: turboSource(upstream) });
+    await page.addScriptTag({ content: turboSource(pinned) });
     await page.addScriptTag({ content: bundle });
     await page.evaluate(() => {
         // Match the response head: runtime scripts must not turn the cached restore into a head reload.
@@ -409,22 +409,10 @@ async function restored(page) {
     await expect.poll(() => page.evaluate(() => window.widget("map", "custom-map")?.map != null)).toBe(true);
 }
 
-function turboSource(upstream) {
-    const source = readFileSync("node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js", "utf8");
-    if (!upstream) return source;
-    // Test-only application of PR #1555 (4d2876d); no production monkey-patch.
-    const replacements = [
-        ["async cacheSnapshot(snapshot = this.snapshot) {", "async cacheSnapshot(snapshot = this.snapshot, shouldNotifyApplication = true) {"],
-        ["this.delegate.viewWillCacheSnapshot();", "if (shouldNotifyApplication) this.delegate.viewWillCacheSnapshot();"],
-        ["this.view.cacheSnapshot(this.snapshot).then((snapshot) => snapshot && this.visitCachedSnapshot(snapshot));", `this.view.cacheSnapshot(this.snapshot, !this.snapshot).then((snapshot) => {
-            if (snapshot) {
-                this.visitCachedSnapshot(snapshot);
-                snapshot.element.querySelectorAll('[data-turbo-temporary]').forEach((element) => element.remove());
-            }
-        });`],
-    ];
-    return replacements.reduce((result, [before, after]) => {
-        expect(result.split(before)).toHaveLength(2);
-        return result.replace(before, after);
-    }, source);
+// "published" is the npm release that apps which already declared Turbo keep;
+// "pinned" is the build the installer adds, which carries hotwired/turbo#1555.
+function turboSource(pinned) {
+    const turbo = pinned ? "@hotwired/turbo" : "@hotwired/turbo-published";
+
+    return readFileSync(`node_modules/${turbo}/dist/turbo.es2017-umd.js`, "utf8");
 }

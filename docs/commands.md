@@ -205,6 +205,13 @@ remain part of application view scanning so their component, controller, npm and
 Remove an identical shadow to resume package-managed updates; review modified and orphaned files manually. `--fix` never
 deletes, moves or rewrites these application-owned views.
 
+When `@hotwired/turbo` points at a Turbo build the package published and has since replaced, with a newer build or
+an official release, a `Turbo` section prints the command that switches it for the detected package manager, keeping
+it in `dependencies` or `devDependencies` as declared. The
+advice never fails the check, and `--fix` leaves the reference alone because switching rewrites your lockfile. Version
+ranges, local files and other URLs are your own choice and are never reported. See
+[Turbo installs from a pinned build](upgrade.md#turbo-installs-from-a-pinned-build).
+
 Missing local controller files are valid because package controllers auto-load from `vendor`. A differing user-owned
 file is reported but not overwritten. CSS selection and application preset problems require manual changes. An untouched
 v2 selective bundle whose package sources changed is safe to regenerate automatically; an externally edited bundle is

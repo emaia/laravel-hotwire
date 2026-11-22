@@ -20,6 +20,7 @@ use Emaia\LaravelHotwire\Support\PackageInstaller;
 use Emaia\LaravelHotwire\Support\PackageMarker;
 use Emaia\LaravelHotwire\Support\PresetSourceException;
 use Emaia\LaravelHotwire\Support\PresetSourceResolver;
+use Emaia\LaravelHotwire\Support\TurboBuild;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
@@ -118,6 +119,8 @@ class CheckCommand extends Command
 
             return self::FAILURE;
         }
+
+        $this->adviseSupersededTurboBuild();
 
         if (empty($usedComponentKeys) && empty($standaloneControllers) && $configuredControllers === [] && $styleIssues === 0
             && $this->problemLines === [] && $this->okStyleLines === [] && $this->viewOverrideLines === []) {
@@ -1497,6 +1500,45 @@ class CheckCommand extends Command
         }
 
         return $missing;
+    }
+
+    /**
+     * Advise apps still on a Turbo build the package no longer installs.
+     *
+     * Advisory only: switching rewrites the app's lockfile, so neither the exit code nor --fix acts on it.
+     *
+     * @throws FileNotFoundException
+     */
+    private function adviseSupersededTurboBuild(): void
+    {
+        $appPath = base_path('package.json');
+        $packagePath = dirname(__DIR__, 2).'/package.json';
+
+        if (! $this->files->exists($appPath) || ! $this->files->exists($packagePath)) {
+            return;
+        }
+
+        $app = json_decode($this->files->get($appPath), true);
+        $package = json_decode($this->files->get($packagePath), true);
+        $production = $app['dependencies'][TurboBuild::PACKAGE] ?? null;
+        $current = $production ?? $app['devDependencies'][TurboBuild::PACKAGE] ?? null;
+        $recommended = $package['dependencies'][TurboBuild::PACKAGE] ?? null;
+
+        if (! is_string($current) || ! is_string($recommended) || ! TurboBuild::isSuperseded($current, $recommended)) {
+            return;
+        }
+
+        $replacement = TurboBuild::tag($recommended) ?? $recommended;
+        $command = TurboBuild::switchCommand(
+            $this->packageInstaller->detect($this->files),
+            $recommended,
+            dev: $production === null,
+        );
+
+        $this->line('<options=bold>Turbo:</>');
+        $this->line('  <comment>!</comment>  '.TurboBuild::PACKAGE.' uses the package build '.TurboBuild::tag($current).", which the package has replaced with {$replacement}.");
+        $this->line("     Switch with `{$command}`, then commit package.json and the lockfile and rebuild your Vite assets.");
+        $this->line('');
     }
 
     private function validateLazyLoaderVersion(): void

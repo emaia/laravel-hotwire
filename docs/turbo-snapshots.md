@@ -71,11 +71,12 @@ installSnapshotNormalization(document);
 
 ## Turbo compatibility and the live document
 
-The regression matrix exercises Turbo **8.0.23** and a test-only variant applying
-[Turbo PR #1555](https://github.com/hotwired/turbo/pull/1555), revision `4d2876d`.
-The PR is not a released dependency requirement or a patch shipped by this
-package. Equivalent document heads isolate this issue from head/frame-only cache
-problems.
+The regression matrix exercises the published Turbo **8.0.23**, which applications
+that already declared Turbo keep, and the build `hotwire:install` adds, compiled from
+upstream commit `5350970` and including
+[Turbo PR #1555](https://github.com/hotwired/turbo/pull/1555)
+([upgrade notes](upgrade.md#turbo-installs-from-a-pinned-build)). Equivalent document
+heads isolate this issue from head/frame-only cache problems.
 
 In the published behavior, a promoted Frame's synthetic Visit can dispatch
 `turbo:before-cache` against the page that remains visible, despite caching a

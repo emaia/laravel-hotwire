@@ -6,6 +6,40 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Turbo installs from a pinned build
+
+`hotwire:install` now adds `@hotwired/turbo` as a tarball built from upstream commit
+[`5350970`](https://github.com/hotwired/turbo/tree/5350970b085d78adb59f89e660c19eef985bddfb) instead of `^8.0.23`.
+That commit includes Turbo fixes the package relies on and that are not in an official release yet: cache notifications
+are no longer sent to the visible page for promoted Frame visits ([#1555](https://github.com/hotwired/turbo/pull/1555)),
+and replacing a Frame's contents no longer resets the scroll position in affected Chromium versions ([#1557](https://github.com/hotwired/turbo/pull/1557)).
+The import stays `@hotwired/turbo`, so application code does not change.
+
+Applications that already declare Turbo keep their version: re-running the installer never replaces an existing
+reference. To adopt the build, replace the reference with your package manager, keeping Turbo in the section that
+declares it today. `hotwire:install` adds it to `devDependencies`:
+
+```bash
+bun add -d https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz
+# npm install -D <url> · pnpm add -D <url> · yarn add -D <url>
+```
+
+If your app declares Turbo under `dependencies`, omit `-d`/`-D` (`bun add <url>`, `npm install <url>`, `pnpm add <url>`,
+`yarn add <url>`). The flag decides the section the package manager writes to, and it moves an existing entry; a
+deploy that skips development dependencies would then stop installing Turbo.
+
+This rewrites `@hotwired/turbo` in `package.json` to the URL and records the tarball and its integrity hash in the
+lockfile (`bun.lock`, `package-lock.json`, `pnpm-lock.yaml` or `yarn.lock`). Commit both files and rebuild your Vite
+assets. Each build has its own URL, and published tarballs are never replaced, so a lockfile keeps resolving the same
+bytes.
+
+The build is temporary. When an official Turbo release includes these fixes, a later package version installs that
+release from npm again; if another fix is needed before then, it publishes a newer build under a new URL. Either way
+your reference stays as it is until you change it. `php artisan hotwire:check` reports when your app is on a build the
+package has replaced and prints the exact command for the section your app uses, such as
+`bun add -d @hotwired/turbo@^<version>` to return to npm.
+Apps that kept a version range are never asked to switch.
+
 ### Input roots and native search clearing
 
 Text-like `<hw:input>` controls now always render an `input-wrapper` root, with or without `clearable`. The class contract
