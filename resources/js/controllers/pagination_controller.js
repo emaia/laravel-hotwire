@@ -18,26 +18,31 @@ export default class extends Controller {
         threshold: { type: Number, default: DEFAULT_THRESHOLD },
     };
 
-    connect() {
-        this.loading = false;
-        this.originalLabels = new WeakMap();
+    #request = null;
 
-        if (this.infiniteValue && typeof IntersectionObserver !== "undefined" && this.hasNextTarget) {
-            this.observeNextLink();
-        }
+    connect() {
+        this.observeNextLink();
     }
 
     disconnect() {
         this.stopObserver();
-        this.abortController?.abort();
-        this.abortController = null;
+        if (this.#request) this.#cancelRequest(this.#request, false);
     }
 
     nextTargetConnected() {
-        if (this.infiniteValue && typeof IntersectionObserver !== "undefined") {
-            this.stopObserver();
-            this.observeNextLink();
-        }
+        this.observeNextLink();
+    }
+
+    nextTargetDisconnected(link) {
+        if (this.#request?.link === link) this.#cancelRequest(this.#request);
+        if (this.observedLink !== link) return;
+
+        this.stopObserver();
+        this.observeNextLink();
+    }
+
+    appendToValueChanged() {
+        if (this.#request) this.#isCurrentRequest(this.#request);
     }
 
     load(event) {
@@ -46,65 +51,160 @@ export default class extends Controller {
     }
 
     async loadNext(link, manual = false) {
-        if (this.loading || ! link?.href) return;
+        if (this.#request || !link?.href) return;
 
-        this.loading = true;
-        this.abortController = new AbortController();
+        const request = {
+            link,
+            url: link.href,
+            destination: this.#appendDestination(),
+            abort: new AbortController(),
+            originalLabel: link.getAttribute("aria-label"),
+            loadingLabel: this.loadingLabelValue,
+        };
+        this.#request = request;
         this.stopObserver();
         this.markBusy(link);
+        this.#watchRequest(request);
 
         const anchor = this.scrollAnchorFor(link);
         const before = this.positionOf(anchor);
         const shouldRestoreFocus = document.activeElement === link;
 
+        let replacement;
         try {
-            const response = await fetch(link.href, {
+            const response = await fetch(request.url, {
                 headers: { Accept: "text/html, application/xhtml+xml" },
-                signal: this.abortController.signal,
+                signal: request.abort.signal,
             });
 
+            if (!this.#isCurrentRequest(request)) return;
             if (!response.ok) throw new Error(`Pagination request failed with ${response.status}`);
 
-            const replacement = this.appendPage(await response.text());
+            const html = await response.text();
+            if (!this.#isCurrentRequest(request)) return;
+
+            replacement = this.appendPage(html);
+        } catch (error) {
+            if (!this.#isCurrentRequest(request)) return;
+            if (error.name === "AbortError") {
+                this.#cancelRequest(request, false);
+
+                return;
+            }
+
+            this.#finishRequest(request);
+            this.element.dataset.state = "error";
+            this.clearBusy(request);
+            this.announce(this.errorLabelValue);
+            this.dispatch("error", { detail: { error } });
+
+            return;
+        }
+
+        this.#finishRequest(request);
+        try {
             this.restorePosition(anchor, before);
             this.restoreFocus(replacement, shouldRestoreFocus);
             this.announceLoaded(replacement);
-            this.loading = false;
-
-            if (manual) {
-                this.scrollToTarget();
-            }
+            if (manual) this.scrollToTarget();
         } catch (error) {
-            if (error.name === "AbortError") return;
-
-            this.element.dataset.state = "error";
-            this.clearBusy(link);
-            this.announce(this.errorLabelValue);
-            this.dispatch("error", { detail: { error } });
-            this.loading = false;
-        } finally {
-            this.abortController = null;
+            // The page is already appended; retrying the request could duplicate results.
+            this.application.handleError(error, "Error restoring pagination UI", { controller: this });
         }
     }
 
-    observeNextLink() {
-        if (this.observer) return;
+    #appendDestination() {
+        return this.explicitAppendTarget() || this.appendTargetFrom(this.currentPaginationBoundary(null));
+    }
 
-        this.observer = new IntersectionObserver((entries) => {
-            if (entries.some((entry) => entry.isIntersecting)) {
-                this.loadNext(this.nextTarget);
-            }
+    #watchRequest(request) {
+        const { link, destination } = request;
+        request.onMorph = ({ target }) => {
+            if (target === destination) this.#cancelRequest(request);
+        };
+        request.onStream = ({ detail }) => {
+            const { newStream, render } = detail ?? {};
+            if (typeof render !== "function" || newStream?.getAttribute("action") !== "update"
+                || !newStream.targetElements.includes(destination)) return;
+
+            // Stream updates morph children without emitting a morph event on the list itself.
+            // Invalidate at render time so a prevented Stream leaves the request alone.
+            const controller = this;
+            detail.render = function (stream) {
+                if (stream.targetElements.includes(destination)) {
+                    controller.#cancelRequest(request);
+                }
+
+                return render.call(this, stream);
+            };
+        };
+        if (destination) {
+            destination.addEventListener("turbo:morph-element", request.onMorph);
+            destination.ownerDocument.addEventListener("turbo:before-stream-render", request.onStream);
+        }
+
+        request.observer = new MutationObserver(() => {
+            this.#isCurrentRequest(request);
+        });
+        request.observer.observe(link, { attributeFilter: ["href"] });
+    }
+
+    #isCurrentRequest(request) {
+        if (this.#request !== request) return false;
+        if (this.element.isConnected
+            && this.nextTargets.includes(request.link)
+            && request.link.href === request.url
+            && this.#appendDestination() === request.destination) return true;
+
+        this.#cancelRequest(request);
+
+        return false;
+    }
+
+    #finishRequest(request) {
+        this.#request = null;
+        request.observer.disconnect();
+        const { destination } = request;
+        if (destination) {
+            destination.removeEventListener("turbo:morph-element", request.onMorph);
+            destination.ownerDocument.removeEventListener("turbo:before-stream-render", request.onStream);
+        }
+    }
+
+    #cancelRequest(request, resume = true) {
+        if (this.#request !== request) return;
+
+        this.#finishRequest(request);
+        this.clearBusy(request);
+        if (this.element.dataset.state === "loading") delete this.element.dataset.state;
+        if (this.hasStatusTarget && this.statusTarget.textContent === request.loadingLabel) this.announce("");
+
+        request.abort.abort();
+        if (resume) this.observeNextLink();
+    }
+
+    observeNextLink() {
+        if (this.observer || this.#request || !this.element.isConnected
+            || !this.infiniteValue || typeof IntersectionObserver === "undefined" || !this.hasNextTarget) return;
+
+        const link = this.nextTarget;
+        const observer = new IntersectionObserver((entries) => {
+            if (this.observer !== observer || link !== this.nextTargets[0]) return;
+            if (entries.some((entry) => entry.isIntersecting)) this.loadNext(link);
         }, {
             rootMargin: this.rootMarginValue,
             threshold: this.thresholdValue,
         });
 
-        this.observer.observe(this.nextTarget);
+        this.observer = observer;
+        this.observedLink = link;
+        observer.observe(link);
     }
 
     stopObserver() {
         this.observer?.disconnect();
         this.observer = null;
+        this.observedLink = null;
     }
 
     appendPage(html) {
@@ -226,28 +326,20 @@ export default class extends Controller {
         this.element.dataset.state = "loading";
         this.element.setAttribute("aria-busy", "true");
         link.setAttribute("aria-busy", "true");
-        this.originalLabels.set(link, link.getAttribute("aria-label"));
         if (this.loadingLabelValue !== "") {
             link.setAttribute("aria-label", this.loadingLabelValue);
         }
         this.announce(this.loadingLabelValue);
     }
 
-    clearBusy(link) {
+    clearBusy({ link, originalLabel, loadingLabel }) {
         this.element.removeAttribute("aria-busy");
         link.removeAttribute("aria-busy");
 
-        if (this.originalLabels.has(link)) {
-            const label = this.originalLabels.get(link);
-
-            if (label === null) {
-                link.removeAttribute("aria-label");
-            } else {
-                link.setAttribute("aria-label", label);
-            }
-        }
-
-        this.originalLabels.delete(link);
+        // A morph may already have installed a different label.
+        if (loadingLabel === "" || link.getAttribute("aria-label") !== loadingLabel) return;
+        if (originalLabel === null) link.removeAttribute("aria-label");
+        else link.setAttribute("aria-label", originalLabel);
     }
 
     announceLoaded(replacement) {

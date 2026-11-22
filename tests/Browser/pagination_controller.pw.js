@@ -109,6 +109,203 @@ test("infinite pagination stops auto-loading after a failed visible-link request
     expect(requests).toBe(3);
 });
 
+for (const changedUrl of [true, false]) {
+    test(`pagination discards a pending response when morph changes results ${changedUrl ? "and next URL" : "at the same next URL"}`, async ({ page }) => {
+        await openWithPendingRequests(page);
+        await page.evaluate(() => {
+            const root = document.querySelector('[data-controller="pagination"]');
+            window.originalPagination = { root, next: root.querySelector("a") };
+        });
+
+        const control = page.locator('[data-controller="pagination"]');
+        const next = control.locator("a");
+        await next.click();
+        await expect(control).toHaveAttribute("data-state", "loading");
+
+        await page.evaluate(({ changedUrl, incoming }) => {
+            const updated = new DOMParser().parseFromString(incoming, "text/html").querySelector("turbo-frame");
+            updated.querySelector("#task-1").textContent = "Filtered task";
+            if (changedUrl) {
+                updated.querySelector("a").setAttribute("href", "/tasks?page=2&filter=new");
+                updated.querySelector("a").setAttribute("aria-label", "Load filtered tasks");
+            }
+            window.Turbo.renderStreamMessage(`<turbo-stream action="update" method="morph" target="results">
+                <template>${updated.innerHTML}</template></turbo-stream>`);
+        }, { changedUrl, incoming: documentHtml("1") });
+
+        await expect(page.locator("#task-1")).toHaveText("Filtered task");
+        expect(await next.evaluate((link) => link === window.originalPagination.next)).toBe(true);
+        expect(await control.evaluate((root) => root === window.originalPagination.root)).toBe(true);
+        await expect.poll(() => page.evaluate(() => window.nextRequests[0].signal.aborted)).toBe(true);
+        await expect(next).not.toHaveAttribute("aria-busy");
+        if (changedUrl) await expect(next).toHaveAccessibleName("Load filtered tasks");
+
+        await next.click();
+        await expect.poll(() => page.evaluate(() => window.nextRequests.length)).toBe(2);
+        await page.evaluate(async (html) => {
+            window.nextRequests[0].resolve(new Response(html, { status: 503 }));
+            await new Promise(queueMicrotask);
+        }, documentHtml("2"));
+        await expect(control).toHaveAttribute("data-state", "loading");
+        await expect(next).toHaveAttribute("aria-busy", "true");
+
+        await page.evaluate((html) => {
+            const fresh = new DOMParser().parseFromString(html, "text/html");
+            fresh.querySelector("#task-2").textContent = "Filtered continuation";
+            window.nextRequests[1].resolve(new Response(fresh.body.innerHTML));
+        }, documentHtml("2"));
+        await expect(page.locator("#tasks article")).toHaveText(["Filtered task", "Filtered continuation"]);
+        await expect(page.locator("#page-3-link")).toBeFocused();
+    });
+}
+
+test("infinite pagination resumes on the new next link after a morph supersedes a load", async ({ page }) => {
+    await openWithPendingRequests(page, { infinite: true });
+    await expect.poll(() => page.evaluate(() => window.nextRequests.length)).toBe(1);
+
+    await page.evaluate(({ current }) => {
+        const incoming = new DOMParser().parseFromString(current, "text/html").querySelector("turbo-frame");
+        incoming.querySelector("#task-1").textContent = "Filtered task";
+        incoming.querySelector("a").setAttribute("href", "/tasks?page=2&filter=new");
+        window.Turbo.renderStreamMessage(`<turbo-stream action="update" method="morph" target="results">
+            <template>${incoming.innerHTML}</template></turbo-stream>`);
+    }, { current: documentHtml("1", { infinite: true }) });
+
+    await expect.poll(() => page.evaluate(() => window.nextRequests.map(({ url }) => url))).toEqual([
+        "https://pagination.test/tasks?page=2",
+        "https://pagination.test/tasks?page=2&filter=new",
+    ]);
+    await page.evaluate(async ({ stale, fresh }) => {
+        window.nextRequests[0].resolve(new Response(stale));
+        await new Promise(queueMicrotask);
+        window.nextRequests[1].resolve(new Response(fresh));
+    }, { stale: documentHtml("2"), fresh: documentHtml("2").replace("Task 2", "Filtered continuation") });
+    await expect(page.locator("#tasks article")).toHaveText(["Filtered task", "Filtered continuation"]);
+});
+
+for (const [action, stream, expected] of [
+    ["appending a broadcast item", `<turbo-stream action="append" target="tasks">
+        <template><article id="broadcast">Broadcast task</article></template></turbo-stream>`, ["Task 1", "Broadcast task"]],
+    ["editing one result", `<turbo-stream action="replace" method="morph" target="task-1">
+        <template><article id="task-1">Edited task</article></template></turbo-stream>`, ["Edited task"]],
+    ["removing one result", '<turbo-stream action="remove" target="task-1"></turbo-stream>', []],
+]) {
+    test(`pagination keeps the pending load while ${action}`, async ({ page }) => {
+        await openWithPendingRequests(page);
+        await page.locator("#page-2-link").click();
+        await applyStream(page, stream);
+
+        await expect(page.locator("#tasks article")).toHaveText(expected);
+        expect(await page.evaluate(() => window.nextRequests.map(({ signal }) => signal.aborted))).toEqual([false]);
+        await expect(page.locator('[data-controller="pagination"]')).toHaveAttribute("data-state", "loading");
+
+        await resolveNextRequest(page, 0);
+        await expect(page.locator("#tasks article")).toHaveText([...expected, "Task 2"]);
+    });
+}
+
+test("infinite pagination does not restart its pending load after a broadcast append", async ({ page }) => {
+    await openWithPendingRequests(page, { infinite: true });
+    await expect.poll(() => page.evaluate(() => window.nextRequests.length)).toBe(1);
+
+    await applyStream(page, `<turbo-stream action="append" target="tasks">
+        <template><article id="broadcast">Broadcast task</article></template></turbo-stream>`);
+    expect(await page.evaluate(() => window.nextRequests.map(({ signal }) => signal.aborted))).toEqual([false]);
+
+    await resolveNextRequest(page, 0);
+    await expect(page.locator("#tasks article")).toHaveText(["Task 1", "Broadcast task", "Task 2"]);
+    expect(await page.evaluate(() => window.nextRequests.length)).toBe(1);
+});
+
+for (const [mode, method] of [["replacement", ""], ["morph", ' method="morph"']]) {
+    test(`pagination discards its pending load after a whole-list Stream update with ${mode}`, async ({ page }) => {
+        await openWithPendingRequests(page);
+        await page.locator("#page-2-link").click();
+        await applyStream(page, `<turbo-stream action="update"${method} targets="#tasks">
+            <template><article id="task-1">Refreshed task</article></template></turbo-stream>`);
+
+        await expect(page.locator("#tasks article")).toHaveText(["Refreshed task"]);
+        expect(await page.evaluate(() => window.nextRequests[0].signal.aborted)).toBe(true);
+        await expect(page.locator('[data-controller="pagination"]')).not.toHaveAttribute("aria-busy");
+        await resolveNextRequest(page, 0);
+        await expect(page.locator("#tasks article")).toHaveText(["Refreshed task"]);
+    });
+}
+
+test("pagination leaves a load pending if the whole-list Stream update is prevented", async ({ page }) => {
+    await openWithPendingRequests(page);
+    await page.locator("#page-2-link").click();
+    await page.evaluate(() => {
+        document.addEventListener("turbo:before-stream-render", (event) => event.preventDefault(), { once: true });
+    });
+    await applyStream(page, `<turbo-stream action="update" target="tasks">
+        <template><article>Unrendered task</article></template></turbo-stream>`);
+
+    expect(await page.evaluate(() => window.nextRequests[0].signal.aborted)).toBe(false);
+    await resolveNextRequest(page, 0);
+    await expect(page.locator("#tasks article")).toHaveText(["Task 1", "Task 2"]);
+});
+
+test("changing append-to invalidates only the request for the old results destination", async ({ page }) => {
+    await openWithPendingRequests(page);
+    const control = page.locator('[data-controller="pagination"]');
+    await page.locator("#page-2-link").click();
+    await control.evaluate((nav) => {
+        const list = document.createElement("div");
+        list.id = "other-tasks";
+        list.innerHTML = "<article>Other task 1</article>";
+        nav.parentElement.before(list);
+        nav.dataset.paginationAppendToValue = "#other-tasks";
+    });
+    await expect.poll(() => page.evaluate(() => window.nextRequests[0].signal.aborted)).toBe(true);
+    await expect(control).not.toHaveAttribute("data-state", "loading");
+
+    await page.locator("#page-2-link").click();
+    await resolveNextRequest(page, 0);
+    await expect(control).toHaveAttribute("data-state", "loading");
+    await resolveNextRequest(page, 1, documentHtml("2").replace('id="tasks"', 'id="other-tasks"'));
+    await expect(page.locator("#tasks article")).toHaveText(["Task 1"]);
+    await expect(page.locator("#other-tasks article")).toHaveText(["Other task 1", "Task 2"]);
+});
+
+async function openWithPendingRequests(page, { infinite = false } = {}) {
+    await page.route("**/tasks", (route) => route.fulfill({
+        contentType: "text/html",
+        body: documentHtml("1", { infinite }),
+    }));
+    await page.goto("https://pagination.test/tasks");
+    await page.evaluate((autoLoad) => {
+        if (autoLoad) {
+            window.IntersectionObserver = class {
+                constructor(callback) { this.callback = callback; }
+                observe(element) { queueMicrotask(() => this.callback([{ isIntersecting: true, target: element }])); }
+                disconnect() {}
+            };
+        }
+        window.nextRequests = [];
+        // Deliver even an aborted response to check that it no longer owns the UI.
+        window.fetch = (url, { signal }) => new Promise((resolve) => {
+            window.nextRequests.push({ url, signal, resolve });
+        });
+    }, infinite);
+    await installController(page);
+}
+
+async function applyStream(page, html) {
+    await page.evaluate(async (stream) => {
+        window.Turbo.renderStreamMessage(stream);
+        const element = document.querySelector("turbo-stream");
+        if (element) await element.render();
+    }, html);
+}
+
+async function resolveNextRequest(page, index, html = documentHtml("2")) {
+    await page.evaluate(async ({ index, html }) => {
+        window.nextRequests[index].resolve(new Response(html));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    }, { index, html });
+}
+
 async function installController(page) {
     await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
