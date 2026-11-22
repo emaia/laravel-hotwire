@@ -52,7 +52,8 @@ In order, every `hotwire:install` invocation:
 Steps 3–7 are skipped when the user passes `--only=css` (CSS-only install).
 
 For JavaScript installs, a `resources/js/app.js` containing only whitespace or comments (including Laravel's default
-`//`) is wired automatically, without removing the comments. If you keep a customized entrypoint, the installer prints
+`//`) is wired automatically, without removing the comments. An entrypoint that already imports `./hotwire` directly
+is kept without prompting unless you pass `--force`. If you keep another customized entrypoint, the installer prints
 `import "./hotwire";` for you to add if your entrypoint does not already load Hotwire.
 
 ---

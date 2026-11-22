@@ -37,6 +37,11 @@ class InstallCommand extends Command
 
     private const string JS_ENTRYPOINT_RELATIVE = 'js/app.js';
 
+    // Line comments also end at JavaScript's Unicode line separators.
+    private const string JS_COMMENT = '//[^\r\n\x{2028}\x{2029}]*+|/\*(?:[^*]++|\*(?!/))*+\*/';
+
+    private const string JS_TRIVIA = '(?:[\t\x0B\f\r\n\x{2028}\x{2029}\x{FEFF}\p{Zs}]++|'.self::JS_COMMENT.')';
+
     private const string CSS_STUB_RELATIVE = 'css/app.css';
 
     private const string CSS_PRESET_MARKER = '/* Presets: keep exactly one import active. */';
@@ -320,8 +325,7 @@ class InstallCommand extends Command
                 }
 
                 if (! $this->option('force')) {
-                    if ($isJsEntrypoint && str_ends_with($existing, $generatedContent)
-                        && $this->isCommentOnlyJavaScript(substr($existing, 0, -strlen($generatedContent)))) {
+                    if ($isJsEntrypoint && $this->importsHotwire($existing)) {
                         continue;
                     }
 
@@ -366,8 +370,19 @@ class InstallCommand extends Command
 
     private function isCommentOnlyJavaScript(string $source): bool
     {
-        // JavaScript line comments also end at U+2028 and U+2029.
-        return preg_match('~\A(?:[\t\x0B\f\r\n\x{2028}\x{2029}\x{FEFF}\p{Zs}]++|//[^\r\n\x{2028}\x{2029}]*+|/\*(?:[^*]++|\*(?!/))*+\*/)*+\z~u', $source) === 1;
+        return preg_match('~\A'.self::JS_TRIVIA.'*+\z~u', $source) === 1;
+    }
+
+    private function importsHotwire(string $source): bool
+    {
+        // A commented-out import or an example string should not silence the manual wiring hint.
+        $strings = <<<'REGEX'
+            "(?:\\[\s\S]|[^"\\])*+"|'(?:\\[\s\S]|[^'\\])*+'|`(?:\\[\s\S]|[^`\\])*+`
+            REGEX;
+        $ignored = '(?:'.self::JS_COMMENT.'|'.$strings.')(*SKIP)(*F)';
+        $import = '(?<![\w$.])import'.self::JS_TRIVIA.'*+(["\'])\./hotwire(?:/index(?:\.js)?)?\1';
+
+        return preg_match('~'.$ignored.'|'.$import.'~u', $source) === 1;
     }
 
     private function cssStubContent(): string
