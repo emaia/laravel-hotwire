@@ -83,6 +83,28 @@ it('generates laravel idea metadata during js install', function () {
 
 // --- Phase 2: Conflict detection ---
 
+it('wires a comment-only JavaScript entrypoint without force or a prompt', function (string $contents, string $expectedPrefix) {
+    File::ensureDirectoryExists(resource_path('js'));
+    File::put(resource_path('js/app.js'), $contents);
+
+    $this->artisan('hotwire:install --no-interaction --skip-install')
+        ->doesntExpectOutputToContain('File "js/app.js" already exists')
+        ->assertSuccessful();
+
+    $stub = File::get($this->stubBase.'/js/app.js');
+    expect(File::get(resource_path('js/app.js')))->toBe($expectedPrefix.$stub);
+
+    $this->artisan('hotwire:install --no-interaction --skip-install')->assertSuccessful();
+
+    expect(File::get(resource_path('js/app.js')))->toBe($expectedPrefix.$stub);
+})->with([
+    'empty' => ['', ''],
+    'whitespace only' => [" \r\n\t", " \r\n\t\n"],
+    'Laravel placeholder' => ["//\n", "//\n"],
+    'comments without trailing newline' => ["/* App notes */\r\n// More notes", "/* App notes */\r\n// More notes\n"],
+    'Unicode line separator' => ["// App notes\u{2028}/* more */", "// App notes\u{2028}/* more */\n"],
+]);
+
 it('skips files that are identical to stubs', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
@@ -94,21 +116,43 @@ it('skips files that are identical to stubs', function () {
     expect(File::get(resource_path('js/app.js')))->toBe(File::get($source));
 });
 
+it('keeps an entrypoint that already imports Hotwire without a warning or prompt', function (string $contents) {
+    File::ensureDirectoryExists(resource_path('js'));
+    File::put(resource_path('js/app.js'), $contents);
+
+    foreach (['hotwire:install --no-interaction --skip-install', 'hotwire:install --skip-install'] as $command) {
+        $this->artisan($command)
+            ->doesntExpectOutputToContain('add this line')
+            ->doesntExpectOutputToContain('Published: js/app.js')
+            ->assertSuccessful();
+
+        expect(File::get(resource_path('js/app.js')))->toBe($contents);
+    }
+})->with([
+    'after bootstrap' => 'import "./bootstrap"; import "./hotwire";',
+    'CRLF' => "// Laravel placeholder\r\nimport \"./hotwire\";\r\n",
+    'without final newline' => 'import "./hotwire";',
+    'single quotes without a semicolon' => "import './hotwire'\n",
+    'directory index' => "import\n'./hotwire/index';\n",
+    'explicit file' => 'import /* app bootstrap */ "./hotwire/index.js";',
+]);
+
 it('prompts when file differs in interactive mode and user declines', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
     $this->artisan('hotwire:install --no-interaction')->assertSuccessful();
 
-    File::put(resource_path('js/app.js'), '// modified');
+    File::put(resource_path('js/app.js'), 'import "./bootstrap";');
 
     $this->artisan('hotwire:install')
         ->expectsConfirmation(
             'File "js/app.js" already exists and differs. Overwrite?',
             'no',
         )
+        ->expectsOutputToContain('import "./hotwire";')
         ->assertSuccessful();
 
-    expect(File::get(resource_path('js/app.js')))->toBe('// modified');
+    expect(File::get(resource_path('js/app.js')))->toBe('import "./bootstrap";');
 });
 
 it('overwrites when user confirms in interactive mode', function () {
@@ -116,7 +160,7 @@ it('overwrites when user confirms in interactive mode', function () {
 
     $this->artisan('hotwire:install --no-interaction')->assertSuccessful();
 
-    File::put(resource_path('js/app.js'), '// modified');
+    File::put(resource_path('js/app.js'), 'import "./bootstrap";');
 
     $this->artisan('hotwire:install')
         ->expectsConfirmation(
@@ -129,25 +173,37 @@ it('overwrites when user confirms in interactive mode', function () {
     expect(File::get(resource_path('js/app.js')))->toBe(File::get($source));
 });
 
-it('skips differing files in non-interactive mode without --force', function () {
+it('preserves application JavaScript and shows the manual import in non-interactive mode', function (string $contents) {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
     $this->artisan('hotwire:install --no-interaction')->assertSuccessful();
 
-    File::put(resource_path('js/app.js'), '// modified');
+    File::put(resource_path('js/app.js'), $contents);
 
     $this->artisan('hotwire:install --no-interaction')
+        ->expectsOutputToContain('import "./hotwire";')
         ->assertSuccessful();
 
-    expect(File::get(resource_path('js/app.js')))->toBe('// modified');
-});
+    expect(File::get(resource_path('js/app.js')))->toBe($contents);
+})->with([
+    'existing import' => 'import "./bootstrap";',
+    'code between comments' => '/* first */ window.ready = true; /* last */',
+    'code after a Unicode line separator' => "// note\u{2028}window.ready = true;",
+    'unterminated comment' => '/* unfinished',
+    'commented import' => "import \"./bootstrap\";\n// import \"./hotwire\";\n/* import './hotwire'; */",
+    'import in a string' => <<<'JS'
+        const example = 'import "./hotwire";';
+        JS,
+    'import in a template literal' => "const example = `\nimport \"./hotwire\";\n`;",
+    'different module' => 'import "./hotwire/turbo";',
+]);
 
 it('overwrites all files with --force', function () {
     File::put($this->packageJsonPath, json_encode(['name' => 'test'], JSON_PRETTY_PRINT));
 
     $this->artisan('hotwire:install --no-interaction')->assertSuccessful();
 
-    File::put(resource_path('js/app.js'), '// modified');
+    File::put(resource_path('js/app.js'), 'import "./bootstrap";');
 
     $this->artisan('hotwire:install --force --no-interaction')
         ->assertSuccessful();
