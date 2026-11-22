@@ -171,7 +171,52 @@ test("Turbo morph restores Embla at the selected snap when its managed transform
     expect(result.transformAfter).not.toBe("");
 });
 
-function carouselMarkup() {
+test("an Embla resize keeps the focused dot when pagination has not changed", async ({ page }) => {
+    const css = await readFile("resources/css/structural.css", "utf8");
+    await page.setContent(`
+        <style>
+            ${css}
+            #carousel { width: 500px; --carousel-slide-size: 100%; }
+            #carousel-container > div { min-height: 40px; }
+        </style>
+        ${carouselMarkup(`
+            <div data-carousel-target="dotList"></div>
+            <template data-carousel-target="dotTemplate">
+                <button type="button" data-action="carousel#scrollTo">Slide</button>
+            </template>
+        `)}
+    `);
+    await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
+    await page.addScriptTag({ path: "node_modules/embla-carousel/embla-carousel.umd.js" });
+    await page.addScriptTag({ content: await browserCarouselScript() });
+    await page.evaluate(() => {
+        window.app = window.Stimulus.Application.start();
+        window.app.register("carousel", window.CarouselController);
+    });
+
+    const second = page.getByRole("button", { name: "Go to slide 2" });
+    await second.focus();
+    await page.keyboard.press("Enter");
+    await expect(second).toHaveAttribute("aria-current", "true");
+
+    const preserved = await second.evaluate(async (dot) => {
+        const root = document.querySelector("#carousel");
+        const embla = window.app.getControllerForElementAndIdentifier(root, "carousel").embla;
+        const resized = new Promise((resolve) => embla.on("reInit", resolve));
+        root.style.width = "400px";
+        await resized;
+
+        return dot.isConnected && document.activeElement === dot;
+    });
+
+    expect(preserved).toBe(true);
+    await expect(second).toHaveAttribute("aria-current", "true");
+    const third = page.getByRole("button", { name: "Go to slide 3" });
+    await third.click();
+    await expect(third).toHaveAttribute("aria-current", "true");
+});
+
+function carouselMarkup(controls = "") {
     return `
         <div id="carousel" data-controller="carousel" data-carousel-options-value='{}'>
             <div id="carousel-viewport" data-carousel-viewport>
@@ -181,6 +226,7 @@ function carouselMarkup() {
                     <div id="slide-3">Slide 3</div>
                 </div>
             </div>
+            ${controls}
         </div>
     `;
 }
