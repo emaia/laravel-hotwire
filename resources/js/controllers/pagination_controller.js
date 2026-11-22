@@ -246,6 +246,7 @@ export default class extends Controller {
             && !["BODY", "TURBO-FRAME"].includes(parent.tagName)
             && (parent.id || parent.children.length === 1)
             && !appendTarget?.contains(parent)
+            && !parent.contains(appendTarget)
         ) {
             return parent;
         }

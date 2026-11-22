@@ -25,6 +25,24 @@ test("incremental pagination appends inside a Turbo Frame instead of navigating 
     await expect(page.locator("#page-marker")).toHaveText("Page 1");
 });
 
+test("incremental pagination preserves a results list in the same wrapper as the control", async ({ page }) => {
+    await page.route("**/tasks*", (route) => route.fulfill({
+        contentType: "text/html",
+        body: documentHtml(new URL(route.request().url()).searchParams.get("page") ?? "1", { sharedWrapper: true }),
+    }));
+    await page.goto("https://pagination.test/tasks");
+    await installController(page);
+    await page.evaluate(() => { window.initialList = document.querySelector("#tasks"); });
+
+    await page.locator("#page-2-link").click();
+    await expect(page.locator("#tasks article")).toHaveText(["Task 1", "Task 2"]);
+    await page.locator("#page-3-link").click();
+    await expect(page.locator("#tasks article")).toHaveText(["Task 1", "Task 2", "Task 3"]);
+    expect(await page.locator("#tasks").evaluate((list) => list === window.initialList)).toBe(true);
+    await expect(page.locator("#tasks-pagination")).toBeVisible();
+    await expect(page.locator('[data-controller="pagination"]')).toHaveCount(0);
+});
+
 test("incremental pagination swaps visible button content while loading", async ({ page }) => {
     let resolveResponse;
 
@@ -339,18 +357,20 @@ async function browserControllerScript() {
         .concat("\nwindow.PaginationController = PaginationController;\n");
 }
 
-function documentHtml(pageNumber, { infinite = false } = {}) {
+function documentHtml(pageNumber, { infinite = false, sharedWrapper = false } = {}) {
+    const results = `<div id="tasks"><article id="task-${pageNumber}">Task ${pageNumber}</article></div>`;
+    const terminal = sharedWrapper && pageNumber === "3";
+
     return `<!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="turbo-prefetch" content="false"></head>
 <body>
     <turbo-frame id="results" data-turbo-action="advance">
         <strong id="page-marker">Page ${pageNumber}</strong>
-        <div id="tasks">
-            <article id="task-${pageNumber}">Task ${pageNumber}</article>
-        </div>
+        ${sharedWrapper ? "" : results}
         <div id="tasks-pagination">
-            <nav data-controller="pagination" data-slot="pagination" aria-label="Task pages" data-pagination-append-to-value="#tasks"${infinite ? ' data-pagination-infinite-value="true"' : ""}>
+            ${sharedWrapper ? results : ""}
+            ${terminal ? "" : `<nav data-controller="pagination" data-slot="pagination" aria-label="Task pages" data-pagination-append-to-value="#tasks"${infinite ? ' data-pagination-infinite-value="true"' : ""}>
                 <span data-slot="pagination-status" data-pagination-target="status" role="status" aria-live="polite" aria-atomic="true"></span>
                 <a
                     id="page-${Number(pageNumber) + 1}-link"
@@ -367,7 +387,7 @@ function documentHtml(pageNumber, { infinite = false } = {}) {
                         <svg data-slot="pagination-next-spinner" aria-hidden="true"></svg>
                     </span>
                 </a>
-            </nav>
+            </nav>`}
         </div>
     </turbo-frame>
 </body>
