@@ -54,6 +54,8 @@ for (const preset of ["nova", "bloom"]) {
         await page.setViewportSize({ width: 768, height: 600 });
         await expect(menu).toBeHidden();
         await expect(expanded.getByRole("link", { name: "Projects" })).toBeVisible();
+        // CSS hides the compact trail before the dropdown handles the media-query change.
+        await expect(compact.locator('button[aria-label="More pages"]')).toHaveAttribute("aria-expanded", "false");
         await page.setViewportSize({ width: 320, height: 600 });
         await expect(trigger).toHaveAttribute("aria-expanded", "false");
         await expect(menu).toBeHidden();
