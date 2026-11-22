@@ -7,7 +7,7 @@
         "@emaia/stimulus-lazy-loader": "^2.0.0",
         "@floating-ui/dom": "^1.8.0",
         "@hotwired/stimulus": "^3.2.2",
-        "@hotwired/turbo": "^8.0.23",
+        "@hotwired/turbo": "https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz",
         "@tiptap/core": "3.34.0",
         "@tiptap/extension-link": "3.34.0",
         "@tiptap/extension-underline": "3.34.0",
@@ -20,6 +20,7 @@
         "maska": "^3.2.2",
       },
       "devDependencies": {
+        "@hotwired/turbo-published": "npm:@hotwired/turbo@8.0.23",
         "@playwright/test": "^1.65.1",
         "@tailwindcss/cli": "^4",
         "@types/bun": "^1.4.4",
@@ -49,7 +50,9 @@
 
     "@hotwired/stimulus": ["@hotwired/stimulus@3.2.2", "", {}, "sha512-eGeIqNOQpXoPAIP7tC1+1Yc1yl1xnwYqg+3mzqxyrbE5pg5YFBZcA6YoTiByJB6DKAEsiWtl6tjTJS4IYtbB7A=="],
 
-    "@hotwired/turbo": ["@hotwired/turbo@8.0.23", "", {}, "sha512-GZ7cijxEZ6Ig71u7rD6LHaRv/wcE/hNsc+nEfiWOkLNqUgLOwo5MNGWOy5ZV9ZUDSiQx1no7YxjTNnT4O6//cQ=="],
+    "@hotwired/turbo": ["@hotwired/turbo@https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz", {}, "sha512-Sv3T2wuGJmPs+XkNdoO5bZrnuuM9Vs5R4YzteJfr/LBkzcrZlXoCeZOBcc8l0f+LXQrEEYoNj9HgsC1irCTn2g=="],
+
+    "@hotwired/turbo-published": ["@hotwired/turbo@8.0.23", "", {}, "sha512-GZ7cijxEZ6Ig71u7rD6LHaRv/wcE/hNsc+nEfiWOkLNqUgLOwo5MNGWOy5ZV9ZUDSiQx1no7YxjTNnT4O6//cQ=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 

@@ -195,6 +195,28 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
     - `**Full Changelog**: https://github.com/emaia/laravel-hotwire/compare/<prev>...<version>` at the end
 - CHANGELOG.md is updated automatically by the release workflow; do not edit manually
 
+### Turbo builds
+
+While an upstream fix the package needs awaits an official Turbo release, `@hotwired/turbo` in `package.json` points at a
+tarball built from an exact `hotwired/turbo` commit instead of an npm range. `hotwire:install` copies that reference
+into new apps and never replaces one an app already declares; `hotwire:check` advises apps still on a build the package
+has replaced (`Support\TurboBuild`).
+
+- **Build:** `scripts/build_turbo_artifact.sh <full-sha>` writes `build/turbo/hotwired-turbo-<sha12>.tgz` with its
+  checksum and provenance. It refuses commits whose Rollup config or `yarn.lock` layout changed.
+- **Publish:** one prerelease per build, tag `turbo-<sha12>`, the three files as assets:
+  `gh release create turbo-<sha12> --prerelease --target main --title "Turbo build <sha12>" build/turbo/hotwired-turbo-<sha12>.*`.
+  A prerelease stays out of "Latest" and does not trigger the changelog workflow. Confirm the URL downloads without
+  authentication before pointing `package.json` at it. Never delete or replace a published asset: app lockfiles pin
+  its integrity hash.
+- **Adopt a newer build:** publish it, update the URL in `package.json`, run `bun install` to refresh `bun.lock`, and add
+  an upgrade note with the new URL (the switch command keeps Turbo in the section the app declares it in).
+- **Return to npm:** once an official release contains the pinned commit (`gh api
+  repos/hotwired/turbo/compare/<tag>...<sha>` reports `ahead_by: 0`) and `tests/Browser/turbo_build.pw.js` plus the
+  pinned `widget_snapshots` cases pass against it, set `@hotwired/turbo` back to `^<version>` and point
+  `@hotwired/turbo-published` at the same version. Ship it in a minor release with an upgrade note; `hotwire:check`
+  then advises apps on the old build to switch.
+
 ## Development
 
 ```bash

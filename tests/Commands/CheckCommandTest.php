@@ -1603,6 +1603,74 @@ it('marks dependency as present when listed in devDependencies', function () {
         ->assertSuccessful();
 });
 
+it('preserves an HTTPS Turbo reference while fixing other dependencies', function () {
+    $turbo = 'https://example.test/builds/hotwired-turbo.tgz';
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@hotwired/turbo' => $turbo]]);
+    publishController('chart', $this->targetDir);
+    writeView('page.blade.php', '<x-hw::chart />');
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->doesntExpectOutputToContain('@hotwired/turbo')
+        ->assertSuccessful();
+
+    expect(readPackageJson()['devDependencies'])
+        ->toHaveKey('echarts')
+        ->and(readPackageJson()['devDependencies']['@hotwired/turbo'])->toBe($turbo);
+});
+
+function recommendTurbo(string $reference): void
+{
+    $manifest = dirname(__DIR__, 2).'/package.json';
+    test()->partialMock(Filesystem::class, function ($mock) use ($manifest, $reference) {
+        $mock->shouldReceive('get')->with($manifest)->andReturn(json_encode([
+            'dependencies' => ['@hotwired/turbo' => $reference],
+        ]));
+    });
+}
+
+it('advises switching from a superseded package Turbo build without failing or rewriting it', function (string $section, string $recommended, string $command) {
+    $old = 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-000000000000/hotwired-turbo-000000000000.tgz';
+    recommendTurbo($recommended);
+    writePackageJson(['name' => 'app', $section => ['@hotwired/turbo' => $old]]);
+    File::put(base_path('bun.lock'), '{}');
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain('@hotwired/turbo uses the package build turbo-000000000000')
+        ->expectsOutputToContain("`{$command}`")
+        ->assertSuccessful();
+
+    expect(readPackageJson()[$section]['@hotwired/turbo'])->toBe($old);
+})->with([
+    'newer build in devDependencies' => [
+        'devDependencies',
+        'https://github.com/emaia/laravel-hotwire/releases/download/turbo-111111111111/hotwired-turbo-111111111111.tgz',
+        'bun add -d https://github.com/emaia/laravel-hotwire/releases/download/turbo-111111111111/hotwired-turbo-111111111111.tgz',
+    ],
+    'official release in devDependencies' => ['devDependencies', '^8.0.30', 'bun add -d @hotwired/turbo@^8.0.30'],
+    'official release in dependencies' => ['dependencies', '^8.0.30', 'bun add @hotwired/turbo@^8.0.30'],
+]);
+
+it('stays quiet when the app uses the recommended Turbo reference', function () {
+    $recommended = 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-111111111111/hotwired-turbo-111111111111.tgz';
+    recommendTurbo($recommended);
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@hotwired/turbo' => $recommended]]);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('@hotwired/turbo')
+        ->assertSuccessful();
+});
+
+it('leaves Turbo to the installer when it is missing', function () {
+    writePackageJson(['name' => 'app', 'devDependencies' => []]);
+    publishController('chart', $this->targetDir);
+    writeView('page.blade.php', '<x-hw::chart />');
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->assertSuccessful();
+
+    expect(readPackageJson()['devDependencies'])->not->toHaveKey('@hotwired/turbo');
+});
+
 it('marks dependency as missing when absent from package.json', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);
     publishController('chart', $this->targetDir);
