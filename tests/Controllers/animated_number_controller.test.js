@@ -73,12 +73,24 @@ afterEach(async () => {
 
 // --- animate: non-lazy, tested manually ---
 
-test.serial("animate: first rAF frame sets innerHTML to start value", async () => {
+test.serial("animate: first rAF frame writes the start value", async () => {
     await mountLazy(`<span>50</span>`);
 
     installRafMock();
     mounted.controller.animate();
     flushRaf(100);
+
+    expect(mounted.root.innerHTML).toBe("0");
+});
+
+test.serial("animate: restores numeric output when external markup replaces the text", async () => {
+    await mountLazy(`<span>50</span>`);
+    installRafMock();
+    mounted.controller.animate();
+    flushRaf(100);
+    mounted.root.innerHTML = "<strong>0</strong>";
+
+    flushRaf(101);
 
     expect(mounted.root.innerHTML).toBe("0");
 });

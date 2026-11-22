@@ -35,9 +35,16 @@ export default class extends Controller {
             const elapsed = timestamp - startTimestamp;
             const progress = Math.min(elapsed / this.durationValue, 1);
 
-            this.element.innerHTML = Math.floor(
+            const value = Math.floor(
                 progress * (this.endValue - this.startValue) + this.startValue,
             ).toString();
+            const text = this.element.firstChild;
+
+            if (text?.nodeType === Node.TEXT_NODE && text === this.element.lastChild) {
+                if (text.data !== value) text.data = value;
+            } else {
+                this.element.textContent = value;
+            }
 
             if (progress < 1) {
                 this.animationFrame = window.requestAnimationFrame(step);
