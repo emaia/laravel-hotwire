@@ -3,6 +3,12 @@ import { Controller } from "@hotwired/stimulus";
 
 const ITEM_SELECTOR = "[data-reveal-item]";
 const CONTAINER_SELECTOR = '[data-controller~="reveal"]';
+const OPEN_OVERLAY_SELECTOR = `:is(
+    [data-slot="modal-overlay"],
+    [data-slot="alert-dialog-overlay"],
+    [data-slot="drawer-overlay"],
+    [data-slot="sheet-overlay"]
+)[data-state="open"]`;
 const REPLACING_ACTIONS = new Set(["replace", "update", "morph"]);
 const MAX_RENDER_WAIT = 2000;
 const finishes = (animation) => Number.isFinite(animation.effect?.getComputedTiming?.().iterations ?? Infinity);
@@ -13,12 +19,20 @@ const handleVisit = () => {
 // Marks the window in which the Sidebar may carry a view transition name. A name is global, so
 // structural.css keys it on this to stay out of transitions that are not navigation.
 let renderGuard = null;
+const syncRenderMode = () => {
+    document.documentElement.dataset.revealRendering = document.querySelector(OPEN_OVERLAY_SELECTOR)
+        ? "overlay"
+        : "sidebar";
+};
 const handleRenderStart = () => {
     clearTimeout(renderGuard);
-    document.documentElement.dataset.revealRendering = "";
+    syncRenderMode();
     // A visit can be aborted or superseded and never reach turbo:load. Left set, the marker keeps
     // the Sidebar named for every later transition, which is what the marker exists to prevent.
     renderGuard = setTimeout(handleRenderEnd, MAX_RENDER_WAIT);
+};
+const handleRender = () => {
+    if (renderGuard !== null) syncRenderMode();
 };
 const handleRenderEnd = () => {
     clearTimeout(renderGuard);
@@ -60,6 +74,7 @@ function connectDocumentListeners(controller) {
         document.addEventListener("turbo:visit", handleVisit);
         document.addEventListener("turbo:before-stream-render", handleStream);
         document.addEventListener("turbo:before-render", handleRenderStart);
+        document.addEventListener("turbo:render", handleRender);
         document.addEventListener("turbo:load", handleRenderEnd);
     }
 
@@ -73,6 +88,7 @@ function disconnectDocumentListeners(controller) {
         document.removeEventListener("turbo:visit", handleVisit);
         document.removeEventListener("turbo:before-stream-render", handleStream);
         document.removeEventListener("turbo:before-render", handleRenderStart);
+        document.removeEventListener("turbo:render", handleRender);
         document.removeEventListener("turbo:load", handleRenderEnd);
         handleRenderEnd();
     }
