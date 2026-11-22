@@ -128,6 +128,86 @@ test("names the Sidebar for the transition only while Turbo is rendering", async
     await expect(sidebar).toHaveCSS("view-transition-name", "none");
 });
 
+test("samples open overlays at render boundaries instead of tracking their DOM changes in CSS", async ({ page }) => {
+    const structural = await readFile("resources/css/structural.css", "utf8");
+
+    await page.setContent(`
+        <style>${structural}</style>
+        <nav data-slot="sidebar-container" data-side="left" data-controller="reveal" data-reveal-scope="document">
+            <div data-reveal-item>Navigation</div>
+        </nav>
+        <main></main>
+    `);
+    await installController(page);
+
+    const names = await page.evaluate(() => {
+        const main = document.querySelector("main");
+        const sidebar = document.querySelector("nav");
+        const overlay = document.createElement("div");
+        const name = () => getComputedStyle(sidebar).viewTransitionName;
+        const emit = (event, renderMethod) =>
+            document.dispatchEvent(new CustomEvent(`turbo:${event}`, { detail: { renderMethod } }));
+
+        overlay.dataset.slot = "modal-overlay";
+        overlay.dataset.state = "open";
+        main.append(overlay);
+        emit("before-render", "replace");
+        const beforeReplace = name();
+        main.replaceChildren();
+        const beforeRenderEvent = name();
+        emit("render", "replace");
+        const afterReplace = name();
+        emit("load");
+        const afterLoad = name();
+        emit("render");
+        const afterUnpairedRender = name();
+
+        const morphs = [];
+        for (const slot of ["modal-overlay", "alert-dialog-overlay", "drawer-overlay", "sheet-overlay"]) {
+            overlay.dataset.slot = slot;
+            overlay.dataset.state = "open";
+            main.append(overlay);
+            emit("before-render", "morph");
+            const beforeMorph = name();
+            emit("render", "morph");
+            morphs.push([beforeMorph, name()]);
+            emit("load");
+        }
+
+        overlay.dataset.state = "closed";
+        emit("before-render", "morph");
+        const beforeOpening = name();
+        overlay.dataset.state = "open";
+        const beforeOpeningRenderEvent = name();
+        emit("render", "morph");
+        const afterOpening = name();
+
+        return {
+            beforeReplace,
+            beforeRenderEvent,
+            afterReplace,
+            afterLoad,
+            afterUnpairedRender,
+            morphs,
+            beforeOpening,
+            beforeOpeningRenderEvent,
+            afterOpening,
+        };
+    });
+
+    expect(names).toEqual({
+        beforeReplace: "none",
+        beforeRenderEvent: "none",
+        afterReplace: "hotwire-sidebar-left",
+        afterLoad: "none",
+        afterUnpairedRender: "none",
+        morphs: Array.from({ length: 4 }, () => ["none", "none"]),
+        beforeOpening: "hotwire-sidebar-left",
+        beforeOpeningRenderEvent: "hotwire-sidebar-left",
+        afterOpening: "none",
+    });
+});
+
 test("keeps named Sidebar snapshots from crossfading during Turbo renders", async ({ page }) => {
     const structural = await readFile("resources/css/structural.css", "utf8");
 
@@ -181,6 +261,21 @@ test("drops the render marker when a render never lands", async ({ page }) => {
     // Left set by an aborted visit, the marker would keep the chrome named for every later
     // transition — the very thing it exists to prevent.
     await expect(sidebar).toHaveCSS("view-transition-name", "none", { timeout: 4000 });
+});
+
+test("disconnecting the last Reveal clears a pending overlay render", async ({ page }) => {
+    await page.setContent(`
+        <div id="reveal" data-controller="reveal"></div>
+        <div data-slot="sheet-overlay" data-state="open"></div>
+    `);
+    await installController(page);
+
+    const root = page.locator("html");
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("turbo:before-render")));
+    await expect(root).toHaveAttribute("data-reveal-rendering", "overlay");
+
+    await page.locator("#reveal").evaluate((element) => element.remove());
+    await expect(root).not.toHaveAttribute("data-reveal-rendering");
 });
 
 test("collapsed desktop Sidebar labels suppress Reveal without changing expanded or mobile labels", async ({
