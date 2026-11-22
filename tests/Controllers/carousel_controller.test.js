@@ -181,6 +181,30 @@ test.serial("does not rebuild the dots on select (keeps dot nodes stable)", asyn
     expect(dotEls()[0]).toBe(firstDot); // same node — not re-created
 });
 
+test.serial("keeps the dots on reInit but updates the labels when the snap meaning changes", async () => {
+    await mount();
+    const first = dotEls()[0];
+    expect(first.getAttribute("aria-label")).toBe("Go to slide 1");
+
+    emblaState.slideNodes.push({});
+    emit("reInit");
+
+    expect(dotEls()[0] === first).toBe(true);
+    expect(first.getAttribute("aria-label")).toBe("Go to group 1");
+});
+
+test.serial("uses updated dot template content even when the snap count stays the same", async () => {
+    await mount();
+    const first = dotEls()[0];
+    const template = mounted.root.querySelector('template[data-carousel-target="dotTemplate"]');
+    template.content.firstElementChild.textContent = "Updated dot";
+
+    emit("reInit");
+
+    expect(dotEls()[0] === first).toBe(false);
+    expect(dotEls()[0].textContent).toBe("Updated dot");
+});
+
 test.serial("re-renders dots when slidesChanged fires", async () => {
     emblaState.snaps = [0, 0.5, 1];
     await mount();

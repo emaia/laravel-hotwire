@@ -11,6 +11,9 @@ export default class extends Controller {
         options: { type: Object, default: {} },
     };
 
+    #dotList = null;
+    #dotTemplate = null;
+
     initialize() {
         this.onSelect = this.onSelect.bind(this);
         this.onReInit = this.onReInit.bind(this);
@@ -33,6 +36,11 @@ export default class extends Controller {
     disconnect() {
         this.detachMorphRecovery?.();
         this.destroyEmbla();
+        this.#clearDots();
+    }
+
+    dotListTargetDisconnected(list) {
+        if (list === this.#dotList) this.#clearDots();
     }
 
     initEmbla(selectedIndex = null) {
@@ -78,7 +86,7 @@ export default class extends Controller {
 
         if (this.hasIndexLabelTarget && this.indexLabelTarget.textContent !== String(selected + 1)) return true;
         if (this.hasTotalLabelTarget && this.totalLabelTarget.textContent !== String(snaps.length)) return true;
-        if (this.hasDotListTarget && this.dotListTarget.childElementCount !== snaps.length) return true;
+        if (this.hasDotListTarget && !this.#canReuseDots(this.dotListTarget, this.#templateButton(), snaps.length)) return true;
 
         if (this.hasProgressTarget) {
             const expected = `${((selected + 1) / snaps.length) * 100}%`;
@@ -96,7 +104,6 @@ export default class extends Controller {
             this.embla.destroy();
             this.embla = null;
         }
-        this.dotNodes = [];
     }
 
     next() {
@@ -200,25 +207,49 @@ export default class extends Controller {
         if (!this.hasDotListTarget) return;
 
         const snaps = this.embla.scrollSnapList();
-        const template = this.hasDotTemplateTarget ? this.dotTemplateTarget.content.firstElementChild : null;
+        const list = this.dotListTarget;
+        const template = this.#templateButton();
         // When slidesToScroll groups slides, a dot is a group/page, not a single slide.
         const noun = snaps.length === this.embla.slideNodes().length ? "slide" : "group";
 
-        this.dotListTarget.innerHTML = "";
-        this.dotNodes = snaps.map((_, index) => {
-            let node;
-            if (template) {
-                node = template.cloneNode(true);
-            } else {
-                node = document.createElement("button");
-                node.type = "button";
-                node.dataset.action = `${this.identifier}#scrollTo`;
-            }
-            node.setAttribute(`data-${this.identifier}-index-param`, String(index));
-            node.setAttribute("aria-label", `Go to ${noun} ${index + 1}`);
-            this.dotListTarget.appendChild(node);
-            return node;
+        if (!this.#canReuseDots(list, template, snaps.length)) {
+            this.#dotList = list;
+            // Turbo can change the contents of the existing template without replacing its node.
+            this.#dotTemplate = template?.cloneNode(true) ?? null;
+            this.dotNodes = snaps.map((_, index) => {
+                const node = template?.cloneNode(true) ?? document.createElement("button");
+                if (!template) {
+                    node.type = "button";
+                    node.dataset.action = `${this.identifier}#scrollTo`;
+                }
+                node.setAttribute(`data-${this.identifier}-index-param`, String(index));
+                return node;
+            });
+            list.replaceChildren(...this.dotNodes);
+        }
+
+        this.dotNodes.forEach((node, index) => {
+            const label = `Go to ${noun} ${index + 1}`;
+            if (node.getAttribute("aria-label") !== label) node.setAttribute("aria-label", label);
         });
+    }
+
+    #templateButton() {
+        return this.hasDotTemplateTarget ? this.dotTemplateTarget.content.firstElementChild : null;
+    }
+
+    #clearDots() {
+        this.dotNodes = [];
+        this.#dotList = null;
+        this.#dotTemplate = null;
+    }
+
+    #canReuseDots(list, template, count) {
+        return list === this.#dotList
+            && this.dotNodes.length === count
+            && list.childElementCount === count
+            && this.dotNodes.every((node, index) => node === list.children[index])
+            && (template ? template.isEqualNode(this.#dotTemplate) : this.#dotTemplate === null);
     }
 
     syncSelected() {
@@ -227,7 +258,7 @@ export default class extends Controller {
         const selected = this.embla.selectedScrollSnap();
         this.dotNodes.forEach((node, index) => {
             if (index === selected) {
-                node.setAttribute("aria-current", "true");
+                if (node.getAttribute("aria-current") !== "true") node.setAttribute("aria-current", "true");
             } else {
                 node.removeAttribute("aria-current");
             }

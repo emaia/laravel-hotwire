@@ -133,6 +133,28 @@ test.serial("load restores focus to the replacement next link", async () => {
     expect(document.activeElement.id).toBe("page-3-link");
 });
 
+test.serial("a focus or scroll error after append does not report a failed page load", async () => {
+    await mount(pageHtml());
+    installFetch(nextPageHtml());
+    const failure = new Error("Cannot restore scroll position");
+    const handleError = mock(() => {});
+    mounted.controller.application.handleError = handleError;
+    mounted.controller.restorePosition = () => { throw failure; };
+    const errors = mock(() => {});
+    document.addEventListener("pagination:error", errors);
+
+    try {
+        await mounted.controller.loadNext(mounted.root.querySelector("a"));
+
+        expect(document.querySelector("#page-2")).not.toBeNull();
+        expect(document.querySelector("#page-3-link")).not.toBeNull();
+        expect(errors).not.toHaveBeenCalled();
+        expect(handleError.mock.calls[0]?.[0] === failure).toBe(true);
+    } finally {
+        document.removeEventListener("pagination:error", errors);
+    }
+});
+
 test.serial("manual load scrolls to the configured target", async () => {
     await mount(pageHtml({ scrollTo: "#heading" }));
     installFetch(nextPageHtml());
