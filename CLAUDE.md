@@ -200,7 +200,7 @@ catalog, and any visual ownership must also be registered in styles.php**, or th
 While an upstream fix the package needs awaits an official Turbo release, `@hotwired/turbo` in `package.json` points at a
 tarball built from an exact `hotwired/turbo` commit instead of an npm range. `hotwire:install` copies that reference
 into new apps and never replaces one an app already declares; `hotwire:check` advises apps still on a build the package
-has replaced (`Support\TurboBuild`).
+has replaced (`Support\PinnedHotwireBuild`).
 
 - **Build:** `scripts/build_turbo_artifact.sh <full-sha>` writes `build/turbo/hotwired-turbo-<sha12>.tgz` with its
   checksum and provenance. It refuses commits whose Rollup config or `yarn.lock` layout changed.
@@ -216,6 +216,34 @@ has replaced (`Support\TurboBuild`).
   pinned `widget_snapshots` cases pass against it, set `@hotwired/turbo` back to `^<version>` and point
   `@hotwired/turbo-published` at the same version. Ship it in a minor release with an upgrade note; `hotwire:check`
   then advises apps on the old build to switch.
+
+### Stimulus builds
+
+`@hotwired/stimulus` follows the same installer and advisory rules as Turbo.
+
+- **Build:** `scripts/build_stimulus_artifact.sh <source-sha> <dev-build-sha>` writes the tarball, checksum and
+  provenance together to `build/stimulus/stimulus-<sha12>/`. Use full commit SHAs, never the moving `latest` tag.
+  The script preserves the official bundles and package name, records the source SHA in `gitHead`, adds SemVer build metadata such as
+  `3.2.2+hotwire.<sha12>` without changing peer compatibility, and omits upstream scripts and test declarations.
+  Use `gitHead` and the provenance manifest and checksum to verify the build; do not rely on a version display.
+  Run one build at a time per output directory and do not modify it during the build: the script cannot detect
+  an empty tag directory created between the final check and the rename. The tag directory appears all at once.
+  Exit status `73` means a check before the rename found the tag destination. To cancel a build, use Ctrl-C in the
+  foreground terminal or signal the process group; signaling only the Bash PID may leave children running.
+  Check the three assets and checksum before removing any tag directory after an interruption. A forced kill may
+  leave a hidden `.stimulus-*` staging directory, which can be removed once the run has stopped.
+- **Publish:** use a dedicated GitHub prerelease, never Latest. With approval, run
+  `gh release create <tag> --prerelease --latest=false --target main --title "Stimulus build <sha12>"
+  --notes-file <notes> build/stimulus/<tag>/hotwired-<tag>.*` with the tag printed by the build script. Use
+  `--prerelease` so the changelog workflow does not run. Never replace an asset. To repackage the same source,
+  pass an output directory and a new revision number (for example `build/stimulus 2`); the tag will end in `-r2`.
+  If an older local build put the files under `<tag>/assets/`, rebuild in a fresh output directory before publishing.
+- **Adopt:** check the public download and checksum without authentication before updating `package.json` and `bun.lock`.
+  Keep an upgrade note with the URL; the installer does not change references an app already declares.
+
+Return to npm when an official version includes the [Stimulus #877](https://github.com/hotwired/stimulus/pull/877)
+fix and passes `tests/Browser/stimulus_build.pw.js` and the loader smoke. Set `STIMULUS_TEST_BUNDLE` to the candidate
+release's `dist/stimulus.umd.js` to run the regression check before changing the repository dependency.
 
 ## Development
 

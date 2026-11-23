@@ -6,6 +6,25 @@ Manual steps required when upgrading to a release that introduces a breaking cha
 
 ## Unreleased
 
+### Stimulus installs from a pinned build
+
+`hotwire:install` now adds `@hotwired/stimulus` from the [pinned build `f45f6138ea0e`](https://github.com/emaia/laravel-hotwire/releases/tag/stimulus-f45f6138ea0e)
+instead of `^3.2.2` when the app does not already declare Stimulus. This build reduces retention of removed elements
+with Stimulus actions when Turbo Streams, morphs or Frames update a region without unmounting its controller.
+Imports stay `@hotwired/stimulus`.
+
+Existing apps keep their Stimulus reference. To adopt the build, run the command for your package manager:
+
+```bash
+bun add -d https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz
+# npm install -D <url> · pnpm add -D <url> · yarn add -D <url>
+```
+
+Omit `-d` or `-D` if your app declares Stimulus in `dependencies` rather than `devDependencies`. Commit `package.json`
+and the lockfile, then rebuild your Vite assets. To go back, restore your prior npm reference, refresh the lockfile
+and rebuild. `hotwire:check` advises when your app still uses a package build that has been replaced; it never
+switches it for you and does not ask apps with an npm version range to switch.
+
 ### Turbo installs from a pinned build
 
 `hotwire:install` now adds `@hotwired/turbo` as a tarball built from upstream commit
