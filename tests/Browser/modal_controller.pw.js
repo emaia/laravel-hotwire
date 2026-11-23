@@ -775,23 +775,77 @@ test("a static root can own a streamed child and closing it retires that child",
     await expect(page.locator("#static-origin")).toContainText("Static draft");
 });
 
-async function mountHostLinks(page, links, origin = "http://overlays.test") {
+async function mountHostLinks(page, links, origin = "http://overlays.test", { family = "modal", turbo = "turbo" } = {}) {
     await page.route("http://overlays.test/", (route) =>
         route.fulfill({ contentType: "text/html", body: "<html><body></body></html>" }),
     );
     await page.goto(`${origin}/`);
-    await page.setContent(`${links}<p id="link-result"></p><div data-controller="modal" data-hotwire-overlay-host="modal">
-        <div data-modal-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
-            <div data-modal-target="backdrop"></div><div data-modal-target="dialog"><turbo-frame id="modal" data-modal-target="dynamicContent"></turbo-frame></div>
+    await page.setContent(`${links}<p id="link-result"></p><div data-controller="${family}" data-hotwire-overlay-host="${family}">
+        <div data-${family}-target="modal" data-state="closed" data-motion="none" role="dialog" tabindex="-1" hidden inert>
+            <div data-${family}-target="backdrop"></div><div data-${family}-target="dialog"><turbo-frame id="${family}" data-${family}-target="dynamicContent"></turbo-frame></div>
         </div>
     </div>`);
-    await page.addScriptTag({ path: "node_modules/@hotwired/turbo/dist/turbo.es2017-umd.js" });
+    await page.addScriptTag({ path: `node_modules/@hotwired/${turbo}/dist/turbo.es2017-umd.js` });
     await page.addScriptTag({ path: "node_modules/@hotwired/stimulus/dist/stimulus.umd.js" });
     await page.addScriptTag({ content: await browserOverlayControllerScript() });
-    await page.evaluate(() => {
+    await page.evaluate((family) => {
         window.StimulusApplication = window.Stimulus.Application.start();
-        window.StimulusApplication.register("modal", window.ModalController);
-    });
+        const controllers = { modal: window.ModalController, sheet: window.SheetController, drawer: window.DrawerController };
+        window.StimulusApplication.register(family, controllers[family]);
+    }, family);
+}
+
+for (const turbo of ["turbo", "turbo-published"]) {
+    for (const family of ["modal", "sheet", "drawer"]) {
+        test(`reports the source of each concrete ${family} close with ${turbo}`, async ({ page }) => {
+            const origin = "http://overlays.test";
+            await mountHostLinks(page, `<a href="/editor" data-turbo-frame="${family}">Open editor</a>`, origin, { family, turbo });
+            await page.route(`${origin}/editor`, (route) => route.fulfill({
+                contentType: "text/html",
+                body: `<turbo-frame id="${route.request().headers()["turbo-frame"]}"><p>Editor</p></turbo-frame>`,
+            }));
+            await page.evaluate((family) => {
+                window.overlayClosures = [];
+                document.addEventListener(`${family}:closed`, (event) => {
+                    window.overlayClosures.push([event.target.querySelector("turbo-frame").id, event.detail?.source]);
+                });
+            }, family);
+
+            const instance = page.locator("[data-hotwire-overlay-instance]");
+            const expected = [];
+            for (const [dismissal, source] of [
+                ["escape", "user"],
+                ["close stream", "stream"],
+                ["empty update", "stream"],
+                ["close method", "programmatic"],
+                ["cache preparation", "cleanup"],
+            ]) {
+                await page.getByRole("link", { name: "Open editor" }).click();
+                await expect(instance.getByRole("dialog")).toBeVisible();
+                await expect(instance).toContainText("Editor");
+                const id = await instance.locator("turbo-frame").getAttribute("id");
+
+                if (dismissal === "escape") {
+                    await page.keyboard.press("Escape");
+                } else if (source === "stream") {
+                    const action = dismissal === "close stream" ? "hotwire-overlay-close" : "update";
+                    await page.evaluate(({ id, action }) => window.Turbo.renderStreamMessage(
+                        `<turbo-stream action="${action}" target="${id}"><template></template></turbo-stream>`,
+                    ), { id, action });
+                } else if (source === "programmatic") {
+                    await instance.evaluate((root, family) =>
+                        window.StimulusApplication.getControllerForElementAndIdentifier(root, family).close(), family);
+                } else {
+                    await page.evaluate(() => document.dispatchEvent(new Event("turbo:before-cache", { bubbles: true })));
+                }
+
+                expected.push([id, source]);
+                await expect(instance).toHaveCount(0);
+                expect(await page.evaluate(() => window.overlayClosures)).toEqual(expected);
+                await expect(page).toHaveURL(`${origin}/`);
+            }
+        });
+    }
 }
 
 for (const inherited of [false, true]) {
@@ -1438,6 +1492,10 @@ test("a delayed return and close cannot affect a later opening for another form"
     });
 
     const instances = page.locator("[data-hotwire-overlay-instance]");
+    await page.evaluate(() => {
+        window.overlayCloseSources = [];
+        document.addEventListener("modal:closed", (event) => window.overlayCloseSources.push(event.detail.source));
+    });
     await page.locator("#first a").click();
     const firstId = await instances.first().locator("turbo-frame").getAttribute("id");
     await deferTurboRenders(page, "turbo:before-stream-render", `turbo-stream[target="${firstId}"]`, 2);
@@ -1457,6 +1515,7 @@ test("a delayed return and close cannot affect a later opening for another form"
     await expect(instances).toHaveCount(1);
     await expect(page.locator("#first select")).toHaveValue("1");
     await expect(page.locator("#second select")).toHaveValue("1");
+    expect(await page.evaluate(() => window.overlayCloseSources)).toEqual(["programmatic"]);
 
     await pending[1].route.fulfill({
         status: 200,
@@ -1466,6 +1525,7 @@ test("a delayed return and close cannot affect a later opening for another form"
     await expect(instances).toHaveCount(0);
     await expect(page.locator("#second select")).toHaveValue("current");
     await expect(page.locator("#first select")).toHaveValue("1");
+    expect(await page.evaluate(() => window.overlayCloseSources)).toEqual(["programmatic", "stream"]);
 });
 
 test("closing a drawer ancestor retires a child modal without losing the parent draft", async ({ page }) => {

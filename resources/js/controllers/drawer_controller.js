@@ -26,7 +26,7 @@ export default class DrawerController extends Controller {
     hasConnected = false;
     overlayRefreshQueued = false;
     framePresentation = createOverlayPresentation(this);
-    closeOverlayHandler = () => this.close();
+    closeOverlayHandler = () => this.close(undefined, "stream");
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -88,10 +88,10 @@ export default class DrawerController extends Controller {
             initialFocusFallback: () => this.modalTarget,
             escapeCapture: true,
             stopEscapePropagation: true,
-            onEscape: () => this.close(),
+            onEscape: () => this.close(undefined, "user"),
             onOpen: () => this.dispatch("opened"),
-            onClose: () => {
-                this.dispatch("closed");
+            onClose: (source) => {
+                this.dispatch("closed", { detail: { source } });
                 this.frameOverlay?.handleOverlayClosed();
             },
             getTriggerElement: () => this.triggerElement,
@@ -116,14 +116,14 @@ export default class DrawerController extends Controller {
         return this.overlay?.open();
     }
 
-    close() {
+    close(event, source = event ? "user" : "programmatic") {
         this.frameOverlay?.markDismissedWhileLoading();
         dismissOverlayInstance(this);
-        return this.overlay?.close();
+        return this.overlay?.close({ source });
     }
 
     toggle(event) {
-        this.isOpen ? this.close() : this.open(event);
+        this.isOpen ? this.close(event) : this.open(event);
     }
 
     clickOutside(event) {
@@ -131,7 +131,7 @@ export default class DrawerController extends Controller {
         if (!this.overlay?.isTop) return;
         if (this.dialogTarget.contains(event.target)) return;
 
-        this.close();
+        this.close(event);
     }
 
     closeForCache() {

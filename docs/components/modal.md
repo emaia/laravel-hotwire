@@ -362,7 +362,7 @@ Pass an arbitrary size to set an inline max width on the dialog positioner:
 | Event          | Description                                 |
 |----------------|---------------------------------------------|
 | `modal:opened` | Fired after the opening animation completes |
-| `modal:closed` | Fired after the closing animation completes |
+| `modal:closed` | Fired when the overlay closes; `detail.source` identifies the [origin of the close](./frame-or-page.md#close-event-sources). |
 
 ## Accessibility
 

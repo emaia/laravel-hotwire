@@ -25,7 +25,7 @@ export default class ModalController extends Controller {
     hasConnected = false;
     overlayRefreshQueued = false;
     framePresentation = createOverlayPresentation(this);
-    closeOverlayHandler = () => this.close();
+    closeOverlayHandler = () => this.close(undefined, "stream");
 
     get isOpen() {
         return this.overlay?.isOpen ?? false;
@@ -86,12 +86,12 @@ export default class ModalController extends Controller {
             closeOnEscape: this.closeOnEscapeValue,
             initialFocus: () => this.initialFocusValue,
             initialFocusFallback: () => this.modalTarget,
-            onEscape: () => this.close(),
+            onEscape: () => this.close(undefined, "user"),
             onOpen: () => {
                 this.#dispatchEvent("modal:opened");
             },
-            onClose: () => {
-                this.#dispatchEvent("modal:closed");
+            onClose: (source) => {
+                this.#dispatchEvent("modal:closed", { source });
                 this.frameOverlay?.handleOverlayClosed();
             },
             getTriggerElement: () => this.triggerElement,
@@ -132,7 +132,7 @@ export default class ModalController extends Controller {
         return this.overlay?.open();
     }
 
-    close(event) {
+    close(event, source = event ? "user" : "programmatic") {
         if (event && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) return;
         if (event && event.button !== undefined && event.button !== 0) return;
 
@@ -153,7 +153,7 @@ export default class ModalController extends Controller {
         dismissOverlayInstance(this);
         if (!this.overlay?.isOpen) return;
 
-        return this.overlay?.close();
+        return this.overlay?.close({ source });
     }
 
     closeForCache() {
@@ -205,16 +205,16 @@ export default class ModalController extends Controller {
                 !this.#isClickInsideModal(event) &&
                 !this.#isClickOnModalRelatedElement(event.target)
             ) {
-                this.close();
+                this.close(undefined, "user");
             }
         }
     }
 
-    #dispatchEvent(name) {
+    #dispatchEvent(name, detail = {}) {
         this.element.dispatchEvent(
             new CustomEvent(name, {
                 bubbles: true,
-                detail: { controller: this },
+                detail: { controller: this, ...detail },
             }),
         );
     }
