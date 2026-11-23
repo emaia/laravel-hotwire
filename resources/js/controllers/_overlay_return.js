@@ -127,7 +127,7 @@ export function registerOverlayStreamActions(findInstance, StreamActions, openOv
             }
             return;
         }
-        if (record.retired || record.returnFailed) return;
-        record.controller()?.close();
+        if (record.retired || record.returnFailed || !record.root.isConnected) return;
+        record.root.dispatchEvent(new Event("hotwire:overlay-close"));
     };
 }

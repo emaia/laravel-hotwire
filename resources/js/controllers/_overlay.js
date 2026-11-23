@@ -153,7 +153,7 @@ export function createOverlay(
         return true;
     }
 
-    async function close({ restoreFocus = true } = {}) {
+    async function close({ restoreFocus = true, source = "programmatic" } = {}) {
         if (destroyed) return false;
         if (!desiredOpen && presence.phase === "closing") return closing;
         if (!desiredOpen && presence.phase === "closed") return true;
@@ -174,7 +174,7 @@ export function createOverlay(
         if (!completed || desiredOpen || destroyed) return false;
 
         topLayerHandle.hide();
-        onClose?.();
+        onClose?.(source);
 
         return true;
     }
@@ -210,7 +210,7 @@ export function createOverlay(
         unlockScrollIfNeeded();
         topLayerHandle.hide();
         if (restoreFocus) restoreTriggerFocus();
-        if (wasOpen) onClose?.();
+        if (wasOpen) onClose?.("cleanup");
 
         return true;
     }

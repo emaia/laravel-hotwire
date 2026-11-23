@@ -356,6 +356,21 @@ canonical `modal` host does not close a child instance. A `refresh` stream affec
 parent's unsaved draft; use it only when that is intentional. Server-driven instance-aware close operations are covered
 by the separate overlay response API.
 
+### Close event sources
+
+The `modal:closed`, `sheet:closed`, and `drawer:closed` events bubble from the closing overlay root.
+Read `event.detail.source` to distinguish:
+
+| Source | What initiated the close |
+| --- | --- |
+| `user` | Escape, the backdrop, or an overlay close control. |
+| `stream` | A targeted close command or an empty update to the overlay's Frame. |
+| `programmatic` | A direct call to `close()`. |
+| `cleanup` | Lifecycle cleanup, such as preparing the page for Turbo's cache. |
+
+A Stream close does not imply a successful mutation. The event reports the source, not the outcome, and does not
+change the URL. If your application navigates in response to closing, ignore cleanup events.
+
 ## Returning validation errors to the frame source
 
 The visible page URL is not necessarily the URL that rendered a frame. A task board at `/tasks` may load an edit form

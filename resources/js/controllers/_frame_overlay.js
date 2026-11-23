@@ -176,7 +176,7 @@ export function createFrameOverlay(controller) {
 
         if (controller.overlay?.isClosing) return;
 
-        controller.close();
+        controller.close(undefined, "stream");
     }
 
     function handleFrameLoad(event) {
