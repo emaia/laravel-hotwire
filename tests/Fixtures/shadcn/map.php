@@ -1878,6 +1878,7 @@ return [
         'item-separator' => ['decision' => 'equivalent', 'class' => 'cn-item-separator'],
         'item-title' => ['decision' => 'equivalent', 'class' => 'cn-item-title'],
         'kbd' => ['decision' => 'equivalent', 'class' => 'cn-kbd'],
+        'map' => ['decision' => 'hotwire-only', 'note' => 'The corpus has no map.'],
         'kbd-group' => ['decision' => 'equivalent', 'class' => 'cn-kbd-group'],
         'marker' => ['decision' => 'equivalent', 'class' => 'cn-marker'],
         'marker-content' => ['decision' => 'equivalent', 'class' => 'cn-marker-content'],

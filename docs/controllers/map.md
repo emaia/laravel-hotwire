@@ -120,6 +120,10 @@ Then mount with the swapped identifier:
 
 Or via the `controller` prop on `<hw:map>` (see component docs).
 
+In a dark scope the official presets invert the tile pane, which suits light raster tiles such as OpenStreetMap. Set
+`--map-tile-filter: none` on the map when your provider already serves dark tiles or imagery that should not be
+inverted — see [Dark mode](../components/map.md#dark-mode).
+
 ## `defaultView` hook
 
 Returns `{ center?, zoom? }` applied **as a fallback** — values from the server/markup always win. Useful for subclasses that want a sensible default when the consumer doesn't pass one:

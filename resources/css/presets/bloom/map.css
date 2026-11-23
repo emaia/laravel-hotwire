@@ -1,0 +1,29 @@
+@layer components {
+    /* Map */
+    @scope ([data-theme="dark"]) to ([data-theme="light"]) {
+        :where(:scope, :scope *)[data-slot="map"] .leaflet-tile-pane { filter: var(--map-tile-filter, invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9)); }
+        :where(:scope, :scope *)[data-slot="map"] .leaflet-control-layers-toggle { filter: invert(1); }
+    }
+}
+
+/* Leaflet's stylesheet is imported from JavaScript and stays unlayered, so these rules must stay unlayered too. */
+[data-slot="map"].leaflet-container { @apply bg-muted; }
+[data-slot="map"].leaflet-container a { @apply text-primary; }
+[data-slot="map"].leaflet-container .leaflet-zoom-box { @apply border-ring bg-background/50; }
+[data-slot="map"].leaflet-container .leaflet-bar { @apply border-border; }
+[data-slot="map"].leaflet-container .leaflet-bar a { @apply border-b-border bg-popover text-popover-foreground; }
+[data-slot="map"].leaflet-container .leaflet-bar a:is(:hover, :focus) { @apply bg-accent text-accent-foreground; }
+[data-slot="map"].leaflet-container .leaflet-bar a.leaflet-disabled { @apply bg-muted text-muted-foreground; }
+[data-slot="map"].leaflet-container :is(.leaflet-control-layers, .leaflet-control-layers-expanded) { @apply border-border bg-popover text-popover-foreground; }
+[data-slot="map"].leaflet-container .leaflet-control-layers-separator { @apply border-t-border; }
+[data-slot="map"].leaflet-container .leaflet-control-attribution { @apply bg-background/80 text-muted-foreground; }
+[data-slot="map"].leaflet-container .leaflet-control-scale-line { @apply border-muted-foreground bg-background/80 text-foreground; }
+[data-slot="map"].leaflet-container :is(.leaflet-popup-content-wrapper, .leaflet-popup-tip) { @apply bg-popover text-popover-foreground; }
+[data-slot="map"].leaflet-container a.leaflet-popup-close-button { @apply text-muted-foreground; }
+[data-slot="map"].leaflet-container a.leaflet-popup-close-button:is(:hover, :focus) { @apply text-foreground; }
+[data-slot="map"].leaflet-container .leaflet-tooltip { @apply border-popover bg-popover text-popover-foreground; }
+[data-slot="map"].leaflet-container .leaflet-tooltip-top::before { @apply border-t-popover; }
+[data-slot="map"].leaflet-container .leaflet-tooltip-bottom::before { @apply border-b-popover; }
+[data-slot="map"].leaflet-container .leaflet-tooltip-left::before { @apply border-l-popover; }
+[data-slot="map"].leaflet-container .leaflet-tooltip-right::before { @apply border-r-popover; }
+[data-slot="map"].leaflet-container .leaflet-div-icon { @apply border-border bg-card; }

@@ -163,6 +163,7 @@ it('projects singleton primitive slot contracts from their component classes', f
     'button' => ['button', Button::class, 'button', 'visual'],
     'checkbox' => ['checkbox', Checkbox::class, 'checkbox', 'visual'],
     'icon' => ['icon', Icon::class, 'icon', 'visual'],
+    'map' => ['map', Map::class, 'map', 'visual'],
     'scroll progress' => ['scroll-progress', ScrollProgress::class, 'scroll-progress', 'visual'],
     'separator' => ['separator', Separator::class, 'separator', 'visual'],
     'skeleton' => ['skeleton', Skeleton::class, 'skeleton', 'visual'],
@@ -186,7 +187,6 @@ it('projects singleton structural host slot contracts without instantiating thei
     ]);
 })->with([
     'chart' => ['chart', Chart::class, 'chart'],
-    'map' => ['map', Map::class, 'map'],
     'optimistic' => ['optimistic', Optimistic::class, 'optimistic'],
 ]);
 

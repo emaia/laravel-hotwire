@@ -111,6 +111,32 @@ By default the map zooms when the user scrolls with the mouse wheel — convenie
 
 Both props become inline `style` declarations. `height` is required (Leaflet won't render in a zero-height container); `width` defaults to `100%`.
 
+## Dark mode
+
+Both official presets theme the map with the rest of the page. Leaflet's zoom, layers, scale and attribution
+controls, popups and tooltips use the semantic tokens, so they follow the nearest `data-theme` scope like any other
+component.
+
+Raster tiles are images, so tokens cannot recolour them. Inside a dark scope the preset applies a CSS filter to
+Leaflet's tile pane that turns the default OpenStreetMap tiles into a dark map. Markers, GeoJSON layers, popups and
+controls sit in other panes and keep their own colours. The filter stops at a nested `data-theme="light"` boundary.
+
+Set `--map-tile-filter` to change or drop the filter, for example when a tile provider already serves dark tiles or
+when inverted satellite imagery would look wrong:
+
+```blade
+<hw:map url="/api/locations" style="--map-tile-filter: none" />
+```
+
+```css
+[data-slot="map"] { --map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.8); }
+```
+
+Leaflet's own stylesheet is imported by the controller and reaches the page without a cascade layer, and unlayered
+rules beat layered ones whatever their specificity. The preset therefore keeps its Leaflet control colours unlayered,
+and application overrides of those colours must be unlayered too. `--map-tile-filter` and the tile filter itself are
+not affected by this.
+
 ## Controller swap — subclass extensibility
 
 When you need a custom tile provider, marker icon, plugin (e.g. cluster), or post-init wiring, write a subclass:
