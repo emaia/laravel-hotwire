@@ -41,7 +41,8 @@ for (const preset of ["nova", "bloom"]) {
 
         await trigger.press("Enter");
         const menu = trail.locator('[data-slot="dropdown-menu"]');
-        await expect(menu).toBeVisible();
+        // During positioning the menu is visible but inert.
+        await expect(menu).toHaveAttribute("data-state", "open");
         await page.keyboard.press("Tab");
         await expect(menu.getByRole("link", { name: "Dashboard" })).toBeFocused();
         await expect(menu.getByRole("link", { name: "Projects" })).toHaveAttribute("data-turbo-frame", "results");
@@ -54,6 +55,8 @@ for (const preset of ["nova", "bloom"]) {
         await page.setViewportSize({ width: 768, height: 600 });
         await expect(menu).toBeHidden();
         await expect(expanded.getByRole("link", { name: "Projects" })).toBeVisible();
+        // CSS hides the compact trail before the dropdown handles the media-query change.
+        await expect(compact.locator('button[aria-label="More pages"]')).toHaveAttribute("aria-expanded", "false");
         await page.setViewportSize({ width: 320, height: 600 });
         await expect(trigger).toHaveAttribute("aria-expanded", "false");
         await expect(menu).toBeHidden();
