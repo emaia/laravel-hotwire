@@ -10,41 +10,21 @@ export default class extends Controller {
 
     initialize() {
         this.formChanges(this.element);
-        this.setupActions = this.setupActions.bind(this);
+        this.leavingPage = this.leavingPage.bind(this);
+        this.allowFormSubmission = this.allowFormSubmission.bind(this);
+        this.submissionEnded = this.submissionEnded.bind(this);
     }
 
     connect() {
-        this.setupActions();
-        document.addEventListener("turbo:render", this.setupActions);
+        window.addEventListener("turbo:before-visit", this.leavingPage);
+        this.element.addEventListener("turbo:submit-start", this.allowFormSubmission);
+        this.element.addEventListener("turbo:submit-end", this.submissionEnded);
     }
 
     disconnect() {
-        document.removeEventListener("turbo:render", this.setupActions);
-    }
-
-    setupActions() {
-        this.setupFormActions();
-        this.setupSubmitButtonActions();
-    }
-
-    setupFormActions() {
-        this.updateActions(this.element, [
-            "turbo:before-visit@window->unsaved-changes#leavingPage",
-            "unsaved-changes#allowFormSubmission",
-        ]);
-    }
-
-    setupSubmitButtonActions() {
-        const submitButton = this.element.querySelector('button[type="submit"]');
-        if (submitButton) {
-            this.updateActions(submitButton, ["unsaved-changes#allowFormSubmission"]);
-        }
-    }
-
-    updateActions(element, newActions) {
-        const currentActions = (element.dataset.action || "").split(" ").filter(Boolean);
-        const updatedActions = [...new Set([...currentActions, ...newActions])];
-        element.dataset.action = updatedActions.join(" ");
+        window.removeEventListener("turbo:before-visit", this.leavingPage);
+        this.element.removeEventListener("turbo:submit-start", this.allowFormSubmission);
+        this.element.removeEventListener("turbo:submit-end", this.submissionEnded);
     }
 
     leavingPage(event) {
@@ -62,8 +42,14 @@ export default class extends Controller {
         this.allow = false;
     }
 
-    allowFormSubmission(event) {
+    allowFormSubmission() {
         this.allow = true;
+    }
+
+    submissionEnded(event) {
+        if (!event.detail.success) {
+            this.allow = false;
+        }
     }
 
     formChanges(form) {

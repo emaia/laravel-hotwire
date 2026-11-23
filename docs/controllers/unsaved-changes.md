@@ -10,7 +10,7 @@ in-app navigations.
 ## Requirements
 
 - No external dependencies.
-- Turbo (`turbo:before-visit` and `turbo:render` events).
+- Turbo (`turbo:before-visit`, `turbo:submit-start` and `turbo:submit-end` events).
 
 ## Basic Usage
 
@@ -32,7 +32,12 @@ in-app navigations.
 
 If the user changes any field and tries to navigate away through a Turbo link, a browser confirmation dialog is shown.
 
-When the submit button is clicked, navigation is allowed without an alert.
+Navigation is allowed without an alert only when Turbo actually starts submitting the form (`turbo:submit-start`),
+whether triggered by a button, Enter or `requestSubmit()`. A click blocked by browser validation, or a prevented
+native `submit`, does not disable the warning.
+
+If the submission ends without success (`turbo:submit-end`), including server validation or network errors, the
+warning is rearmed for fields that still differ from their defaults. Successful submissions keep navigation allowed.
 
 ## Ignoring specific fields
 
@@ -66,19 +71,23 @@ The controller detects changes in:
 
 ## How it works
 
-The controller automatically sets up the required `data-action` on `connect()`:
+The controller attaches listeners on `connect()` and removes them on `disconnect()`, without modifying the form's
+or submit buttons' `data-action`:
 
 1. Listens to `turbo:before-visit` on window to intercept Turbo Drive navigations.
-2. Listens to form submit to set `allow = true` before submission.
-3. On navigation, compares the current field state with their default values.
-4. If there are differences and `allow` is `false`, shows `window.confirm()`.
+2. Listens to `turbo:submit-start` on its own form to allow submission navigation.
+3. Listens to `turbo:submit-end` on its own form to rearm the warning when `detail.success` is falsy.
+4. On navigation, compares the current field state with their default values.
+5. If there are differences and navigation is not allowed, shows `window.confirm()`.
 
 The current controller handles Turbo Drive navigation. Browser tab close and reload handling are outside this
 controller's documented behavior.
 
 ## Turbo morph support
 
-The controller re-applies its `data-action` wiring on every `turbo:render`. Under morph (`<hw:meta refresh />`
-or `data-turbo-action="morph"`), idiomorph rewrites the form's `data-action` attribute from server HTML — without
-re-applying, the leave-warning and submit-allow actions would be lost after a morph. The "is changed" detection still
-compares `value` vs `defaultValue` per element, which idiomorph keeps in sync when it updates input attributes.
+When a morph preserves the form element, its listeners remain attached even if the server HTML rewrites
+`data-action`. This also applies to Frame or Stream updates that retain the form.
+
+Change detection still compares each field with its current defaults; this controller does not prevent a render
+from removing fields or resetting their values/defaults. Use [Morph Guard](turbo/morph-guard.md) when an editor needs
+to be protected from an outer page morph.
