@@ -854,6 +854,9 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="left"]' => ['translate-x-2'],
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="closed"][data-side="right"]' => ['-translate-x-2'],
         ':is([data-slot="dropdown-menu"], [data-slot="tooltip"], [data-slot="hover-card-content"], [data-slot="popover-content"], [data-slot="multi-select-content"])[data-state="open"]' => ['translate-x-0'],
+        // Leaflet places tooltips on a physical side and does not mirror them for right-to-left text.
+        '[data-slot="map"].leaflet-container .leaflet-tooltip-left::before' => ['border-l-popover'],
+        '[data-slot="map"].leaflet-container .leaflet-tooltip-right::before' => ['border-r-popover'],
     ];
     $unexpected = collect($physical)
         ->reject(fn (array $occurrence): bool => in_array(

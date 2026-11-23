@@ -10,7 +10,7 @@ use InvalidArgumentException;
 class Map extends Component
 {
     public const array SLOTS = [
-        'root' => ['name' => 'map', 'kind' => 'structural'],
+        'root' => ['name' => 'map', 'kind' => 'visual'],
     ];
 
     public ?string $encodedMarkers;

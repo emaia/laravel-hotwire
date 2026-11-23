@@ -572,6 +572,10 @@ it('resolves migrated integrations to exact canonical visual sources', function 
         ['toaster'],
         ['presets/nova/toaster.css'],
     ],
+    'Map component anatomy' => [
+        ['map'],
+        ['presets/nova/map.css'],
+    ],
     'Video Embed component anatomy' => [
         ['video-embed'],
         ['presets/nova/video-embed.css'],
