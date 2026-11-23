@@ -17,41 +17,50 @@ class ConditionalField extends Component
     /** @var array<string, string|array<int, string>> */
     public array $conditions;
 
+    /** @var array<string, string|array<int, string>> */
+    public array $unlessConditions;
+
     public string $as;
 
     /**
+     * Configure positive and negated visibility rules.
+     *
      * @param  array<string, string|array<int, string>>|string  $when
+     * @param  array<string, string|array<int, string>>|string  $unless
      */
     public function __construct(
-        public array|string $when,
+        public array|string $when = [],
         public mixed $state = null,
         public string $tag = 'fieldset',
         public ?Htmlable $stimulus = null,
         ?string $as = null,
+        public array|string $unless = [],
     ) {
         $this->as = PolymorphicTag::normalize($as ?? $this->tag, ['fieldset', 'div'], 'conditional field');
         $this->tag = $this->as;
-        $this->conditions = $this->normaliseWhen($when);
+        $this->conditions = $this->normaliseConditions($when);
+        $this->unlessConditions = $this->normaliseConditions($unless);
         $this->matches = $this->evaluate($this->state);
     }
 
     /**
+     * Encode the positive rule as runtime attributes.
+     *
      * @return array<int, array{name: string, attribute: string, value: string}>
      */
     public function dataWhenAttributes(): array
     {
-        $attributes = [];
+        return $this->conditionAttributes($this->conditions, 'data-when-');
+    }
 
-        foreach ($this->conditions as $name => $expected) {
-            $values = is_array($expected) ? $expected : [$expected];
-            $attributes[] = [
-                'name' => $name,
-                'attribute' => 'data-when-'.$name,
-                'value' => implode('|', $values),
-            ];
-        }
-
-        return $attributes;
+    /**
+     * Encode the negated rule as runtime attributes.
+     *
+     * @return array<int, array{name: string, attribute: string, value: string}>
+     */
+    public function dataUnlessAttributes(): array
+    {
+        return $this->conditionAttributes($this->unlessConditions, 'data-unless-');
     }
 
     public function render()
@@ -61,14 +70,42 @@ class ConditionalField extends Component
         ]);
     }
 
+    /** Evaluate both rules against inherited form state. */
     public function matchesWith(mixed $state): bool
     {
         return $this->evaluate($state);
     }
 
+    /**
+     * @param  array<string, string|array<int, string>>  $conditions
+     * @return array<int, array{name: string, attribute: string, value: string}>
+     */
+    private function conditionAttributes(array $conditions, string $prefix): array
+    {
+        $attributes = [];
+
+        foreach ($conditions as $name => $expected) {
+            $values = is_array($expected) ? $expected : [$expected];
+            $attributes[] = [
+                'name' => $name,
+                'attribute' => $prefix.$name,
+                'value' => implode('|', $values),
+            ];
+        }
+
+        return $attributes;
+    }
+
     private function evaluate(mixed $state): bool
     {
-        foreach ($this->conditions as $field => $expected) {
+        return $this->matchesConditions($this->conditions, $state)
+            && ($this->unlessConditions === [] || ! $this->matchesConditions($this->unlessConditions, $state));
+    }
+
+    /** @param array<string, string|array<int, string>> $conditions */
+    private function matchesConditions(array $conditions, mixed $state): bool
+    {
+        foreach ($conditions as $field => $expected) {
             if (! $this->fieldMatches($field, $expected, $state)) {
                 return false;
             }
@@ -134,15 +171,15 @@ class ConditionalField extends Component
     /**
      * @return array<string, string|array<int, string>>
      */
-    private function normaliseWhen(array|string $when): array
+    private function normaliseConditions(array|string $expression): array
     {
-        if (is_array($when)) {
-            return $when;
+        if (is_array($expression)) {
+            return $expression;
         }
 
         $conditions = [];
 
-        foreach (preg_split('/\s+/', trim($when)) ?: [] as $condition) {
+        foreach (preg_split('/\s+/', trim($expression)) ?: [] as $condition) {
             if ($condition === '' || ! str_contains($condition, '=')) {
                 continue;
             }

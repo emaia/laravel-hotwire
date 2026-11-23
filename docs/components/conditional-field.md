@@ -1,8 +1,8 @@
 # Conditional Field
 
 Renders a dependent block for the [`conditional-fields`](../controllers/conditional-fields.md)
-controller. The show/hide rule lives in the `when` prop, and the component renders both the
-server-side initial visibility and the runtime `data-when-*` attributes the controller reads.
+controller. The show/hide rules live in `when` and `unless`, and the component renders both the
+server-side initial visibility and the runtime attributes the controller reads.
 
 The component eliminates the classic rule duplication pitfall: dependent markup should not encode
 the same rule once for JavaScript and once for first paint. Drift between those two copies flashes
@@ -80,12 +80,61 @@ Use the array form when it is clearer for complex rules:
 </hw:conditional-field>
 ```
 
+## Negating A Rule
+
+Use `unless` to show a block except when a rule matches, without listing every other possible value:
+
+```blade
+<hw:conditional-field unless="status=completed">
+    <hw:button type="submit">Save draft</hw:button>
+</hw:conditional-field>
+```
+
+`unless` accepts the same string or array grammar as `when`, including OR alternatives, AND conditions and checkbox
+tokens. It negates the **whole expression**:
+
+```blade
+{{-- Show unless status is either completed or cancelled. --}}
+<hw:conditional-field unless="status=completed|cancelled" />
+
+{{-- Hide only when BOTH status is completed AND approved is yes. --}}
+<hw:conditional-field unless="status=completed approved=yes" />
+
+{{-- Use the array form for values containing spaces. --}}
+<hw:conditional-field :unless="['status' => ['Completed successfully', 'Cancelled by user']]" />
+```
+
+You can combine both props. The block is visible when `when` matches **and** `unless` does not:
+
+```blade
+<hw:conditional-field when="plan=pro" unless="archived=:checked">
+    ...
+</hw:conditional-field>
+```
+
+Omitting a prop, or passing an empty string/array, adds no restriction. Existing `when` rules and literal values
+remain unchanged; `!completed` is a literal value, not a negation operator.
+
+### Empty Selection And Missing Triggers
+
+A radio group with nothing selected, or a checkbox group with no checked items, does not match a specific value.
+For example, `unless="status=completed"` stays visible when the `status` radios exist but none is checked. This does
+not select an option or substitute the model's current status for the field's value.
+
+At runtime, **every trigger named in either rule must exist** inside the controller's scope. A missing trigger keeps
+the block hidden, including with `unless`, so a misspelled field name cannot reveal the block through negation.
+Server rendering cannot inspect sibling controls; keep `state`/`old()` aligned with the controls' actual initial
+values, as for `when`. Use `null` or an empty array in state to represent no selection rather than a model value
+that is not selected in the form.
+
+Conditional visibility is not authorization: validate permitted actions and values on the server.
+
 ## Server-Rendered State
 
 `<hw:input>`, `<hw:select>`, and `<hw:textarea>` each render one field with the value you hand them
 via `:value` / `:selected`, merging `old()` on top automatically.
 
-`<hw:conditional-field>` decides visibility for the whole block by resolving the `when` rule
+`<hw:conditional-field>` decides visibility for the whole block by resolving its `when` and `unless` rules
 server-side, often across multiple fields. It cannot peek at sibling form fields because they are
 separate components, so it resolves trigger values with:
 
@@ -115,7 +164,7 @@ matches against it, and the dependent's initial visibility lines up with what th
 ### State Is About The Triggers
 
 The fields inside the block are irrelevant to whether you pass `state`. What matters is whether the
-trigger fields named in `when` carry an initial value.
+trigger fields named in `when` or `unless` carry an initial value.
 
 ```blade
 <hw:form conditional-fields :state="$message">
@@ -131,12 +180,13 @@ trigger fields named in `when` carry an initial value.
 </hw:form>
 ```
 
-Create forms can skip `state` entirely. Fresh GET requests start hidden, and validation retries still
+Create forms can skip `state` when their trigger controls start empty or unselected. Visibility follows the rule:
+positive value checks usually start hidden, while an `unless` block may start visible. Validation retries still
 use `old()` to restore the submitted trigger values.
 
 ### When The Trigger Name Does Not Match The State Key
 
-The `when` key plays two roles: at runtime the controller looks for `[name="<key>"]` in the form; at
+Each field key in `when` or `unless` plays two roles: at runtime the controller looks for `[name="<key>"]` in the form; at
 SSR the component calls `data_get($state, '<key>')`. In standard Laravel forms those align naturally.
 They diverge when data lives on a related model, uses a different case convention, or sits behind a
 display-only field.
@@ -144,7 +194,7 @@ display-only field.
 Two ways out:
 
 - Define an accessor on the model so `data_get($model, 'country')` resolves transparently.
-- Pass an associative array as form `state` so each `when` key maps to the right source.
+- Pass an associative array as form `state` so each rule's field key maps to the right source.
 
 ```blade
 @php
@@ -165,7 +215,8 @@ $state = [
 
 | Prop    | Type             | Default      | Description                                                                                                |
 |---------|------------------|--------------|------------------------------------------------------------------------------------------------------------|
-| `when`  | `string\|array`  | (required)   | Show/hide rule. Use `field=value` strings for common cases or an array for complex rules.                  |
+| `when`  | `string\|array`  | `[]`         | Show only when this rule matches. Use `field=value` strings or an array.                                  |
+| `unless` | `string\|array` | `[]`         | Hide when this entire rule matches. Uses the same grammar as `when`.                                    |
 | `state` | `mixed`          | inherited    | Optional local state override. Usually set `state` on `<hw:form>` instead. Anything `data_get()` can read. |
 | `as`    | `fieldset\|div`  | `'fieldset'` | Validated wrapper element. `fieldset` is recommended.                                                    |
 | `tag`   | `fieldset\|div`  | `'fieldset'` | Validated compatibility input used only when `as` is omitted.                                           |

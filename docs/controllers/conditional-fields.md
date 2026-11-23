@@ -1,6 +1,6 @@
 # Conditional Fields
 
-Show or hide form fields based on the value of other form fields, with zero round-trips to the server. The controller auto-detects triggers from `data-when-*` attributes on each dependent and flips visibility plus the `disabled` cascade as the user fills in the form.
+Show or hide form fields based on the value of other form fields, with zero round-trips to the server. The controller auto-detects triggers from `data-when-*` and `data-unless-*` attributes on each dependent and flips visibility plus the `disabled` cascade as the user fills in the form.
 
 **Identifier:** `conditional-fields`
 **Loaded by:** auto-loaded after `php artisan hotwire:install`; publish only to customize with `php artisan hotwire:controllers conditional-fields`.
@@ -55,6 +55,29 @@ Within a single attribute, values are pipe-separated (`|`) and OR-matched. `data
 
 Across multiple `data-when-*`, conditions are AND-combined. The dependent above appears only when `reason` is `bug` or `feature` and `severity` is `high`.
 
+## Negated Conditions
+
+Use the component's [`unless` prop](../components/conditional-field.md#negating-a-rule), or `data-unless-{field-name}`
+in raw markup:
+
+```html
+<fieldset data-conditional-fields-target="dependent" data-unless-status="completed|cancelled">
+    <button type="submit">Save draft</button>
+</fieldset>
+```
+
+`data-unless-*` uses the same values and checkbox tokens as `data-when-*`. OR-match alternatives inside an attribute,
+AND-combine the attributes, then negate that **entire expression**. With
+`data-unless-status="completed" data-unless-approved="yes"`, the block is hidden only when both conditions match.
+
+When both groups are present, visibility is `matches(when) && !matches(unless)`. An absent group adds no restriction.
+Every named trigger must exist in the controller's scope; a missing trigger keeps the block hidden rather than
+turning a lookup failure into a successful negation.
+
+An existing radio group with no selection, or checkbox group with no checked items, has no selected values. It does
+not match a specific value, so `data-unless-status="completed"` shows the block while the existing `status` radios
+are unselected. The controller does not fall back to the model or server-rendered `state`.
+
 ## Checkbox State
 
 For boolean checkboxes (typical `<input type="checkbox" name="x" value="1" />`), match the checked or unchecked state directly:
@@ -88,7 +111,7 @@ The controller hosts on any container that wraps the named inputs: filter bars, 
 
 ## Behavior
 
-The controller scans every dependent for `data-when-{name}` attributes and infers the trigger field names from them. No explicit `trigger` target is needed. Field lookup is forgiving: a `data-when-ship-different` attribute resolves to `[name="ship_different"]`, `[name="ship-different"]`, or `[name="ship_different[]"]` automatically.
+The controller scans every dependent for `data-when-{name}` and `data-unless-{name}` attributes and infers the trigger field names from them. No explicit `trigger` target is needed. Field lookup is forgiving: a `data-when-ship-different` or `data-unless-ship-different` attribute resolves to `[name="ship_different"]`, `[name="ship-different"]`, or `[name="ship_different[]"]` automatically.
 
 When a dependent should be hidden, the controller sets both `hidden` and `disabled` on the dependent element. Both attributes are required: `hidden` alone does not exclude form fields from submission; `disabled` does.
 
@@ -100,7 +123,7 @@ The evaluation runs on `connect()` and on every `change` / `input` event inside 
 
 ## Limitations
 
-- No negation operator. `data-when-reason="not-other"` is treated as a literal value `not-other`, not as negation.
+- Negation uses `unless` / `data-unless-*`, not an inline operator. Values such as `!other` and `not-other` remain literal values; `!=` is not part of the rule grammar.
 - No comparison operators (`>`, `<=`, regex). For complex predicates, write a small custom controller.
 - Bracketed nested names like `user[email]` are not supported as trigger names because the data attribute name would be invalid. Top-level names, including `name[]` array names, work.
 - Trigger values containing a literal `|` clash with the OR separator. Normalize such values (slug, code) before using them as triggers. `:when="['country' => $user->country_code]"` is safer than matching a free-text label with `|` in it.
@@ -116,7 +139,7 @@ The evaluation runs on `connect()` and on every `change` / `input` event inside 
 
 ### Rule Grammar
 
-Each dependent declares one or more `data-when-{field-name}` attributes. Values inside one attribute are OR-matched with `|`; multiple `data-when-*` attributes are AND-combined.
+Each dependent declares `data-when-{field-name}`, `data-unless-{field-name}`, or both. Values inside one attribute are OR-matched with `|`; attributes within either group are AND-combined. The `unless` group is negated as a whole.
 
 ### Tokens For Checkbox State
 

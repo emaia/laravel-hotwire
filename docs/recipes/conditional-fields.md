@@ -4,6 +4,30 @@ Add `conditional-fields` to `<hw:form>`, then put each rule on `<hw:conditional-
 for server-rendered visibility and client-side updates, and hidden fieldsets are disabled so their values are not
 submitted.
 
+## Show A Default Action Except For Completion
+
+Use `unless` for "everything except this value" instead of enumerating all other statuses. The default action below
+is available even before a radio is selected; choosing Completed switches to the completion action:
+
+```blade
+<hw:form conditional-fields :state="['status' => null]" :action="route('tasks.update', $task)" method="patch">
+    <label><input type="radio" name="status" value="accepted" @checked(old('status') === 'accepted') /> Accepted</label>
+    <label><input type="radio" name="status" value="completed" @checked(old('status') === 'completed') /> Completed</label>
+
+    <hw:conditional-field unless="status=completed">
+        <hw:button type="submit">Save draft</hw:button>
+    </hw:conditional-field>
+
+    <hw:conditional-field when="status=completed">
+        <hw:button type="submit">Complete</hw:button>
+    </hw:conditional-field>
+</hw:form>
+```
+
+Here `null` represents the radios' initial lack of selection, not the task's persisted status. `old()` still restores
+the submitted selection after validation. Choose that initial state explicitly; `unless` does not supply a fallback
+value or authorize a transition. The server must validate which actions and statuses are allowed.
+
 ## Ask for details by reason
 
 Use `|` to match any value for one field:

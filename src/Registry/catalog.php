@@ -354,7 +354,7 @@ return [
             'view' => 'hotwire::component-views.conditional-field',
             'docs' => 'docs/components/conditional-field.md',
             'category' => 'forms',
-            'description' => 'Dependent form block with declarative server and client visibility rules',
+            'description' => 'Dependent form block with positive and negated server and client visibility rules',
             'controllers' => ['conditional-fields'],
             'styling' => [
                 'slots' => [
@@ -1370,7 +1370,7 @@ return [
             'source' => 'resources/js/controllers/conditional_fields_controller.js',
             'docs' => 'docs/controllers/conditional-fields.md',
             'category' => 'forms',
-            'description' => 'Shows and disables dependent fields using declarative value and checkbox-state rules',
+            'description' => 'Shows and disables dependent fields using positive and negated value and checkbox-state rules',
         ],
         'copy-to-clipboard' => [
             'source' => 'resources/js/controllers/copy_to_clipboard_controller.js',

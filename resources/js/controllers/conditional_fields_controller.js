@@ -12,6 +12,7 @@ export default class extends Controller {
         this.rules = this.dependentTargets.map((dependent) => ({
             element: dependent,
             conditions: this.parseConditions(dependent),
+            unlessConditions: this.parseConditions(dependent, "data-unless-"),
         }));
 
         this.element.addEventListener("change", this.handleTriggerEvent);
@@ -31,17 +32,26 @@ export default class extends Controller {
 
     evaluateAll() {
         for (const rule of this.rules) {
-            this.applyVisibility(rule.element, this.matchesAll(rule.conditions));
+            const hasUnlessTriggers = rule.unlessConditions.every(({ name }) => this.findFields(name).length > 0);
+            const visible =
+                this.matchesAll(rule.conditions) &&
+                hasUnlessTriggers &&
+                (rule.unlessConditions.length === 0 || !this.matchesAll(rule.unlessConditions));
+
+            this.applyVisibility(rule.element, visible);
         }
     }
 
-    parseConditions(dependent) {
+    parseConditions(dependent, prefix = "data-when-") {
         const conditions = [];
         for (const attr of dependent.attributes) {
-            if (!attr.name.startsWith("data-when-")) continue;
+            if (!attr.name.startsWith(prefix)) continue;
 
-            const name = attr.name.slice("data-when-".length);
-            const expected = attr.value.split("|").map((v) => v.trim()).filter(Boolean);
+            const name = attr.name.slice(prefix.length);
+            const expected = attr.value
+                .split("|")
+                .map((v) => v.trim())
+                .filter(Boolean);
             conditions.push({ name, expected });
         }
         return conditions;
@@ -86,11 +96,7 @@ export default class extends Controller {
     }
 
     findFields(name) {
-        const variants = [...new Set([
-            name,
-            name.replace(/-/g, "_"),
-            name.replace(/_/g, "-"),
-        ])];
+        const variants = [...new Set([name, name.replace(/-/g, "_"), name.replace(/_/g, "-")])];
 
         for (const variant of variants) {
             const matches = [
