@@ -1618,19 +1618,17 @@ it('preserves an HTTPS Turbo reference while fixing other dependencies', functio
         ->and(readPackageJson()['devDependencies']['@hotwired/turbo'])->toBe($turbo);
 });
 
-function recommendTurbo(string $reference): void
+function recommendBuilds(array $dependencies): void
 {
     $manifest = dirname(__DIR__, 2).'/package.json';
-    test()->partialMock(Filesystem::class, function ($mock) use ($manifest, $reference) {
-        $mock->shouldReceive('get')->with($manifest)->andReturn(json_encode([
-            'dependencies' => ['@hotwired/turbo' => $reference],
-        ]));
+    test()->partialMock(Filesystem::class, function ($mock) use ($manifest, $dependencies) {
+        $mock->shouldReceive('get')->with($manifest)->andReturn(json_encode(['dependencies' => $dependencies]));
     });
 }
 
 it('advises switching from a superseded package Turbo build without failing or rewriting it', function (string $section, string $recommended, string $command) {
     $old = 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-000000000000/hotwired-turbo-000000000000.tgz';
-    recommendTurbo($recommended);
+    recommendBuilds(['@hotwired/turbo' => $recommended]);
     writePackageJson(['name' => 'app', $section => ['@hotwired/turbo' => $old]]);
     File::put(base_path('bun.lock'), '{}');
 
@@ -1652,13 +1650,63 @@ it('advises switching from a superseded package Turbo build without failing or r
 
 it('stays quiet when the app uses the recommended Turbo reference', function () {
     $recommended = 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-111111111111/hotwired-turbo-111111111111.tgz';
-    recommendTurbo($recommended);
+    recommendBuilds(['@hotwired/turbo' => $recommended]);
     writePackageJson(['name' => 'app', 'devDependencies' => ['@hotwired/turbo' => $recommended]]);
 
     $this->artisan('hotwire:check --no-interaction')
         ->doesntExpectOutputToContain('@hotwired/turbo')
         ->assertSuccessful();
 });
+
+it('advises switching from a superseded Stimulus build without modifying the app', function (string $section, string $recommended, string $command) {
+    $old = 'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-000000000000/hotwired-stimulus-000000000000.tgz';
+    recommendBuilds(['@hotwired/stimulus' => $recommended]);
+    writePackageJson(['name' => 'app', $section => ['@hotwired/stimulus' => $old]]);
+    File::put(base_path('bun.lock'), '{}');
+    $manifest = File::get(base_path('package.json'));
+
+    $this->artisan('hotwire:check --fix --skip-install --no-interaction')
+        ->expectsOutputToContain('@hotwired/stimulus uses the package build stimulus-000000000000')
+        ->expectsOutputToContain("`{$command}`")
+        ->assertSuccessful();
+
+    expect(File::get(base_path('package.json')))->toBe($manifest)
+        ->and(File::get(base_path('bun.lock')))->toBe('{}');
+})->with([
+    'newer build in devDependencies' => [
+        'devDependencies',
+        'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz',
+        'bun add -d https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz',
+    ],
+    'official release in dependencies' => ['dependencies', '^3.3.0', 'bun add @hotwired/stimulus@^3.3.0'],
+]);
+
+it('reports superseded Turbo and Stimulus builds in the same app', function () {
+    recommendBuilds(['@hotwired/turbo' => '^8.0.30', '@hotwired/stimulus' => '^3.3.0']);
+    writePackageJson(['name' => 'app', 'devDependencies' => [
+        '@hotwired/turbo' => 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-000000000000/hotwired-turbo-000000000000.tgz',
+        '@hotwired/stimulus' => 'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-000000000000/hotwired-stimulus-000000000000.tgz',
+    ]]);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->expectsOutputToContain('@hotwired/turbo uses the package build turbo-000000000000')
+        ->expectsOutputToContain('@hotwired/stimulus uses the package build stimulus-000000000000')
+        ->assertSuccessful();
+});
+
+it('does not advise switching the current Stimulus build or app-owned references', function (string $reference) {
+    writePackageJson(['name' => 'app', 'devDependencies' => ['@hotwired/stimulus' => $reference]]);
+
+    $this->artisan('hotwire:check --no-interaction')
+        ->doesntExpectOutputToContain('@hotwired/stimulus')
+        ->assertSuccessful();
+})->with([
+    'current build' => 'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz',
+    'npm range' => '^3.2.2',
+    'third-party tarball' => 'https://example.test/stimulus.tgz',
+    'Turbo build URL' => 'https://github.com/emaia/laravel-hotwire/releases/download/turbo-000000000000/hotwired-turbo-000000000000.tgz',
+    'mismatched tag and asset' => 'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-000000000000/hotwired-stimulus-111111111111.tgz',
+]);
 
 it('leaves Turbo to the installer when it is missing', function () {
     writePackageJson(['name' => 'app', 'devDependencies' => []]);

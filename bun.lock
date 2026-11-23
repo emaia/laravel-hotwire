@@ -6,7 +6,7 @@
       "dependencies": {
         "@emaia/stimulus-lazy-loader": "^2.0.0",
         "@floating-ui/dom": "^1.8.0",
-        "@hotwired/stimulus": "^3.2.2",
+        "@hotwired/stimulus": "https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz",
         "@hotwired/turbo": "https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz",
         "@tiptap/core": "3.34.0",
         "@tiptap/extension-link": "3.34.0",
@@ -48,7 +48,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
-    "@hotwired/stimulus": ["@hotwired/stimulus@3.2.2", "", {}, "sha512-eGeIqNOQpXoPAIP7tC1+1Yc1yl1xnwYqg+3mzqxyrbE5pg5YFBZcA6YoTiByJB6DKAEsiWtl6tjTJS4IYtbB7A=="],
+    "@hotwired/stimulus": ["@hotwired/stimulus@https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz", {}, "sha512-YdCZ3slAT08co9MOGPuuApIM9MuiHB0Y0Voe3D841tPZ3hnwEqFiYXD46YWNpTCF3K4UfpUNdcCzJVLjQQxtVw=="],
 
     "@hotwired/turbo": ["@hotwired/turbo@https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz", {}, "sha512-Sv3T2wuGJmPs+XkNdoO5bZrnuuM9Vs5R4YzteJfr/LBkzcrZlXoCeZOBcc8l0f+LXQrEEYoNj9HgsC1irCTn2g=="],
 

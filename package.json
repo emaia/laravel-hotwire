@@ -15,7 +15,7 @@
     "dependencies": {
         "@emaia/stimulus-lazy-loader": "^2.0.0",
         "@floating-ui/dom": "^1.8.0",
-        "@hotwired/stimulus": "^3.2.2",
+        "@hotwired/stimulus": "https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz",
         "@hotwired/turbo": "https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz",
         "@tiptap/core": "3.34.0",
         "@tiptap/extension-link": "3.34.0",

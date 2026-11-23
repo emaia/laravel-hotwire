@@ -374,6 +374,34 @@ it('copies the configured Turbo reference verbatim on a JS-only install without 
     'release tarball' => 'https://example.test/releases/turbo-111111111111/hotwired-turbo-111111111111.tgz',
 ]);
 
+it('installs the pinned Stimulus build when the app does not declare Stimulus', function () {
+    File::put($this->packageJsonPath, '{"name":"test"}');
+
+    $this->artisan('hotwire:install --only=js --core-only --skip-install --no-interaction')->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+
+    expect($json['devDependencies']['@hotwired/stimulus'])
+        ->toBe('https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz')
+        ->and($json['devDependencies'])->not->toHaveKey('@hotwired/stimulus-published');
+});
+
+it('preserves a Stimulus reference the app already declares when re-installing', function (string $section, string $reference) {
+    File::put($this->packageJsonPath, json_encode(['name' => 'test', $section => ['@hotwired/stimulus' => $reference]]));
+
+    $this->artisan('hotwire:install --only=js --core-only --skip-install --force --no-interaction')->assertSuccessful();
+
+    $json = json_decode(File::get($this->packageJsonPath), true);
+    $otherSection = $section === 'dependencies' ? 'devDependencies' : 'dependencies';
+
+    expect($json[$section]['@hotwired/stimulus'])->toBe($reference)
+        ->and($json[$otherSection] ?? [])->not->toHaveKey('@hotwired/stimulus');
+})->with(['devDependencies', 'dependencies'])->with([
+    'npm range' => '^3.2.2',
+    'custom build' => 'https://example.test/stimulus.tgz',
+    'old package build' => 'https://github.com/emaia/laravel-hotwire/releases/download/stimulus-000000000000/hotwired-stimulus-000000000000.tgz',
+]);
+
 it('preserves a Turbo reference the app already declares', function (string $section, string $reference) {
     File::put($this->packageJsonPath, json_encode([
         'name' => 'test',
