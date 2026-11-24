@@ -2,9 +2,12 @@
 
 namespace Emaia\LaravelHotwire\Components;
 
+use BackedEnum;
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Support\PolymorphicTag;
 use Illuminate\Contracts\Support\Htmlable;
+use InvalidArgumentException;
+use UnitEnum;
 
 class ConditionalField extends Component
 {
@@ -25,8 +28,10 @@ class ConditionalField extends Component
     /**
      * Configure positive and negated visibility rules.
      *
-     * @param  array<string, string|array<int, string>>|string  $when
-     * @param  array<string, string|array<int, string>>|string  $unless
+     * @param  array<string, mixed>|string  $when
+     * @param  array<string, mixed>|string  $unless
+     *
+     * @throws InvalidArgumentException When a string rule contains a condition that is not `field=value`.
      */
     public function __construct(
         public array|string $when = [],
@@ -38,8 +43,8 @@ class ConditionalField extends Component
     ) {
         $this->as = PolymorphicTag::normalize($as ?? $this->tag, ['fieldset', 'div'], 'conditional field');
         $this->tag = $this->as;
-        $this->conditions = $this->normaliseConditions($when);
-        $this->unlessConditions = $this->normaliseConditions($unless);
+        $this->conditions = $this->normaliseConditions($when, 'when');
+        $this->unlessConditions = $this->normaliseConditions($unless, 'unless');
         $this->matches = $this->evaluate($this->state);
     }
 
@@ -116,7 +121,7 @@ class ConditionalField extends Component
 
     private function fieldMatches(string $field, string|array $expected, mixed $state): bool
     {
-        $current = $this->currentValue($field, $state);
+        $current = $this->comparable($this->currentValue($field, $state));
         $tokens = is_array($expected) ? $expected : [$expected];
 
         foreach ($tokens as $token) {
@@ -137,7 +142,7 @@ class ConditionalField extends Component
             }
 
             if (is_array($current)) {
-                if (in_array($token, $current, true) || in_array($token, array_map('strval', $current), true)) {
+                if (in_array($token, array_map(strval(...), $current), true)) {
                     return true;
                 }
 
@@ -168,38 +173,64 @@ class ConditionalField extends Component
         return ! in_array($value, [null, '', '0', 0, false], true);
     }
 
+    /** Reduce enums to the scalar the browser submits, so model casts compare like form input. */
+    private function comparable(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map($this->comparable(...), $value);
+        }
+
+        return match (true) {
+            $value instanceof BackedEnum => $value->value,
+            $value instanceof UnitEnum => $value->name,
+            default => $value,
+        };
+    }
+
     /**
+     * @param  array<string, mixed>|string  $expression
      * @return array<string, string|array<int, string>>
      */
-    private function normaliseConditions(array|string $expression): array
+    private function normaliseConditions(array|string $expression, string $prop): array
     {
         if (is_array($expression)) {
-            return $expression;
+            return array_map(
+                fn (mixed $expected): string|array => $this->compactValues(is_array($expected) ? $expected : [$expected]),
+                $expression,
+            );
         }
 
         $conditions = [];
 
-        foreach (preg_split('/\s+/', trim($expression)) ?: [] as $condition) {
-            if ($condition === '' || ! str_contains($condition, '=')) {
-                continue;
+        foreach (preg_split('/\s+/', trim($expression), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $condition) {
+            [$field, $expected] = array_pad(explode('=', $condition, 2), 2, '');
+            $values = $this->compactValues(explode('|', $expected));
+
+            if ($field === '' || $values === []) {
+                throw new InvalidArgumentException(
+                    "Invalid conditional field {$prop} condition [{$condition}]: expected field=value without spaces around '='."
+                );
             }
 
-            [$field, $expected] = explode('=', $condition, 2);
-            $field = trim($field);
-            $expected = trim($expected);
-
-            if ($field === '' || $expected === '') {
-                continue;
-            }
-
-            $values = array_values(array_filter(
-                array_map('trim', explode('|', $expected)),
-                fn (string $value): bool => $value !== '',
-            ));
-
-            $conditions[$field] = count($values) === 1 ? $values[0] : $values;
+            $conditions[$field] = $values;
         }
 
         return $conditions;
+    }
+
+    /**
+     * Drop empty alternatives, which the browser cannot express, so both sides evaluate the same rule.
+     *
+     * @param  array<int|string, mixed>  $values
+     * @return string|array<int, string>
+     */
+    private function compactValues(array $values): string|array
+    {
+        $values = array_values(array_filter(
+            array_map(fn (mixed $value): string => trim((string) $this->comparable($value)), $values),
+            fn (string $value): bool => $value !== '',
+        ));
+
+        return count($values) === 1 ? $values[0] : $values;
     }
 }

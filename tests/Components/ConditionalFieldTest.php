@@ -363,3 +363,102 @@ it('uses old input ahead of inherited state for unless rules', function () {
         ->assertSee(' hidden', false)
         ->assertSee(' disabled', false);
 });
+
+// --- Expression validation ---
+
+it('rejects string rules it cannot parse', function (string $prop, string $expression) {
+    new ConditionalField(...[$prop => $expression]);
+})->with([
+    'spaces around =' => ['unless', 'status = completed'],
+    'colon separator' => ['unless', 'status:completed'],
+    'missing value' => ['unless', 'status='],
+    'only separators' => ['unless', 'status=|'],
+    'missing field' => ['unless', '=completed'],
+    'malformed when' => ['when', 'type:link'],
+])->throws(InvalidArgumentException::class);
+
+it('drops empty and null values from array rules so server and browser agree', function (mixed $expected) {
+    $component = new ConditionalField(
+        unless: ['status' => $expected],
+        state: ['status' => null],
+    );
+
+    expect($component->matches)->toBeTrue()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('');
+})->with([
+    'empty string' => [''],
+    'null' => [null],
+    'only empty alternatives' => [['', null]],
+]);
+
+it('keeps the remaining alternatives of an array rule after dropping empty ones', function () {
+    $component = new ConditionalField(
+        unless: ['status' => ['', 'completed', null]],
+        state: ['status' => 'completed'],
+    );
+
+    expect($component->matches)->toBeFalse()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('completed');
+});
+
+// --- Enum state ---
+
+enum ConditionalFieldStatus: string
+{
+    case Accepted = 'accepted';
+    case Completed = 'completed';
+}
+
+enum ConditionalFieldPriority
+{
+    case Low;
+    case High;
+}
+
+it('compares enum state by its value', function (mixed $status, bool $visible) {
+    $component = new ConditionalField(
+        unless: 'status=completed',
+        state: ['status' => $status],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'completed' => [ConditionalFieldStatus::Completed, false],
+    'accepted' => [ConditionalFieldStatus::Accepted, true],
+    'collection of values' => [[ConditionalFieldStatus::Accepted, ConditionalFieldStatus::Completed], false],
+]);
+
+it('compares a pure enum state by its name', function () {
+    $component = new ConditionalField(
+        when: 'priority=High',
+        state: ['priority' => ConditionalFieldPriority::High],
+    );
+
+    expect($component->matches)->toBeTrue();
+});
+
+it('accepts enums as expected values in array rules', function () {
+    $component = new ConditionalField(
+        unless: ['status' => [ConditionalFieldStatus::Completed]],
+        state: ['status' => ConditionalFieldStatus::Completed],
+    );
+
+    expect($component->matches)->toBeFalse()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('completed');
+});
+
+it('renders an unless block against an Eloquent enum cast', function () {
+    $task = new class(['status' => 'completed']) extends Model
+    {
+        protected $guarded = [];
+
+        protected $casts = ['status' => ConditionalFieldStatus::class];
+    };
+
+    $view = $this->blade(
+        '<x-hw::conditional-field unless="status=completed" :state="$task">Save</x-hw::conditional-field>',
+        ['task' => $task],
+    );
+
+    $view->assertSee(' hidden', false);
+});

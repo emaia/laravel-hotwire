@@ -153,7 +153,9 @@ Each dependent declares `data-when-{field-name}`, `data-unless-{field-name}`, or
 | Trigger                  | Effective value used for matching                                      |
 |--------------------------|------------------------------------------------------------------------|
 | `<select>`               | `.value`                                                               |
+| `<select multiple>`      | Every selected option; match any value listed in the `data-when-*`.    |
 | `<input type="text" ...>` | `.value`                                                               |
 | Radio group              | The value of the checked radio (empty if none).                        |
 | Single checkbox          | Tokens above, or the `value` attribute when checked.                   |
+| Checkbox + hidden input  | Same as a single checkbox; the hidden input's value when unchecked.    |
 | Checkbox group `name[]`  | Array of checked values; match any value listed in the `data-when-*`.  |

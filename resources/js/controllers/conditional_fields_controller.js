@@ -65,25 +65,47 @@ export default class extends Controller {
         const fields = this.findFields(name);
         if (fields.length === 0) return false;
 
-        const allCheckboxes = fields.every((f) => f.type === "checkbox");
+        const checkboxes = this.checkboxesOf(fields);
+        const values = this.currentValues(fields, checkboxes);
 
         for (const token of expected) {
-            if (token === ":checked" && allCheckboxes) {
-                if (fields.some((f) => f.checked)) return true;
+            if (token === ":checked" && checkboxes) {
+                if (checkboxes.some((f) => f.checked)) return true;
                 continue;
             }
-            if (token === ":unchecked" && allCheckboxes) {
-                if (fields.every((f) => !f.checked)) return true;
+            if (token === ":unchecked" && checkboxes) {
+                if (checkboxes.every((f) => !f.checked)) return true;
                 continue;
             }
 
-            if (this.currentValues(fields).includes(token)) return true;
+            if (values.includes(token)) return true;
         }
         return false;
     }
 
-    currentValues(fields) {
-        if (fields.length === 1 && fields[0].type !== "checkbox" && fields[0].type !== "radio") {
+    // Checkbox and Switch components pair the checkbox with a same-named hidden input carrying `unchecked-value`.
+    checkboxesOf(fields) {
+        const checkboxes = fields.filter((f) => f.type === "checkbox");
+        if (checkboxes.length === 0) return null;
+
+        return fields.every((f) => f.type === "checkbox" || f.type === "hidden") ? checkboxes : null;
+    }
+
+    currentValues(fields, checkboxes) {
+        if (checkboxes) {
+            const checked = checkboxes.filter((f) => f.checked).map((f) => f.value);
+            if (checked.length > 0) return checked;
+
+            return fields.filter((f) => f.type === "hidden" && !f.disabled).map((f) => f.value);
+        }
+
+        if (fields.length === 1 && fields[0].tagName === "SELECT" && fields[0].multiple) {
+            return Array.from(fields[0].options)
+                .filter((option) => option.selected)
+                .map((option) => option.value);
+        }
+
+        if (fields.length === 1 && fields[0].type !== "radio") {
             return [fields[0].value];
         }
 

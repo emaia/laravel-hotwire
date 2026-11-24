@@ -43,7 +43,9 @@ render needs model-backed trigger values, such as edit forms:
 ```
 
 `state` can be an Eloquent model, array, or object readable by `data_get()`. Validation retries still
-win over state via `old()`, so the initial visibility matches the values the user just submitted.
+win over state via `old()`, so the initial visibility matches the values the user just submitted. Enum attributes,
+such as a model's `status` cast, compare by their backed value (or case name for pure enums), as the browser
+submits them.
 
 The component may also render without `<hw:form>`. In that case, pass `state` directly when server-rendered visibility
 needs model data; Laravel `old()` input still takes precedence. For runtime updates, mount the
@@ -69,6 +71,9 @@ For common rules, pass a compact `field=value` string:
 - A space means AND across fields.
 - `:checked` and `:unchecked` match checkbox state.
 
+A condition that does not read `field=value` throws an `InvalidArgumentException` instead of being ignored, so
+`status = completed` or `status:completed` cannot silently remove a restriction.
+
 Use the array form when it is clearer for complex rules:
 
 ```blade
@@ -79,6 +84,10 @@ Use the array form when it is clearer for complex rules:
     ...
 </hw:conditional-field>
 ```
+
+The array form drops empty strings and `null` from the expected values. A field left with no values never matches,
+so `:unless="['status' => $excluded]"` shows the block when `$excluded` is empty. Backed enums are accepted as values
+and compared by `->value`.
 
 ## Negating A Rule
 
