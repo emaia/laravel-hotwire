@@ -32,7 +32,7 @@
         "@hotwired/turbo-published": "npm:@hotwired/turbo@8.0.23",
         "@playwright/test": "^1.65.1",
         "@tailwindcss/cli": "^4",
-        "@types/bun": "^1.4.4",
+        "@types/bun": "^1.4.5",
         "happy-dom": "^21.0.4",
         "prettier": "^3.10.1",
         "prettier-plugin-blade": "^2.1.21",
