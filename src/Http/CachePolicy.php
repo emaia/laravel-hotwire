@@ -3,12 +3,14 @@
 namespace Emaia\LaravelHotwire\Http;
 
 use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
+use Emaia\LaravelHotwireTurbo\Http\TurboRequestVariation;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -28,7 +30,8 @@ final readonly class CachePolicy
             && ! $request->hasSession()
             && ! $request->headers->has('Authorization')
             && $request->getUser() === null
-            && $this->routePolicy($request) === 'public';
+            && $this->routePolicy($request) === 'public'
+            && ! TurboRequestVariation::isMarked($request);
     }
 
     /** Admit only explicitly public, fresh HTML after the response has passed through the application. */
@@ -57,9 +60,26 @@ final readonly class CachePolicy
     /** Prevent shared storage of any managed response that fails the public policy. */
     public function enforce(Request $request, Response $response): void
     {
-        if ($this->routePolicy($request) !== null && ! $this->mayStore($request, $response)) {
-            $this->preventStorage($response);
+        $policy = $this->routePolicy($request);
+
+        if ($policy === null) {
+            return;
         }
+
+        if (! $this->mayStore($request, $response)) {
+            if ($policy === 'public' && TurboRequestVariation::isMarked($request) && config('app.debug')) {
+                Log::warning('Hotwire withheld public caching because the response consulted Turbo negotiation.', [
+                    'route' => $request->route()?->uri(),
+                ]);
+            }
+
+            $this->preventStorage($response);
+
+            return;
+        }
+
+        // Validate the full representation before Symfony removes its body and type for a 304.
+        $response->isNotModified($request);
     }
 
     /** Remove origin headers that could take precedence over the private cache policy. */

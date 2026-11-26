@@ -104,17 +104,45 @@ it('does not let the Spatie lifetime extend the HTML freshness window', function
     $this->get('/cache-ttl')->assertContent('Render 2');
 });
 
-it('does not use an existing spatie entry that predates the guard', function () {
+it('does not use entries written without the current negotiation guard', function (?string $version) {
     $legacy = Request::create('http://localhost/cache-legacy');
-    app(ResponseCache::class)->cacheResponse($legacy, response('Legacy HTML')
+    $response = response('Legacy HTML')
         ->header('Content-Type', 'text/html')
-        ->header('Cache-Control', 'public, s-maxage=300'));
+        ->header('Cache-Control', 'public, s-maxage=300');
+    if ($version !== null) {
+        $response->header('X-Hotwire-Cache-Policy', $version);
+    }
+    app(ResponseCache::class)->cacheResponse($legacy, $response);
 
     Route::get('/cache-legacy', fn () => response('Current HTML')->header('Cache-Control', 'public, s-maxage=300'))
         ->middleware(['hotwire.cache:public', 'hotwire.cache.spatie']);
 
     $this->get('/cache-legacy')->assertContent('Current HTML')->assertHeader('X-Cache-Status', 'MISS');
     $this->get('/cache-legacy')->assertContent('Current HTML')->assertHeader('X-Cache-Status', 'HIT');
+})->with(['unguarded' => null, 'before negotiation detection' => 'public-html-v1']);
+
+it('never warms the origin cache with either branch of negotiated HTML', function () {
+    Route::get('/cache-variants', fn (Request $request) => response($request->wasFromTurboFrame() ? 'Frame' : 'Page')
+        ->header('Cache-Control', 'public, s-maxage=300'))->middleware(['hotwire.cache:public', 'hotwire.cache.spatie']);
+
+    foreach ([[], ['Turbo-Frame' => 'edit'], []] as $headers) {
+        $this->get('/cache-variants', $headers)
+            ->assertContent($headers === [] ? 'Page' : 'Frame')
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('X-Cache-Status', 'MISS');
+    }
+
+    expect(app(ResponseCache::class)->hasBeenCached(Request::create('http://localhost/cache-variants')))->toBeFalse();
+});
+
+it('revalidates a cached public representation without replacing its body', function () {
+    Route::get('/cache-revalidate', fn () => response('Current HTML')->setEtag('current')
+        ->header('Cache-Control', 'public, s-maxage=300'))->middleware(['hotwire.cache:public', 'hotwire.cache.spatie']);
+
+    $this->get('/cache-revalidate')->assertHeader('X-Cache-Status', 'MISS');
+    $this->get('/cache-revalidate', ['If-None-Match' => '"current"'])
+        ->assertStatus(304)->assertHeader('Cache-Control', 'public, s-maxage=300')->assertHeader('X-Cache-Status', 'HIT');
+    $this->get('/cache-revalidate')->assertContent('Current HTML')->assertHeader('X-Cache-Status', 'HIT');
 });
 
 it('does not read a public entry ahead of StartSession even if the adapter is listed first', function () {

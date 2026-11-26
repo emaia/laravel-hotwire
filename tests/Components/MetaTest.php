@@ -6,6 +6,12 @@ use Emaia\LaravelHotwire\Components\Meta\Refresh;
 use Emaia\LaravelHotwire\Components\Meta\ViewTransition;
 use Emaia\LaravelHotwire\Components\Meta\VisitControl;
 
+beforeEach(function () {
+    $session = app('session')->driver();
+    $session->regenerateToken();
+    request()->setLaravelSession($session);
+});
+
 // --- Granular components render without props ---
 
 it('renders every granular meta with its default', function (string $tag, string $expected) {

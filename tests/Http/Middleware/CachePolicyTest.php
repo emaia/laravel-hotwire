@@ -2,6 +2,7 @@
 
 use Emaia\LaravelHotwire\Http\Middleware\EnforceCachePolicy;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,14 @@ final class RejectPrivateRequest
     public function handle(): Response
     {
         return redirect('/login')->header('Cache-Control', 'public, s-maxage=300');
+    }
+}
+
+final class CacheVariationFormRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [];
     }
 }
 
@@ -69,10 +78,10 @@ it('does not change responses without a route policy', function () {
     $this->get('/cache-unmanaged')->assertHeader('Cache-Control', 'max-age=60, public');
 });
 
-it('keeps a negotiated response private for both page and frame requests', function () {
+it('keeps a negotiated component private for both page and frame requests', function () {
     Route::get('/cache-edit', fn () => response(Blade::render(
         '<hw:frame-or-page frame="edit" layout="cache-test-layout">Edit form</hw:frame-or-page>',
-    ))->header('Cache-Control', 'public, s-maxage=300'))->middleware('hotwire.cache:private');
+    ))->header('Cache-Control', 'public, s-maxage=300'))->middleware('hotwire.cache:public');
 
     view()->addLocation(__DIR__.'/../../Fixtures/views');
 
@@ -86,6 +95,64 @@ it('keeps a negotiated response private for both page and frame requests', funct
         ->assertSee('id="edit"', false)
         ->assertDontSee('Page layout')
         ->assertHeader('Cache-Control', 'no-store, private');
+});
+
+it('keeps both branches of a Turbo detection macro private including on a FormRequest', function (string $macro, array $headers) {
+    Route::get('/cache-negotiated', function (CacheVariationFormRequest $request) use ($macro) {
+        return response($request->{$macro}() ? 'Variant' : 'Page')
+            ->header('Cache-Control', 'public, s-maxage=300');
+    })->middleware('hotwire.cache:public');
+
+    foreach ([[], $headers] as $input) {
+        $this->get('/cache-negotiated', $input)
+            ->assertContent($input === [] ? 'Page' : 'Variant')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+})->with([
+    'frame' => ['wasFromTurboFrame', ['Turbo-Frame' => 'edit']],
+    'stream' => ['wantsTurboStream', ['Accept' => 'text/vnd.turbo-stream.html']],
+]);
+
+it('preserves public cache headers when revalidating approved HTML and never approves an opaque 304', function () {
+    Route::get('/cache-conditional', fn () => response('Current HTML')->setEtag('revision')
+        ->header('Cache-Control', 'public, s-maxage=60'))->middleware('hotwire.cache:public');
+
+    Route::get('/cache-opaque', fn () => response('', 304)->setEtag('revision')
+        ->header('Cache-Control', 'public, s-maxage=60'))->middleware('hotwire.cache:public');
+
+    $this->get('/cache-conditional')->assertOk()->assertContent('Current HTML');
+    $this->get('/cache-conditional', ['If-None-Match' => '"previous"'])->assertOk();
+    $this->get('/cache-conditional', ['If-None-Match' => '"revision"'])
+        ->assertStatus(304)->assertContent('')->assertHeader('Cache-Control', 'public, s-maxage=60');
+    $this->get('/cache-opaque', ['If-None-Match' => '"revision"'])
+        ->assertStatus(304)->assertHeader('Cache-Control', 'no-store, private');
+});
+
+it('does not revalidate negotiated HTML even if its validator matches', function () {
+    Route::get('/cache-negotiated-etag', fn (Request $request) => response($request->wasFromTurboFrame() ? 'Frame' : 'Page')
+        ->setEtag('revision')->header('Cache-Control', 'public, s-maxage=60'))
+        ->middleware('hotwire.cache:public');
+
+    $this->get('/cache-negotiated-etag', ['If-None-Match' => '"revision"'])
+        ->assertOk()->assertContent('Page')->assertHeader('Cache-Control', 'no-store, private');
+});
+
+it('omits the csrf meta on a public route but renders the active session token on a web route', function () {
+    config()->set('session.driver', 'array');
+    config()->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
+
+    $head = fn () => Blade::render('<hw:meta.csrf />');
+
+    Route::get('/cache-csrf-public', fn () => response($head())->header('Cache-Control', 'public, s-maxage=60'))
+        ->middleware('hotwire.cache:public');
+    Route::get('/cache-csrf-private', $head)->middleware(['web', 'hotwire.cache:private']);
+
+    $this->get('/cache-csrf-private')
+        ->assertSee('name="csrf-token" content="'.csrf_token().'"', false)
+        ->assertHeader('Cache-Control', 'no-store, private');
+    $this->get('/cache-csrf-public')
+        ->assertDontSee('csrf-token')
+        ->assertHeader('Cache-Control', 'public, s-maxage=60');
 });
 
 it('protects private redirects even when a preceding middleware short-circuits', function () {

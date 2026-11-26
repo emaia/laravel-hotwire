@@ -21,7 +21,7 @@ final class CachePublicResponse extends CacheResponse
 {
     private const string ADMISSION_HEADER = 'X-Hotwire-Cache-Policy';
 
-    private const string ADMISSION_VERSION = 'public-html-v1';
+    private const string ADMISSION_VERSION = 'public-html-v2';
 
     protected string $pendingCacheAttribute = self::class.':pending';
 

@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Http\Middleware;
 
 use Closure;
 use Emaia\LaravelHotwire\Http\CachePolicy;
+use Emaia\LaravelHotwireTurbo\Http\TurboRequestVariation;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,6 +16,7 @@ final readonly class EnforceCachePolicy
     public function handle(Request $request, Closure $next): Response
     {
         $request->attributes->set(CachePolicy::GUARDED_REQUEST, true);
+        TurboRequestVariation::track($request);
         $response = $next($request);
 
         $this->policy->enforce($request, $response);

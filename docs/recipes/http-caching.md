@@ -28,6 +28,11 @@ for explicitly public HTML `200` responses to `GET` or `HEAD` with a positive `s
 `Cache-Control: private, no-store`. A route with Laravel's session, authentication, or authorization middleware
 is treated as private even if that middleware has not run yet.
 
+For conditional requests, set an `ETag` or `Last-Modified` on the full response and let the guard turn approved
+public HTML into `304 Not Modified`. Do not call `isNotModified()` or enable `cache.headers` ETag handling ahead of
+the guard: once a response has already become a `304`, the guard cannot verify the original representation and
+treats it as non-storable instead.
+
 ## Put public routes outside `web`
 
 Register a separate route file in the `then` callback of `withRouting(...)`. Include bindings if the routes need them,
@@ -60,9 +65,16 @@ return response()->view('products.show', compact('product'), 200, [
 The stock action can always return `<hw:frame id="stock">...</hw:frame>`, regardless of `Turbo-Frame` or `Accept`.
 If nested components generate IDs, use explicit IDs or render them in a fixed
 [`ComponentId::withinScope()`](./stable-component-ids.md) scope so the header does not change the markup.
-The same invariant applies to direct visits and prefetch. The guard cannot detect arbitrary Blade or middleware
-that personalizes output: every public route must return the same representation regardless of incoming cookies,
-locale headers, or Turbo headers. If language or filters change the output, include them in the URL and cache key.
+The same invariant applies to direct visits and prefetch. The guard refuses to store output that consults
+`FrameOrPage` or a Turbo request helper such as `wasFromTurboFrame()` or `wantsTurboStream()`, including on requests
+without Turbo headers. Generated component IDs also consult the Frame header unless the scope is fixed. With
+`APP_DEBUG` enabled, a public route that triggers this safeguard logs a warning.
+
+The guard cannot infer arbitrary header reads or HTML personalization. Every public route must return the same
+representation regardless of incoming cookies, locale headers, or Turbo headers. If language or filters change
+the output, include them in the URL and cache key. The negotiation marker is only available once the application
+runs, so it cannot prevent a hit already served by the CDN or Spatie. Keep negotiated routes out of both caches
+and purge the old entries when correcting a route.
 
 ## Keep interactive responses private
 
@@ -77,9 +89,9 @@ Route::middleware(['auth', 'hotwire.cache:private'])->group(function () {
 
 The edit action can use [FrameOrPage](../components/frame-or-page.md) for an overlay and a full-page fallback.
 A successful submit can return a Turbo Stream and send a toast to `<hw:toaster :flash="false" />` on the public page.
-If a redirect needs to render Laravel flash, errors, or old input, send it to a private page instead. Keep
-`<hw:meta.csrf />` out of shared HTML. A form rendered in a private Frame has its own `_token`, but File Upload
-reads the CSRF token from the document head; use a private document for that flow.
+If a redirect needs to render Laravel flash, errors, or old input, send it to a private page instead. The
+`<hw:meta.csrf />` tag is omitted when the request has no session token. A form rendered in a private Frame has
+its own `_token`, but File Upload reads the CSRF token from the document head; use a private document for that flow.
 
 ## Optionally cache public HTML in Laravel
 
