@@ -28,6 +28,9 @@ This component is the declarative form of the [frame-or-page recipe](../recipes/
 
 The view itself stays oblivious to how it was requested.
 
+Because this component returns different HTML at the same URL, keep the route outside shared caches. See
+[HTTP caching](../recipes/http-caching.md) to serve public pages and Frames alongside private overlays.
+
 > **Why no `<turbo-frame>` around the slot on direct nav?** A dashboard layout typically already
 > hosts the receiving frame globally — e.g. `<hw:modal frame="modal">` renders a
 > `<turbo-frame id="modal">` once per page. If the component also wrapped the slot in

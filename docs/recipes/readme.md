@@ -23,6 +23,7 @@ Each recipe is self-contained — pick the one that matches your use case.
   describe the full UI transition in a single response.
 - [Stable component ids](./stable-component-ids.md) — choose automatic, model-derived, or explicit ids for components
   rendered across Turbo morphs and separate fragment requests.
+- [HTTP caching](./http-caching.md) — cache public pages and Frames without sharing session or overlay responses.
 - [Carousel patterns](./carousel-patterns.md) — thumbnail nav, lightbox modal, infinite Turbo Stream slides,
   URL-deep-linked slides — built on the `carousel` controller.
 - [Carousel as a primitive](./carousel-as-primitive.md) — multi-step wizard, server-driven signage, swipe
