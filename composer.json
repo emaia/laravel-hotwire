@@ -39,6 +39,9 @@
         "phpstan/phpstan-phpunit": "^2.0",
         "symfony/yaml": "^7.2||^8.0"
     },
+    "suggest": {
+        "spatie/laravel-responsecache": "Use version 8.7.x for optional origin caching of public HTML on PHP 8.4 or later."
+    },
     "autoload": {
         "psr-4": {
             "Emaia\\LaravelHotwire\\": "src/"

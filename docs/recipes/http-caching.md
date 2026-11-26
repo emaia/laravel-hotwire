@@ -25,7 +25,8 @@ makes a private response public nor assigns a TTL. On a managed route, it preser
 for explicitly public HTML `200` responses to `GET` or `HEAD` with a positive `s-maxage` (or `max-age` when
 `s-maxage` is absent), no session, no `Authorization`, and no `Set-Cookie`. It rejects streamed or encoded bodies,
 `no-cache`, `no-store`, and `Vary` values other than `Accept-Encoding`. Other managed responses receive
-`Cache-Control: private, no-store`.
+`Cache-Control: private, no-store`. A route with Laravel's session, authentication, or authorization middleware
+is treated as private even if that middleware has not run yet.
 
 ## Put public routes outside `web`
 
@@ -80,14 +81,36 @@ If a redirect needs to render Laravel flash, errors, or old input, send it to a 
 `<hw:meta.csrf />` out of shared HTML. A form rendered in a private Frame has its own `_token`, but File Upload
 reads the CSRF token from the document head; use a private document for that flow.
 
+## Optionally cache public HTML in Laravel
+
+With Spatie ResponseCache **8.7.x** and PHP **8.4+**, add `hotwire.cache.spatie` only to your public route group:
+
+```php
+Route::middleware([
+    SubstituteBindings::class,
+    'hotwire.cache:public',
+    'hotwire.cache.spatie',
+])->group(base_path('routes/public.php'));
+```
+
+The adapter skips ineligible requests before lookup and checks the final response before storing it. It uses the
+configured ResponseCache store, hasher and cache profile, but caps lifetime at the remaining HTTP freshness window.
+It does not serve entries written without the guard or run response replacers on shared HTML. `HEAD` and
+`#[FlexibleCache]` bypass the adapter; it does not replace Spatie's flexible caching middleware. The alias is
+not registered without a supported version of Spatie.
+
+Remove the regular Spatie middleware from any group that contains both public and private routes. Attach only
+the guarded adapter on the public routes, after other route middleware. A hit skips the remainder of the route's
+pipeline. Ensure that Spatie's ignored query parameters never affect the body or headers of those responses.
+
 ## Set the boundary at the cache
 
 - Make only the canonical URLs eligible at the CDN. Bypass other HTML URLs and requests with `Authorization`
   before lookup. Preserve URL parameters that affect the response and respect `Cache-Control` from Laravel;
   do not force an Edge TTL or set conflicting CDN-specific headers.
-- The HTTP guard does not control lookups by third-party Laravel cache middleware. Do not apply a response cache
-  globally across public and private routes. Remove existing entries from both layers before enabling the new
-  rules; headers on future responses cannot change a hit already served by a cache.
+- The HTTP guard alone does not control lookups by third-party Laravel cache middleware. Do not apply a response
+  cache globally across public and private routes. Remove existing entries from both layers before enabling the
+  new rules; headers on future responses cannot change a hit already served by a cache.
 - Verify that a direct visit and a prefetch can hit the public cache, and that private Frame, Stream, and redirect
   requests still reach Laravel after warming the cache. Check both body and cache status, using two independent
   sessions for private forms and flash. Turbo's snapshot and prefetch caches are separate from HTTP caching;

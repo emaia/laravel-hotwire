@@ -3,9 +3,12 @@
 namespace Emaia\LaravelHotwire\Http;
 
 use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
+use Illuminate\Session\Middleware\StartSession;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -77,10 +80,11 @@ final readonly class CachePolicy
             return null;
         }
 
-        $policy = null;
+        $public = false;
+        $middlewareStack = $this->router->gatherRouteMiddleware($route);
 
         // Read the declaration even if authorization or binding short-circuited before the route middleware.
-        foreach ($this->router->gatherRouteMiddleware($route) as $middleware) {
+        foreach ($middlewareStack as $middleware) {
             if (! is_string($middleware)) {
                 continue;
             }
@@ -94,10 +98,26 @@ final readonly class CachePolicy
                     return 'private';
                 }
 
-                $policy = 'public';
+                $public = true;
             }
         }
 
-        return $policy;
+        if (! $public) {
+            return null;
+        }
+
+        // A cache placed before these middleware must not prevent them from running.
+        foreach ($middlewareStack as $middleware) {
+            if (is_string($middleware)) {
+                [$class] = explode(':', $middleware, 2);
+
+                if (is_a($class, StartSession::class, true) || is_a($class, AuthenticatesRequests::class, true)
+                    || is_a($class, Authorize::class, true)) {
+                    return 'private';
+                }
+            }
+        }
+
+        return 'public';
     }
 }
