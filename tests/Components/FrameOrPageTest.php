@@ -15,6 +15,8 @@ class FrameOrPageMessage extends Model
 }
 
 beforeEach(function () {
+    // DynamicComponent can retain an earlier compiler; keep fixture lookup available through the current view finder.
+    view()->addLocation(__DIR__.'/../Fixtures/views');
     Blade::anonymousComponentPath(__DIR__.'/../Fixtures/views/components');
 });
 
