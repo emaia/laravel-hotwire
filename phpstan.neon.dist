@@ -1,5 +1,6 @@
 includes:
     - phpstan-baseline.neon
+    - phpstan-optional-integrations.php
 
 parameters:
     level: 5

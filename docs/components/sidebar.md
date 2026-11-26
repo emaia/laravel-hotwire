@@ -295,7 +295,9 @@ The provider stores the current state as `data-state="expanded|collapsed"`. Trig
 `click->sidebar#toggle`, and the controller also listens for Cmd/Ctrl+B on the window.
 
 The controller writes the cookie named by `cookieName` by default, and the provider reads it automatically when
-`defaultOpen` is omitted. Pass `defaultOpen` explicitly when a page should ignore the persisted state.
+`defaultOpen` is omitted. Pass `defaultOpen` explicitly when a page should ignore the persisted state. Because the HTML
+follows each visitor's cookie, a page that reads it is kept out of shared caches; pass `defaultOpen` on public cached
+pages, as described in [HTTP caching](../recipes/http-caching.md).
 
 On mobile viewports, the trigger opens a temporary drawer using `--sidebar-width-mobile`. This mobile Presence state is
 separate from the desktop expanded/collapsed state, so opening the mobile sidebar does not change the persisted desktop

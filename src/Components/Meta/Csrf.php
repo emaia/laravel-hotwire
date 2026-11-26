@@ -12,7 +12,14 @@ class Csrf extends Component
 
     public function __construct()
     {
-        $this->content = csrf_token() ?? '';
+        $request = request();
+        $this->content = $request->hasSession() ? (string) $request->session()->token() : '';
+    }
+
+    /** Omit the tag when the request has no usable session token. */
+    public function shouldRender(): bool
+    {
+        return $this->content !== '';
     }
 
     public function render()

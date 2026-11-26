@@ -102,7 +102,8 @@ and `prefetch="false"` all behave as you would expect.
 
 ## Why these metas
 
-- **`csrf-token`** is read by the [File Upload](file-upload.md) controller for its requests.
+- **`csrf-token`** is read by the [File Upload](file-upload.md) controller for its requests. The tag is omitted
+  when the current request has no session token.
 - **`color-scheme`** metadata advertises supported schemes before or without application CSS. The preset's
   `color-scheme` property makes native controls and scrollbars follow its active `data-theme`. On the umbrella
   `<hw:meta>`, the prop also renders `<hw:color-scheme.script />` so the theme is applied before CSS paints.

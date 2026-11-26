@@ -12,6 +12,9 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\MakePresetCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
+use Emaia\LaravelHotwire\Http\Middleware\BypassResponseCache;
+use Emaia\LaravelHotwire\Http\Middleware\CachePublicResponse;
+use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
 use Emaia\LaravelHotwire\Support\ComponentAliases;
 use Emaia\LaravelHotwire\Support\ComponentId;
@@ -29,6 +32,7 @@ use Illuminate\Foundation\ViteException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
@@ -66,8 +70,18 @@ class LaravelHotwireServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerCacheMiddleware();
         $this->bootPackageResources();
         $this->bootBladeIntegration();
+    }
+
+    private function registerCacheMiddleware(): void
+    {
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('hotwire.cache', CacheRoute::class);
+        $router->aliasMiddleware('hotwire.cache.spatie', BypassResponseCache::supports(BypassResponseCache::installedVersion())
+            ? CachePublicResponse::class
+            : BypassResponseCache::class);
     }
 
     /**

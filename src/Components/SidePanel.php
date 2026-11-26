@@ -3,6 +3,7 @@
 namespace Emaia\LaravelHotwire\Components;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
+use Emaia\LaravelHotwire\Http\ResponseVariation;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -115,6 +116,7 @@ class SidePanel extends Component
             return true;
         }
 
+        ResponseVariation::mark(request());
         // Laravel drops unencrypted package cookies, so read the raw header as a fallback.
         $value = request()->cookie($this->cookieName);
         if (! is_string($value)) {
