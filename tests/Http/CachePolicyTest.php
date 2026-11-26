@@ -1,9 +1,12 @@
 <?php
 
+use Emaia\LaravelHotwire\Http\CachePolicy;
+use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
 use Emaia\LaravelHotwire\Http\Middleware\EnforceCachePolicy;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -83,7 +86,7 @@ it('keeps a negotiated component private for both page and frame requests', func
         '<hw:frame-or-page frame="edit" layout="cache-test-layout">Edit form</hw:frame-or-page>',
     ))->header('Cache-Control', 'public, s-maxage=300'))->middleware('hotwire.cache:public');
 
-    view()->addLocation(__DIR__.'/../../Fixtures/views');
+    view()->addLocation(__DIR__.'/../Fixtures/views');
 
     $this->get('/cache-edit')
         ->assertOk()
@@ -111,6 +114,35 @@ it('keeps both branches of a Turbo detection macro private including on a FormRe
 })->with([
     'frame' => ['wasFromTurboFrame', ['Turbo-Frame' => 'edit']],
     'stream' => ['wantsTurboStream', ['Accept' => 'text/vnd.turbo-stream.html']],
+]);
+
+it('keeps navigation state restored from the visitor cookie private', function (string $blade, string $cookie) {
+    Route::get('/cache-navigation', fn () => response(Blade::render($blade))
+        ->header('Cache-Control', 'public, s-maxage=300'))->middleware('hotwire.cache:public');
+
+    $this->get('/cache-navigation')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
+    $this->withUnencryptedCookie($cookie, 'false')->get('/cache-navigation')
+        ->assertOk()
+        ->assertSee('data-state="collapsed"', false)
+        ->assertHeader('Cache-Control', 'no-store, private');
+})->with([
+    'sidebar' => ['<hw:sidebar.provider>Nav</hw:sidebar.provider>', 'sidebar_state'],
+    'side panel' => ['<hw:side-panel name="docs"><hw:side-panel.panel /></hw:side-panel>', 'side_panel_docs_state'],
+]);
+
+it('keeps navigation with a fixed initial state public', function (string $blade) {
+    Route::get('/cache-navigation-fixed', fn () => response(Blade::render($blade))
+        ->header('Cache-Control', 'public, s-maxage=300'))->middleware('hotwire.cache:public');
+
+    $this->withUnencryptedCookie('sidebar_state', 'false')
+        ->withUnencryptedCookie('side_panel_docs_state', 'false')
+        ->get('/cache-navigation-fixed')
+        ->assertOk()
+        ->assertHeader('Cache-Control', 'public, s-maxage=300');
+})->with([
+    'sidebar default' => ['<hw:sidebar.provider :default-open="true">Nav</hw:sidebar.provider>'],
+    'side panel default' => ['<hw:side-panel name="docs" :default-open="true"><hw:side-panel.panel /></hw:side-panel>'],
+    'side panel without persistence' => ['<hw:side-panel name="docs" :persist="false"><hw:side-panel.panel /></hw:side-panel>'],
 ]);
 
 it('preserves public cache headers when revalidating approved HTML and never approves an opaque 304', function () {
@@ -249,4 +281,31 @@ it('does not publish a policy-marked response without the final response guard',
     $this->get('/cache-no-guard')
         ->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private');
+});
+
+it('resolves the route policy once per request', function () {
+    $router = new class(app('events'), app()) extends Router
+    {
+        public int $gathered = 0;
+
+        public function gatherRouteMiddleware(Illuminate\Routing\Route $route)
+        {
+            $this->gathered++;
+
+            return parent::gatherRouteMiddleware($route);
+        }
+    };
+    $route = (new Illuminate\Routing\Route('GET', '/cache-memo', fn () => null))
+        ->middleware(CacheRoute::class.':public');
+    $request = Request::create('/cache-memo');
+    $request->setRouteResolver(fn () => $route->bind($request));
+    $request->attributes->set(CachePolicy::GUARDED_REQUEST, true);
+    $policy = new CachePolicy($router);
+    $response = response('Memo', 200, ['Content-Type' => 'text/html', 'Cache-Control' => 'public, s-maxage=60']);
+
+    expect($policy->mayRead($request))->toBeTrue()
+        ->and($policy->mayStore($request, $response))->toBeTrue();
+    $policy->enforce($request, $response);
+
+    expect($router->gathered)->toBe(1);
 });

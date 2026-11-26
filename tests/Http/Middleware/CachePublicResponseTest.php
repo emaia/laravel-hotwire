@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 use Spatie\ResponseCache\Attributes\FlexibleCache;
+use Spatie\ResponseCache\Events\CacheMissedEvent;
 use Spatie\ResponseCache\Events\ResponseCacheHitEvent;
 use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\Middlewares\CacheResponse;
@@ -101,7 +102,11 @@ it('does not let the Spatie lifetime extend the HTML freshness window', function
     $this->get('/cache-ttl')->assertContent('Render 1');
     $this->get('/cache-ttl')->assertHeader('X-Cache-Status', 'HIT');
     $this->travel(3)->seconds();
+    Event::fake([ResponseCacheHitEvent::class, CacheMissedEvent::class]);
     $this->get('/cache-ttl')->assertContent('Render 2');
+
+    Event::assertNotDispatched(ResponseCacheHitEvent::class);
+    Event::assertDispatchedTimes(CacheMissedEvent::class, 1);
 });
 
 it('does not use entries written without the current negotiation guard', function (?string $version) {
@@ -117,8 +122,13 @@ it('does not use entries written without the current negotiation guard', functio
     Route::get('/cache-legacy', fn () => response('Current HTML')->header('Cache-Control', 'public, s-maxage=300'))
         ->middleware(['hotwire.cache:public', 'hotwire.cache.spatie']);
 
+    Event::fake([ResponseCacheHitEvent::class, CacheMissedEvent::class]);
     $this->get('/cache-legacy')->assertContent('Current HTML')->assertHeader('X-Cache-Status', 'MISS');
+    Event::assertNotDispatched(ResponseCacheHitEvent::class);
+    Event::assertDispatchedTimes(CacheMissedEvent::class, 1);
+
     $this->get('/cache-legacy')->assertContent('Current HTML')->assertHeader('X-Cache-Status', 'HIT');
+    Event::assertDispatchedTimes(ResponseCacheHitEvent::class, 1);
 })->with(['unguarded' => null, 'before negotiation detection' => 'public-html-v1']);
 
 it('never warms the origin cache with either branch of negotiated HTML', function () {

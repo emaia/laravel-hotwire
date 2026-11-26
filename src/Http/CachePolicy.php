@@ -3,7 +3,6 @@
 namespace Emaia\LaravelHotwire\Http;
 
 use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
-use Emaia\LaravelHotwireTurbo\Http\TurboRequestVariation;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Http\Request;
@@ -20,6 +19,8 @@ final readonly class CachePolicy
 {
     public const string GUARDED_REQUEST = self::class.':guarded';
 
+    private const string RESOLVED_POLICY = self::class.':policy';
+
     public function __construct(private Router $router) {}
 
     /** Decide whether a shared origin cache may look up an entry for this request. */
@@ -31,7 +32,7 @@ final readonly class CachePolicy
             && ! $request->headers->has('Authorization')
             && $request->getUser() === null
             && $this->routePolicy($request) === 'public'
-            && ! TurboRequestVariation::isMarked($request);
+            && ! ResponseVariation::isMarked($request);
     }
 
     /** Admit only explicitly public, fresh HTML after the response has passed through the application. */
@@ -67,8 +68,8 @@ final readonly class CachePolicy
         }
 
         if (! $this->mayStore($request, $response)) {
-            if ($policy === 'public' && TurboRequestVariation::isMarked($request) && config('app.debug')) {
-                Log::warning('Hotwire withheld public caching because the response consulted Turbo negotiation.', [
+            if ($policy === 'public' && ResponseVariation::isMarked($request) && config('app.debug')) {
+                Log::warning('Hotwire withheld public caching because the response varies with Turbo headers or a visitor cookie.', [
                     'route' => $request->route()?->uri(),
                 ]);
             }
@@ -92,6 +93,7 @@ final readonly class CachePolicy
         $response->headers->set('Cache-Control', 'private, no-store');
     }
 
+    /** Resolve once per matched route, since a single request checks the policy up to four times. */
     private function routePolicy(Request $request): ?string
     {
         $route = $request->route();
@@ -100,6 +102,20 @@ final readonly class CachePolicy
             return null;
         }
 
+        $resolved = $request->attributes->get(self::RESOLVED_POLICY);
+
+        if (is_array($resolved) && $resolved['route'] === $route) {
+            return $resolved['policy'];
+        }
+
+        $policy = $this->resolveRoutePolicy($route);
+        $request->attributes->set(self::RESOLVED_POLICY, ['route' => $route, 'policy' => $policy]);
+
+        return $policy;
+    }
+
+    private function resolveRoutePolicy(Route $route): ?string
+    {
         $public = false;
         $middlewareStack = $this->router->gatherRouteMiddleware($route);
 

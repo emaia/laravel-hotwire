@@ -4,6 +4,7 @@ namespace Emaia\LaravelHotwire\Components\Sidebar;
 
 use Emaia\LaravelHotwire\Components\BaseComponent as Component;
 use Emaia\LaravelHotwire\Components\Sidebar;
+use Emaia\LaravelHotwire\Http\ResponseVariation;
 use Emaia\LaravelHotwire\Support\StimulusAttributes;
 use Emaia\LaravelHotwire\Support\StimulusIdentifier;
 use Illuminate\Contracts\Support\Htmlable;
@@ -71,6 +72,7 @@ class Provider extends Component
             return $this->defaultOpen;
         }
 
+        ResponseVariation::mark(request());
         $value = request()->cookie($this->cookieName);
         if (! is_string($value)) {
             $value = $this->rawCookieValue($this->cookieName);

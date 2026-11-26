@@ -31,6 +31,9 @@ rendering, so the first frame already matches the persisted state. Passing `defa
 `persist="false"` ignores it. Laravel may discard this unencrypted package cookie from `request()->cookie()`, so the
 component falls back to the raw Cookie header when `EncryptCookies` is active.
 
+Because the HTML follows each visitor's cookie, a page that reads it is kept out of shared caches. On a public cached
+page, pass `defaultOpen` or `persist="false"`; see [HTTP caching](../recipes/http-caching.md).
+
 The root exposes `data-state="expanded|collapsed"` and `data-side="left|right"`. The trigger mirrors state through
 `aria-expanded` and references the generated panel id through `aria-controls`.
 

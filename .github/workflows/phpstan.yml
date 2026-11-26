@@ -31,6 +31,9 @@ jobs:
           php-version: '8.4'
           coverage: none
 
+      - name: Add optional integrations for analysis
+        run: composer require --dev "spatie/laravel-responsecache:~8.7.0" --no-interaction --no-update
+
       - name: Install composer dependencies
         uses: ramsey/composer-install@v4
 

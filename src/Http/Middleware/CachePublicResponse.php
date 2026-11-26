@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Spatie\ResponseCache\Attributes\FlexibleCache;
 use Spatie\ResponseCache\CacheProfiles\CacheProfile;
+use Spatie\ResponseCache\Events\ResponseCacheHitEvent;
+use Spatie\ResponseCache\Hasher\RequestHasher;
 use Spatie\ResponseCache\Middlewares\CacheResponse;
 use Spatie\ResponseCache\ResponseCache;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 if (! class_exists(CacheResponse::class)) {
     return;
@@ -52,9 +55,16 @@ final class CachePublicResponse extends CacheResponse
         }
     }
 
+    /** Admit the entry before reporting a hit, so a rejected lookup counts only as a miss. */
     protected function getCachedResponse(Request $request, array $tags): ?Response
     {
-        $response = parent::getCachedResponse($request, $tags);
+        try {
+            $response = $this->responseCache->getCachedResponseFor($request, $tags);
+        } catch (Throwable $exception) {
+            report("Could not serve cached response: {$exception->getMessage()}");
+
+            return null;
+        }
 
         if ($response === null || $response->headers->get(self::ADMISSION_HEADER) !== self::ADMISSION_VERSION
             || ! $this->policy->mayStore($request, $response)) {
@@ -67,6 +77,11 @@ final class CachePublicResponse extends CacheResponse
             return null;
         }
 
+        $cacheAge = $this->getAgeInSeconds($response);
+        event(new ResponseCacheHitEvent($request, $cacheAge, $tags));
+        $response = $this->addDebugHeaders($response, true, app(RequestHasher::class)->getHashFor($request), $cacheAge);
+
+        $response->headers->remove('Set-Cookie');
         $response->headers->remove(self::ADMISSION_HEADER);
         $response->headers->set('Age', (string) $age);
 

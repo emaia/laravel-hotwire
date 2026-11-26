@@ -26,7 +26,8 @@ for explicitly public HTML `200` responses to `GET` or `HEAD` with a positive `s
 `s-maxage` is absent), no session, no `Authorization`, and no `Set-Cookie`. It rejects streamed or encoded bodies,
 `no-cache`, `no-store`, and `Vary` values other than `Accept-Encoding`. Other managed responses receive
 `Cache-Control: private, no-store`. A route with Laravel's session, authentication, or authorization middleware
-is treated as private even if that middleware has not run yet.
+is treated as private even if that middleware has not run yet. Custom authentication middleware is recognized only
+when it implements Laravel's `AuthenticatesRequests` contract; keep other protected routes under `hotwire.cache:private`.
 
 For conditional requests, set an `ETag` or `Last-Modified` on the full response and let the guard turn approved
 public HTML into `304 Not Modified`. Do not call `isNotModified()` or enable `cache.headers` ETag handling ahead of
@@ -67,7 +68,9 @@ If nested components generate IDs, use explicit IDs or render them in a fixed
 [`ComponentId::withinScope()`](./stable-component-ids.md) scope so the header does not change the markup.
 The same invariant applies to direct visits and prefetch. The guard refuses to store output that consults
 `FrameOrPage` or a Turbo request helper such as `wasFromTurboFrame()` or `wantsTurboStream()`, including on requests
-without Turbo headers. Generated component IDs also consult the Frame header unless the scope is fixed. With
+without Turbo headers. Generated component IDs also consult the Frame header unless the scope is fixed. A
+[Sidebar](../components/sidebar.md) or [Side Panel](../components/side-panel.md) without `defaultOpen` restores its
+state from the visitor's cookie, so pass `defaultOpen` (or `persist="false"` on a Side Panel) on public pages. With
 `APP_DEBUG` enabled, a public route that triggers this safeguard logs a warning.
 
 The guard cannot infer arbitrary header reads or HTML personalization. Every public route must return the same
@@ -90,8 +93,10 @@ Route::middleware(['auth', 'hotwire.cache:private'])->group(function () {
 The edit action can use [FrameOrPage](../components/frame-or-page.md) for an overlay and a full-page fallback.
 A successful submit can return a Turbo Stream and send a toast to `<hw:toaster :flash="false" />` on the public page.
 If a redirect needs to render Laravel flash, errors, or old input, send it to a private page instead. The
-`<hw:meta.csrf />` tag is omitted when the request has no session token. A form rendered in a private Frame has
-its own `_token`, but File Upload reads the CSRF token from the document head; use a private document for that flow.
+`<hw:meta.csrf />` tag is omitted when the request has no session token. Do not render a form that submits to Laravel
+directly on a public page: without a session its `_token` is empty and the submit fails CSRF validation with `419`.
+Load it in a private Frame instead, which renders its own `_token`. File Upload reads the CSRF token from the document
+head, so use a private document for that flow.
 
 ## Optionally cache public HTML in Laravel
 
@@ -108,8 +113,9 @@ Route::middleware([
 The adapter skips ineligible requests before lookup and checks the final response before storing it. It uses the
 configured ResponseCache store, hasher and cache profile, but caps lifetime at the remaining HTTP freshness window.
 It does not serve entries written without the guard or run response replacers on shared HTML. `HEAD` and
-`#[FlexibleCache]` bypass the adapter; it does not replace Spatie's flexible caching middleware. The alias is
-not registered without a supported version of Spatie.
+`#[FlexibleCache]` bypass the adapter; it does not replace Spatie's flexible caching middleware. Without a supported
+version of Spatie, the alias renders the routes without origin caching and logs a warning once per process, so a
+dependency update cannot break them.
 
 Remove the regular Spatie middleware from any group that contains both public and private routes. Attach only
 the guarded adapter on the public routes, after other route middleware. A hit skips the remainder of the route's

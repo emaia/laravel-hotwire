@@ -3,7 +3,6 @@
 namespace Emaia\LaravelHotwire;
 
 use Closure;
-use Composer\InstalledVersions;
 use Emaia\LaravelHotwire\Commands\BundlePresetCommand;
 use Emaia\LaravelHotwire\Commands\CheckCommand;
 use Emaia\LaravelHotwire\Commands\DocsCommand;
@@ -13,6 +12,7 @@ use Emaia\LaravelHotwire\Commands\ListComponentsCommand;
 use Emaia\LaravelHotwire\Commands\MakeControllerCommand;
 use Emaia\LaravelHotwire\Commands\MakePresetCommand;
 use Emaia\LaravelHotwire\Commands\PublishControllersCommand;
+use Emaia\LaravelHotwire\Http\Middleware\BypassResponseCache;
 use Emaia\LaravelHotwire\Http\Middleware\CachePublicResponse;
 use Emaia\LaravelHotwire\Http\Middleware\CacheRoute;
 use Emaia\LaravelHotwire\Registry\HotwireRegistry;
@@ -79,14 +79,9 @@ class LaravelHotwireServiceProvider extends ServiceProvider
     {
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('hotwire.cache', CacheRoute::class);
-
-        $package = 'spatie/laravel-responsecache';
-        $version = InstalledVersions::isInstalled($package) ? InstalledVersions::getVersion($package) : null;
-
-        // Other versions may write before terminate() or take a different path to a cache hit.
-        if ($version !== null && preg_match('/\A8\.7\.[0-9]+(?:\.0)?\z/', $version) === 1) {
-            $router->aliasMiddleware('hotwire.cache.spatie', CachePublicResponse::class);
-        }
+        $router->aliasMiddleware('hotwire.cache.spatie', BypassResponseCache::supports(BypassResponseCache::installedVersion())
+            ? CachePublicResponse::class
+            : BypassResponseCache::class);
     }
 
     /**
