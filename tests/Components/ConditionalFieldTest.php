@@ -223,3 +223,242 @@ it('protects the internal conditional-fields target while merging extra stimulus
     $view->assertSee('data-controller="analytics"', false);
     $view->assertSee('data-action="change->analytics#track"', false);
 });
+
+// --- Negated rules ---
+
+it('accepts an unless-only string rule without leaking the prop into HTML', function () {
+    $view = $this->blade(
+        '<x-hw::conditional-field unless="status=completed" :state="[\'status\' => \'accepted\']">Save</x-hw::conditional-field>'
+    );
+
+    $view->assertSee('data-unless-status="completed"', false)
+        ->assertDontSee(' unless=', false)
+        ->assertDontSee(' hidden', false)
+        ->assertDontSee(' disabled', false);
+});
+
+it('hides and disables a block when its unless rule matches', function () {
+    $view = $this->blade(
+        '<x-hw::conditional-field unless="status=completed" :state="[\'status\' => \'completed\']">Save</x-hw::conditional-field>'
+    );
+
+    $view->assertSee(' hidden', false)
+        ->assertSee(' disabled', false);
+});
+
+it('accepts unless arrays with literal values and OR alternatives', function () {
+    $component = new ConditionalField(
+        unless: ['status' => ['Completed successfully', '!cancelled']],
+        state: ['status' => '!cancelled'],
+    );
+
+    expect($component->matches)->toBeFalse()
+        ->and($component->dataUnlessAttributes())->toBe([
+            [
+                'name' => 'status',
+                'attribute' => 'data-unless-status',
+                'value' => 'Completed successfully|!cancelled',
+            ],
+        ]);
+});
+
+it('negates the entire AND expression in unless', function (string $status, string $approved, bool $visible) {
+    $component = new ConditionalField(
+        unless: 'status=completed|cancelled approved=yes',
+        state: ['status' => $status, 'approved' => $approved],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'all match' => ['completed', 'yes', false],
+    'OR alternative matches' => ['cancelled', 'yes', false],
+    'first condition differs' => ['accepted', 'yes', true],
+    'second condition differs' => ['completed', 'no', true],
+]);
+
+it('requires when to match and unless not to match', function (string $plan, string $status, bool $visible) {
+    $component = new ConditionalField(
+        when: 'plan=pro',
+        unless: 'status=completed',
+        state: ['plan' => $plan, 'status' => $status],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'when matches and unless differs' => ['pro', 'accepted', true],
+    'both match' => ['pro', 'completed', false],
+    'neither matches' => ['starter', 'accepted', false],
+]);
+
+it('emits both positive and negative rules for the same field', function () {
+    $view = $this->blade(
+        '<x-hw::conditional-field when="status=accepted|completed" unless="status=completed">Save</x-hw::conditional-field>'
+    );
+
+    $view->assertSee('data-when-status="accepted|completed"', false)
+        ->assertSee('data-unless-status="completed"', false);
+});
+
+it('does not hide matching when rules for an empty unless expression', function (array|string $unless) {
+    $component = new ConditionalField(
+        when: 'plan=pro',
+        unless: $unless,
+        state: ['plan' => 'pro'],
+    );
+
+    expect($component->matches)->toBeTrue()
+        ->and($component->dataUnlessAttributes())->toBe([]);
+})->with([
+    'empty array' => [[]],
+    'empty string' => [''],
+]);
+
+it('shows an unless block when a trigger has no selected value', function (mixed $value) {
+    $component = new ConditionalField(
+        unless: ['status' => 'completed'],
+        state: ['status' => $value],
+    );
+
+    expect($component->matches)->toBeTrue();
+})->with([null, '', [[]]]);
+
+it('negates checkbox state tokens', function (string $token, mixed $value, bool $visible) {
+    $component = new ConditionalField(
+        unless: ['active' => $token],
+        state: ['active' => $value],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'checked' => [':checked', '1', false],
+    'unchecked' => [':checked', null, true],
+    'not unchecked' => [':unchecked', '1', true],
+    'not checked' => [':unchecked', null, false],
+]);
+
+it('negates membership across all checkbox group values', function (array $values, bool $visible) {
+    $component = new ConditionalField(
+        unless: ['interests' => ['news', 'events']],
+        state: ['interests' => $values],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'one forbidden choice' => [['tips', 'events'], false],
+    'no forbidden choices' => [['tips'], true],
+    'nothing selected' => [[], true],
+]);
+
+it('uses old input ahead of inherited state for unless rules', function () {
+    seedOldInput(['status' => 'completed']);
+
+    $view = $this->blade(<<<'BLADE'
+        <x-hw::form conditional-fields :state="['status' => 'accepted']">
+            <x-hw::conditional-field unless="status=completed">Save</x-hw::conditional-field>
+        </x-hw::form>
+    BLADE);
+
+    $view->assertSee('data-controller="conditional-fields"', false)
+        ->assertSee('data-unless-status="completed"', false)
+        ->assertSee(' hidden', false)
+        ->assertSee(' disabled', false);
+});
+
+// --- Expression validation ---
+
+it('rejects string rules it cannot parse', function (string $prop, string $expression) {
+    new ConditionalField(...[$prop => $expression]);
+})->with([
+    'spaces around =' => ['unless', 'status = completed'],
+    'colon separator' => ['unless', 'status:completed'],
+    'missing value' => ['unless', 'status='],
+    'only separators' => ['unless', 'status=|'],
+    'missing field' => ['unless', '=completed'],
+    'malformed when' => ['when', 'type:link'],
+])->throws(InvalidArgumentException::class);
+
+it('drops empty and null values from array rules so server and browser agree', function (mixed $expected) {
+    $component = new ConditionalField(
+        unless: ['status' => $expected],
+        state: ['status' => null],
+    );
+
+    expect($component->matches)->toBeTrue()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('');
+})->with([
+    'empty string' => [''],
+    'null' => [null],
+    'only empty alternatives' => [['', null]],
+]);
+
+it('keeps the remaining alternatives of an array rule after dropping empty ones', function () {
+    $component = new ConditionalField(
+        unless: ['status' => ['', 'completed', null]],
+        state: ['status' => 'completed'],
+    );
+
+    expect($component->matches)->toBeFalse()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('completed');
+});
+
+// --- Enum state ---
+
+enum ConditionalFieldStatus: string
+{
+    case Accepted = 'accepted';
+    case Completed = 'completed';
+}
+
+enum ConditionalFieldPriority
+{
+    case Low;
+    case High;
+}
+
+it('compares enum state by its value', function (mixed $status, bool $visible) {
+    $component = new ConditionalField(
+        unless: 'status=completed',
+        state: ['status' => $status],
+    );
+
+    expect($component->matches)->toBe($visible);
+})->with([
+    'completed' => [ConditionalFieldStatus::Completed, false],
+    'accepted' => [ConditionalFieldStatus::Accepted, true],
+    'collection of values' => [[ConditionalFieldStatus::Accepted, ConditionalFieldStatus::Completed], false],
+]);
+
+it('compares a pure enum state by its name', function () {
+    $component = new ConditionalField(
+        when: 'priority=High',
+        state: ['priority' => ConditionalFieldPriority::High],
+    );
+
+    expect($component->matches)->toBeTrue();
+});
+
+it('accepts enums as expected values in array rules', function () {
+    $component = new ConditionalField(
+        unless: ['status' => [ConditionalFieldStatus::Completed]],
+        state: ['status' => ConditionalFieldStatus::Completed],
+    );
+
+    expect($component->matches)->toBeFalse()
+        ->and($component->dataUnlessAttributes()[0]['value'])->toBe('completed');
+});
+
+it('renders an unless block against an Eloquent enum cast', function () {
+    $task = new class(['status' => 'completed']) extends Model
+    {
+        protected $guarded = [];
+
+        protected $casts = ['status' => ConditionalFieldStatus::class];
+    };
+
+    $view = $this->blade(
+        '<x-hw::conditional-field unless="status=completed" :state="$task">Save</x-hw::conditional-field>',
+        ['task' => $task],
+    );
+
+    $view->assertSee(' hidden', false);
+});

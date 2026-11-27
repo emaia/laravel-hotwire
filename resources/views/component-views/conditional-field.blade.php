@@ -8,7 +8,7 @@
         'data-conditional-fields-target' => 'dependent',
         'hidden' => $resolvedMatches ? null : true,
         'disabled' => $resolvedMatches ? null : true,
-    ], collect($dataWhenAttributes())
+    ], collect([...$dataWhenAttributes(), ...$dataUnlessAttributes()])
         ->mapWithKeys(fn ($a) => [$a['attribute'] => $a['value']])
         ->all()), $attributes, $stimulus, except: ['as', 'tag'], protectedPrefixes: ['data-conditional-fields-']);
 @endphp

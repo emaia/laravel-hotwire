@@ -324,6 +324,213 @@ test.serial("visible non-fieldset dependents keep originally disabled controls a
     expect(windowMs.disabled).toBe(true);
 });
 
+// --- negated rules ---
+
+test.serial("unless-only blocks hide on a matching value and restore their controls when it changes", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <select name="status">
+                <option value="completed" selected>Completed</option>
+                <option value="accepted">Accepted</option>
+            </select>
+            <fieldset data-conditional-fields-target="dependent" data-unless-status="completed">
+                <button type="submit">Save</button>
+            </fieldset>
+        </form>
+    `);
+
+    const dependent = document.querySelector("fieldset");
+    expect(dependent.hidden).toBe(true);
+    expect(dependent.disabled).toBe(true);
+
+    const status = document.querySelector("select");
+    status.value = "accepted";
+    status.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(dependent.hidden).toBe(false);
+    expect(dependent.disabled).toBe(false);
+});
+
+test.serial("unless negates a whole AND expression with OR alternatives", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input name="status" value="completed" />
+            <input name="approved" value="yes" />
+            <fieldset data-conditional-fields-target="dependent"
+                data-unless-status="completed|cancelled" data-unless-approved="yes">
+                <input name="details" />
+            </fieldset>
+        </form>
+    `);
+
+    const dependent = document.querySelector("fieldset");
+    const status = document.querySelector('[name="status"]');
+    const approved = document.querySelector('[name="approved"]');
+    expect(dependent.hidden).toBe(true);
+
+    approved.value = "no";
+    approved.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(dependent.hidden).toBe(false);
+
+    approved.value = "yes";
+    status.value = "accepted";
+    status.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(dependent.hidden).toBe(false);
+
+    status.value = "cancelled";
+    status.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(dependent.hidden).toBe(true);
+});
+
+test.serial("when and unless combine without overriding one another", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input name="plan" value="starter" />
+            <input name="status" value="accepted" />
+            <fieldset data-conditional-fields-target="dependent"
+                data-when-plan="pro" data-unless-status="completed">
+            </fieldset>
+        </form>
+    `);
+
+    const dependent = document.querySelector("fieldset");
+    expect(dependent.hidden).toBe(true);
+
+    const plan = document.querySelector('[name="plan"]');
+    plan.value = "pro";
+    plan.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(dependent.hidden).toBe(false);
+
+    const status = document.querySelector('[name="status"]');
+    status.value = "completed";
+    status.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(dependent.hidden).toBe(true);
+});
+
+test.serial("an unselected radio group does not match the value excluded by unless", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input type="radio" name="status" value="accepted" />
+            <input type="radio" name="status" value="completed" />
+            <fieldset data-conditional-fields-target="dependent" data-unless-status="completed"></fieldset>
+        </form>
+    `);
+
+    const dependent = document.querySelector("fieldset");
+    expect(dependent.hidden).toBe(false);
+
+    const completed = document.querySelector('[value="completed"]');
+    completed.checked = true;
+    completed.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(dependent.hidden).toBe(true);
+});
+
+test.serial("a missing unless trigger keeps the dependent hidden", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input name="status" value="accepted" />
+            <fieldset data-conditional-fields-target="dependent"
+                data-unless-status="completed" data-unless-missing="yes"></fieldset>
+        </form>
+    `);
+
+    expect(document.querySelector("fieldset").hidden).toBe(true);
+});
+
+test.serial("unless negates checkbox-state tokens and OR membership without changing literal values", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input type="checkbox" name="active" value="1" />
+            <input type="checkbox" name="interests[]" value="news" />
+            <input type="checkbox" name="interests[]" value="events" checked />
+            <input name="status" value="!Completed successfully" />
+            <fieldset id="active" data-conditional-fields-target="dependent" data-unless-active=":checked"></fieldset>
+            <fieldset id="interests" data-conditional-fields-target="dependent" data-unless-interests="news|events"></fieldset>
+            <fieldset id="literal" data-conditional-fields-target="dependent" data-unless-status="!Completed successfully"></fieldset>
+        </form>
+    `);
+
+    expect(document.querySelector("#active").hidden).toBe(false);
+    expect(document.querySelector("#interests").hidden).toBe(true);
+    expect(document.querySelector("#literal").hidden).toBe(true);
+
+    const active = document.querySelector('[name="active"]');
+    active.checked = true;
+    active.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.querySelector("#active").hidden).toBe(true);
+
+    const events = document.querySelector('[value="events"]');
+    events.checked = false;
+    events.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.querySelector("#interests").hidden).toBe(false);
+});
+
+test.serial("checkbox tokens ignore the same-named hidden unchecked-value input", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input type="hidden" name="archived" value="0" />
+            <input type="checkbox" name="archived" value="1" checked />
+            <fieldset id="unless" data-conditional-fields-target="dependent" data-unless-archived=":checked"></fieldset>
+            <fieldset id="when" data-conditional-fields-target="dependent" data-when-archived=":checked"></fieldset>
+            <fieldset id="unchecked" data-conditional-fields-target="dependent" data-when-archived=":unchecked"></fieldset>
+        </form>
+    `);
+
+    expect(document.querySelector("#unless").hidden).toBe(true);
+    expect(document.querySelector("#when").hidden).toBe(false);
+    expect(document.querySelector("#unchecked").hidden).toBe(true);
+
+    const archived = document.querySelector('[type="checkbox"]');
+    archived.checked = false;
+    archived.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(document.querySelector("#unless").hidden).toBe(false);
+    expect(document.querySelector("#when").hidden).toBe(true);
+    expect(document.querySelector("#unchecked").hidden).toBe(false);
+});
+
+test.serial("an unchecked checkbox reads the value of its hidden unchecked-value input", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <input type="hidden" name="archived" value="0" />
+            <input type="checkbox" name="archived" value="1" />
+            <fieldset data-conditional-fields-target="dependent" data-when-archived="0"></fieldset>
+        </form>
+    `);
+
+    const dependent = document.querySelector("fieldset");
+    expect(dependent.hidden).toBe(false);
+
+    const archived = document.querySelector('[type="checkbox"]');
+    archived.checked = true;
+    archived.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(dependent.hidden).toBe(true);
+});
+
+test.serial("a multiple select matches every selected option", async () => {
+    await mount(`
+        <form data-controller="conditional-fields">
+            <select name="tags[]" multiple>
+                <option value="draft" selected>Draft</option>
+                <option value="archived" selected>Archived</option>
+                <option value="featured">Featured</option>
+            </select>
+            <fieldset id="unless" data-conditional-fields-target="dependent" data-unless-tags="archived"></fieldset>
+            <fieldset id="when" data-conditional-fields-target="dependent" data-when-tags="archived"></fieldset>
+        </form>
+    `);
+
+    expect(document.querySelector("#unless").hidden).toBe(true);
+    expect(document.querySelector("#when").hidden).toBe(false);
+
+    const select = document.querySelector("select");
+    select.options[1].selected = false;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(document.querySelector("#unless").hidden).toBe(false);
+    expect(document.querySelector("#when").hidden).toBe(true);
+});
+
 // --- cleanup ---
 
 test.serial("disconnect removes the delegated change listener", async () => {
