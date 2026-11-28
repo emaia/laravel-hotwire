@@ -21,7 +21,7 @@ beforeEach(async () => {
     mounted = await mountController("navigation-menu", Controller, `
         <nav data-controller="navigation-menu" data-navigation-menu-close-delay-value="10" data-navigation-menu-open-delay-value="0"
              data-action="pointerenter->navigation-menu#cancelClose pointerleave->navigation-menu#leave
-                 focusin->navigation-menu#focusIn focusout->navigation-menu#focusOut
+                 focusout->navigation-menu#focusOut keydown@window->navigation-menu#dismissPreviewOnTab:capture
                  keydown->navigation-menu#keydown keydown.esc@window->navigation-menu#escapeOutside:capture click@document->navigation-menu#outside
                  turbo:before-cache@document->navigation-menu#close turbo:morph@document->navigation-menu#close">
             <ul data-navigation-menu-target="list">
@@ -86,6 +86,15 @@ test("cancels delayed hover when a quick click activates the trigger", async () 
     expect(viewport.hidden).toBe(true);
 });
 
+test("a click on a hover preview activates it before another click dismisses it", () => {
+    pointer(products, "pointerenter");
+    expect(first.hidden).toBe(false);
+    products.click();
+    expect(first.hidden).toBe(false);
+    products.click();
+    expect(first.hidden).toBe(true);
+});
+
 test("switches panels in both directions without hiding the shared viewport", () => {
     pointer(products, "pointerenter");
     pointer(company, "pointerenter");
@@ -101,16 +110,16 @@ test("switches panels in both directions without hiding the shared viewport", ()
     expect(viewport.hidden).toBe(false);
 });
 
-test("updates the viewport's measured custom properties for the new panel", () => {
-    Object.defineProperties(first, { offsetWidth: { value: 185 }, offsetHeight: { value: 95 } });
-    Object.defineProperties(second, { offsetWidth: { value: 320 }, offsetHeight: { value: 110 } });
+test("rounds fractional panel sizes up so the viewport does not clip them", () => {
+    first.getBoundingClientRect = () => ({ width: 185.2, height: 95.4 });
+    second.getBoundingClientRect = () => ({ width: 320.1, height: 110.3 });
 
     products.click();
-    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-width")).toBe("185px");
-    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-height")).toBe("95px");
+    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-width")).toBe("186px");
+    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-height")).toBe("96px");
     company.click();
-    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-width")).toBe("320px");
-    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-height")).toBe("110px");
+    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-width")).toBe("321px");
+    expect(viewport.style.getPropertyValue("--navigation-menu-viewport-height")).toBe("111px");
 });
 
 test("loads a submenu frame once and retains the returned markup", () => {
@@ -142,12 +151,21 @@ test("dismisses on Escape without propagating to enclosing listeners", () => {
     const parent = mock(() => {});
     document.body.addEventListener("keydown", parent);
     products.click();
+    first.querySelector("a").focus();
     const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
     first.querySelector("a").dispatchEvent(event);
     expect(parent).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(true);
     expect(viewport.hidden).toBe(true);
     expect(document.activeElement).toBe(products);
+});
+
+test("Escape dismisses a hover preview without taking focus from another entry", () => {
+    company.focus();
+    pointer(products, "pointerenter");
+    company.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(viewport.hidden).toBe(true);
+    expect(document.activeElement === company).toBe(true);
 });
 
 test("Escape over a hover-open submenu does not move focus from outside the navigation", () => {

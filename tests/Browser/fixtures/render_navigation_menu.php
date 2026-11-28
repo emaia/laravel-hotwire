@@ -45,7 +45,7 @@ $testCase = new class('runTest') extends TestCase
             ]);
 
             $wrapper = match ($surface) {
-                'frame' => '<turbo-frame id="page-nav">{{ $menu }}</turbo-frame>',
+                'frame' => '<turbo-frame id="page-nav" refresh="morph">{{ $menu }}</turbo-frame>',
                 'modal' => <<<'BLADE'
                     <hw:modal initial-focus="dialog">
                         <hw:modal.trigger>Open modal</hw:modal.trigger>

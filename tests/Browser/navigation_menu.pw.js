@@ -15,7 +15,7 @@ test.beforeAll(async () => {
     ]).toString();
 });
 
-test("tabs through active links in context and returns focus on Escape", async ({ page }) => {
+test("tabs past closed submenus and enters only a submenu opened explicitly", async ({ page }) => {
     await setup(page);
     const products = page.getByRole("button", { name: "Products" });
     const catalog = page.getByRole("link", { name: "Catalog" });
@@ -24,6 +24,17 @@ test("tabs through active links in context and returns focus on Escape", async (
 
     await page.keyboard.press("Tab");
     await expect(products).toBeFocused();
+    await expect(catalog).toBeHidden();
+    await page.keyboard.press("Tab");
+    await expect(company).toBeFocused();
+    await expect(company).toHaveAttribute("aria-expanded", "false");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "About" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "After navigation" })).toBeFocused();
+
+    await products.focus();
+    await page.keyboard.press("Enter");
     await expect(catalog).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(catalog).toBeFocused();
@@ -37,17 +48,71 @@ test("tabs through active links in context and returns focus on Escape", async (
     await expect(catalog).toBeHidden();
     await page.keyboard.press("ArrowRight");
     await expect(company).toBeFocused();
+    await expect(company).toHaveAttribute("aria-expanded", "false");
     await page.keyboard.press("ArrowLeft");
+    await expect(catalog).toBeHidden();
+    await page.keyboard.press("ArrowUp");
     await expect(catalog).toBeVisible();
+    await expect(products).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(catalog).toBeHidden();
+    await expect(products).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(catalog).toBeVisible();
+    await page.keyboard.press("ArrowUp");
+    await expect(catalog).toBeHidden();
+    await expect(products).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(catalog).toBeVisible();
+    await expect(products).toBeFocused();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
     await expect(company).toBeFocused();
+    await expect(company).toHaveAttribute("aria-expanded", "false");
+    await page.keyboard.press("Space");
+    await expect(company).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "About" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "After navigation" })).toBeFocused();
+});
+
+test("Tab skips a hover preview in either direction until the user activates its trigger", async ({ page }) => {
+    await setup(page);
+    const products = page.getByRole("button", { name: "Products" });
+    const company = page.getByRole("button", { name: "Company" });
+    const after = page.getByRole("button", { name: "After navigation" });
+    await products.focus();
+    await products.hover();
+    await expect(products).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Tab");
+    await expect(company).toBeFocused();
+    await expect(products).toHaveAttribute("aria-expanded", "false");
+
+    await after.focus();
+    await page.mouse.move(0, 0);
+    await products.hover();
+    await expect(products).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.getByRole("link", { name: "About" })).toBeFocused();
+    await expect(products).toHaveAttribute("aria-expanded", "false");
+});
+
+test("keeps fractional panel edges inside the viewport", async ({ page }) => {
+    await setup(page);
+    await page.addStyleTag({ content: "#site-content-products { width: 220.25px; height: 96.25px; }" });
+    await page.getByRole("button", { name: "Products" }).press("Enter");
+    const viewport = page.locator('[data-slot="navigation-menu-viewport"]');
+    await expect(viewport).toBeVisible();
+    const edges = await viewport.evaluate(node => {
+        const panel = node.firstElementChild.getBoundingClientRect();
+        const box = node.getBoundingClientRect();
+        return { right: box.right - panel.right, bottom: box.bottom - panel.bottom };
+    });
+    expect(edges.right).toBeGreaterThanOrEqual(0);
+    expect(edges.bottom).toBeGreaterThanOrEqual(0);
 });
 
 test("positions a vertical RTL menu at inline end and moves between entries with up and down", async ({ page }) => {
@@ -61,14 +126,59 @@ test("positions a vertical RTL menu at inline end and moves between entries with
     const viewport = page.locator('[data-slot="navigation-menu-viewport"]');
     await page.keyboard.press("Tab");
     await expect(products).toBeFocused();
+    await expect(viewport).toBeHidden();
+    await page.keyboard.press("ArrowLeft");
     await expect(viewport).toBeVisible();
     await expect(viewport).toHaveAttribute("data-side", "left");
     const panel = await viewport.boundingBox();
     expect(panel.x + panel.width).toBeLessThan((await products.boundingBox()).x);
     await page.keyboard.press("ArrowDown");
     await expect(company).toBeFocused();
+    await expect(company).toHaveAttribute("aria-expanded", "false");
     await page.keyboard.press("ArrowUp");
     await expect(products).toBeFocused();
+    await expect(viewport).toBeHidden();
+});
+
+test("resets the disclosure after a Turbo Stream morph of the menu or a morphing outer Frame", async ({ page }) => {
+    await setup(page, "frame");
+    const root = page.locator("#site");
+    const products = root.getByRole("button", { name: "Products" });
+    const company = root.getByRole("button", { name: "Company" });
+    const viewport = root.locator('[data-slot="navigation-menu-viewport"]');
+    const original = await root.evaluate(node => node.outerHTML);
+    await page.route(`${url}/outer-menu`, route => route.fulfill({
+        contentType: "text/html", body: `<turbo-frame id="page-nav">${original}</turbo-frame>`,
+    }));
+    const frame = page.locator("#page-nav");
+    await frame.evaluate(async node => {
+        node.src = "/outer-menu";
+        await node.loaded;
+    });
+    await root.evaluate(node => { window.originalNavigationMenu = node; });
+
+    for (const render of [
+        () => page.evaluate(html => {
+            window.Turbo.renderStreamMessage(`<turbo-stream action="replace" method="morph" target="site"><template>${html}</template></turbo-stream>`);
+        }, original),
+        () => frame.evaluate(node => node.reload()),
+    ]) {
+        await products.press("Enter");
+        await expect(viewport).toBeVisible();
+        await render();
+        await expect(viewport).toBeHidden();
+        expect(await root.evaluate(node => node === window.originalNavigationMenu)).toBe(true);
+
+        await root.evaluate(node => {
+            node.dataset.navigationMenuOpenDelayValue = "10000";
+            node.querySelector("#site-trigger-company").dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+        });
+        await expect(company).toHaveAttribute("aria-expanded", "false");
+
+        await products.press("Enter");
+        await expect(viewport).toBeVisible();
+        await page.keyboard.press("Escape");
+    }
 });
 
 test("anchors a wide viewport to the menu while its content slides and height changes", async ({ page }) => {

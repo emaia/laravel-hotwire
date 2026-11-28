@@ -37,16 +37,16 @@ one `.viewport` after the list. Match each trigger to its panel with a unique `v
 </hw:navigation-menu>
 ```
 
-- Mouse hover and keyboard focus reveal submenus; clicking or tapping a trigger toggles it. The first hover has a
-  short delay so a quick click can open the menu. Set `:hover="false"` to disable mouse hover without changing
-  keyboard or touch behavior.
-- `Tab` follows the active submenu links before continuing to the next top-level item, and `Shift+Tab` can return to
-  its trigger. Arrow keys move between top-level items along the menu's orientation; `Home` and `End` jump to the
-  first and last items.
-- `Escape` in the menu closes the active submenu and returns focus to its trigger without closing an enclosing
-  overlay. When the pointer opened the submenu without moving focus into the menu, `Escape` dismisses it without
-  moving focus. Clicking outside, moving focus out, leaving with the pointer after the delay, and Turbo snapshot
-  caching also dismiss the submenu.
+- Hover previews a submenu after a short delay. Clicking or tapping activates it, including when it is already
+  visible from hover; activating it again closes it. Set `:hover="false"` to disable previews.
+- Focus alone does not open a submenu. Press `Enter` or `Space` to toggle it. In a horizontal menu, `ArrowUp` and
+  `ArrowDown` also toggle it. In a vertical menu, use `ArrowRight` in LTR or `ArrowLeft` in RTL to open it. These
+  keys keep focus on the trigger; `Tab` enters the active submenu and skips closed submenus and hover previews.
+  `Shift+Tab` can return from the first link to the trigger. Arrows along the menu's orientation move between items
+  without opening panels; `Home` and `End` jump to the first and last items.
+- `Escape` closes the submenu without closing an enclosing overlay. Focus returns to the trigger only if it was
+  inside the submenu. Clicking outside, leaving the menu after the pointer delay, and Turbo snapshot caching also
+  dismiss it.
 - Nova and Bloom fade in the viewport on open, then slide in the incoming content when switching panels.
   When the viewport opens above its anchor, it grows upward without shifting the sliding content vertically.
   With reduced motion enabled, the viewport updates without animations. Panels that exceed the available space

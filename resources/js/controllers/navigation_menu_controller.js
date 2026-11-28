@@ -18,11 +18,6 @@ export default class extends Controller {
         closeDelay: { type: Number, default: 180 },
     };
 
-    connect() {
-        const focused = this.element.ownerDocument.activeElement;
-        if (focused?.matches(":focus-visible") && this.triggerTargets.includes(focused)) this.open(focused);
-    }
-
     disconnect() {
         this.close();
     }
@@ -56,24 +51,19 @@ export default class extends Controller {
 
     toggle(event) {
         if (event.defaultPrevented) return;
-        const trigger = event.currentTarget;
-        this.active?.trigger === trigger ? this.close() : this.open(trigger);
+        this.toggleTrigger(event.currentTarget);
     }
 
-    focusIn(event) {
-        if (this.restoringFocus) return;
-        const { target } = event;
-        if (this.triggerTargets.includes(target) && target.matches(":focus-visible")) {
-            this.open(target);
-        } else if (this.linkTargets.includes(target) && this.isInList(target)) {
-            this.close();
-        }
+    toggleTrigger(trigger) {
+        if (this.active?.trigger === trigger && this.active.activated) this.close();
+        else this.open(trigger, { activated: true });
     }
 
-    focusOut(event) {
-        if (this.restoringFocus || !event.relatedTarget || this.active?.content.contains(event.relatedTarget)) return;
-        if (event.relatedTarget === this.active?.trigger || this.triggerTargets.includes(event.relatedTarget)) return;
-        if (this.active?.content.contains(event.target) || !this.element.contains(event.relatedTarget)) this.close();
+    focusOut({ target, relatedTarget }) {
+        if (!this.active || !relatedTarget) return;
+        const { trigger, content } = this.active;
+        if (relatedTarget === trigger || content.contains(relatedTarget)) return;
+        if (target === trigger || content.contains(target) || !this.element.contains(relatedTarget)) this.close();
     }
 
     keydown(event) {
@@ -85,12 +75,39 @@ export default class extends Controller {
             if (hasPendingSearchClear(target)) return;
             event.preventDefault();
             event.stopPropagation();
-            this.returnFocus(active.trigger);
+            if (active.content.contains(target)) this.returnFocus(active.trigger);
             this.close();
         } else if (key === "Tab" && active) {
             this.tabThroughPanel(event, active);
         } else if (this.isInList(target) && !event.altKey && !event.ctrlKey && !event.metaKey && !shiftKey) {
-            this.moveInList(event);
+            const activatesPanel = this.vertical
+                ? key === (this.rtl ? "ArrowLeft" : "ArrowRight")
+                : key === "ArrowUp" || key === "ArrowDown";
+            if (activatesPanel && this.triggerTargets.includes(target) && !target.matches(":disabled")) {
+                event.preventDefault();
+                if (!event.repeat) {
+                    if (this.vertical) this.open(target, { activated: true });
+                    else this.toggleTrigger(target);
+                }
+            } else {
+                this.moveInList(event);
+            }
+        }
+    }
+
+    dismissPreviewOnTab(event) {
+        if (event.key !== "Tab" || event.defaultPrevented || isComposing(event) || !this.active || this.active.activated) return;
+        // A preview must not enter the native tab order, including Shift+Tab from outside the menu.
+        if (!this.active.content.contains(event.target)) this.close();
+    }
+
+    reconcileRender({ target, type }) {
+        if (target.contains(this.element)) {
+            this.close();
+        } else if (type === "turbo:morph-element" && this.active && this.element.contains(target)) {
+            // Only changes to the disclosure shell invalidate it, not a render inside the active panel.
+            const { trigger, content, viewport } = this.active;
+            if ([trigger, content, viewport].some(element => target.contains(element))) this.close();
         }
     }
 
@@ -116,7 +133,8 @@ export default class extends Controller {
         this.cancelClose();
         this.closeTimer = setTimeout(() => {
             this.closeTimer = undefined;
-            if (!this.panelHasFocus() && !this.active?.trigger.matches(":focus-visible")) this.close();
+            const active = this.active;
+            if (!this.panelHasFocus() && !(active?.activated && active.trigger.matches(":focus-visible"))) this.close();
         }, Math.max(0, this.closeDelayValue));
     }
 
@@ -130,7 +148,7 @@ export default class extends Controller {
         this.openTimer = undefined;
     }
 
-    open(trigger) {
+    open(trigger, { activated = false } = {}) {
         this.cancelOpen();
         if (!this.isInList(trigger) || trigger.matches(":disabled") || !this.hasViewportTarget) return;
         const viewport = this.viewportTarget;
@@ -139,7 +157,10 @@ export default class extends Controller {
 
         this.cancelClose();
         const previous = this.active;
-        if (previous?.trigger === trigger && previous.content === content) return;
+        if (previous?.trigger === trigger && previous.content === content) {
+            if (activated) previous.activated = true;
+            return;
+        }
 
         if (previous) {
             this.releasePanel(previous);
@@ -147,7 +168,7 @@ export default class extends Controller {
         }
 
         const topLayer = previous?.viewport === viewport ? previous.topLayer : createTopLayer(viewport, { suppressAutofocus: true });
-        const active = { trigger, content, viewport, topLayer };
+        const active = { trigger, content, viewport, topLayer, activated };
         this.active = active;
         this.element.setAttribute(ESCAPE_SCOPE, "");
         this.setTriggerState(trigger, true);
@@ -168,8 +189,9 @@ export default class extends Controller {
 
         const measure = () => {
             if (this.active !== active) return;
-            viewport.style.setProperty(`${VIEWPORT_PROPERTY}width`, `${content.offsetWidth}px`);
-            viewport.style.setProperty(`${VIEWPORT_PROPERTY}height`, `${content.offsetHeight}px`);
+            const { width, height } = content.getBoundingClientRect();
+            viewport.style.setProperty(`${VIEWPORT_PROPERTY}width`, `${Math.ceil(width)}px`);
+            viewport.style.setProperty(`${VIEWPORT_PROPERTY}height`, `${Math.ceil(height)}px`);
         };
         measure();
         const view = viewport.ownerDocument.defaultView;
@@ -277,11 +299,11 @@ export default class extends Controller {
         entries[to].focus();
     }
 
-    tabThroughPanel(event, { trigger, content }) {
+    tabThroughPanel(event, { trigger, content, activated }) {
         const { target, shiftKey } = event;
         if (target !== trigger && !content.contains(target)) return;
         const focusables = getFocusableElements(content);
-        if (target === trigger && !shiftKey && focusables.length) {
+        if (target === trigger && activated && !shiftKey && focusables.length) {
             event.preventDefault();
             focusables[0].focus();
         } else if (target === focusables[0] && shiftKey) {
@@ -295,9 +317,7 @@ export default class extends Controller {
     }
 
     returnFocus(trigger) {
-        this.restoringFocus = true;
         trigger.focus({ preventScroll: true });
-        this.restoringFocus = false;
     }
 }
 

@@ -18,6 +18,9 @@ identifies a `content` panel in the shared `viewport`. The controller keeps `ari
 placement. With `data-anchor="menu"`, the horizontal viewport centers on the root and a vertical viewport anchors
 to the list. Otherwise, the active trigger is the anchor.
 
+Focus alone does not open a panel. Hover previews it, but users tab past the preview unless they activate the trigger
+by clicking, tapping or pressing `Enter`, `Space` or a disclosure arrow key.
+
 ## Styling
 
 The viewport gets `--navigation-menu-viewport-width` and `--navigation-menu-viewport-height` from the active
