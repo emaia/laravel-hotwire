@@ -35,11 +35,15 @@ export function createFloating(anchor, floating, options = {}) {
 
         const resolved = parsePlacement(placement);
 
-        Object.assign(floating.style, {
-            position: config.strategy,
-            left: `${x}px`,
-            top: `${y}px`,
-        });
+        if (config.applyPosition) {
+            config.applyPosition({ x, y, side: resolved.side });
+        } else {
+            Object.assign(floating.style, {
+                position: config.strategy,
+                left: `${x}px`,
+                top: `${y}px`,
+            });
+        }
 
         floating.dataset.side = resolved.side;
         floating.dataset.align = resolved.align;
@@ -176,6 +180,7 @@ function normalizeOptions(options) {
         arrowElement: isElement(options.arrowElement) ? options.arrowElement : null,
         arrowPadding: number(options.arrowPadding, 4),
         hideWhenDetached: options.hideWhenDetached === true,
+        applyPosition: options.applyPosition,
     };
 }
 

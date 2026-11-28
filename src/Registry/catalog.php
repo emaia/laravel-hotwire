@@ -58,6 +58,7 @@ use Emaia\LaravelHotwire\Components\Modal;
 use Emaia\LaravelHotwire\Components\MultiSelect;
 use Emaia\LaravelHotwire\Components\Navbar;
 use Emaia\LaravelHotwire\Components\Navbar\Item as NavbarItem;
+use Emaia\LaravelHotwire\Components\NavigationMenu;
 use Emaia\LaravelHotwire\Components\Optimistic;
 use Emaia\LaravelHotwire\Components\OverlayReturn;
 use Emaia\LaravelHotwire\Components\Pagination;
@@ -824,6 +825,63 @@ return [
                 ],
             ],
         ],
+        'navigation-menu' => [
+            'class' => NavigationMenu::class,
+            'view' => 'hotwire::component-views.navigation-menu',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Site navigation with direct links, animated submenus for mouse, keyboard and touch, and optional Turbo Frame loading',
+            'controllers' => ['navigation-menu'],
+            'styling' => ['slots' => [['class' => NavigationMenu::class]]],
+        ],
+        'navigation-menu.content' => [
+            'class' => NavigationMenu\Content::class,
+            'view' => 'hotwire::component-views.navigation-menu-content',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Submenu panel for custom Blade layouts or content loaded on demand through a Turbo Frame',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['content']]]],
+        ],
+        'navigation-menu.item' => [
+            'class' => NavigationMenu\Item::class,
+            'view' => 'hotwire::component-views.navigation-menu-item',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Top-level entry for a direct link or a button that opens a submenu',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['item']]]],
+        ],
+        'navigation-menu.link' => [
+            'class' => NavigationMenu\Link::class,
+            'view' => 'hotwire::component-views.navigation-menu-link',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Link that can mark the current page and open its destination in a specific Turbo Frame',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['link']]]],
+        ],
+        'navigation-menu.list' => [
+            'class' => NavigationMenu\MenuList::class,
+            'view' => 'hotwire::component-views.navigation-menu-list',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Horizontal or vertical list of links and submenu buttons with arrow-key navigation',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['list']]]],
+        ],
+        'navigation-menu.trigger' => [
+            'class' => NavigationMenu\Trigger::class,
+            'view' => 'hotwire::component-views.navigation-menu-trigger',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Submenu button with an optional chevron that indicates when the panel is open',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['trigger', 'trigger-icon']]]],
+        ],
+        'navigation-menu.viewport' => [
+            'class' => NavigationMenu\Viewport::class,
+            'view' => 'hotwire::component-views.navigation-menu-viewport',
+            'docs' => 'docs/components/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Shared submenu panel that follows the active button or stays anchored to the menu as content slides',
+            'styling' => ['slots' => [['class' => NavigationMenu::class, 'only' => ['viewport']]]],
+        ],
         'optimistic' => [
             'class' => Optimistic::class,
             'view' => 'hotwire::component-views.optimistic',
@@ -1495,6 +1553,13 @@ return [
             'docs' => 'docs/controllers/multi-select.md',
             'category' => 'forms',
             'description' => 'Enhances a native multiple select with search, limits, select-all and floating positioning',
+            'npm' => ['@floating-ui/dom' => '^1.8.0'],
+        ],
+        'navigation-menu' => [
+            'source' => 'resources/js/controllers/navigation_menu_controller.js',
+            'docs' => 'docs/controllers/navigation-menu.md',
+            'category' => 'navigation',
+            'description' => 'Opens submenus by mouse, keyboard or touch, supports Escape dismissal and loads Turbo Frame content on demand',
             'npm' => ['@floating-ui/dom' => '^1.8.0'],
         ],
         'oembed' => [

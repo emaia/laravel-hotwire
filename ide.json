@@ -739,6 +739,41 @@
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Navbar\\Item"
                 },
                 {
+                    "name": "navigation-menu",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu"
+                },
+                {
+                    "name": "navigation-menu.content",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\Content"
+                },
+                {
+                    "name": "navigation-menu.item",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\Item"
+                },
+                {
+                    "name": "navigation-menu.link",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\Link"
+                },
+                {
+                    "name": "navigation-menu.list",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\MenuList"
+                },
+                {
+                    "name": "navigation-menu.trigger",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\Trigger"
+                },
+                {
+                    "name": "navigation-menu.viewport",
+                    "namespace": "hw",
+                    "className": "\\Emaia\\LaravelHotwire\\Components\\NavigationMenu\\Viewport"
+                },
+                {
                     "name": "optimistic",
                     "namespace": "hw",
                     "className": "\\Emaia\\LaravelHotwire\\Components\\Optimistic"

@@ -3235,7 +3235,7 @@ async function browserControllerScript(path) {
 
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
-        .replace("export class FocusTrap", "class FocusTrap");
+        .replace(/^export /gm, "");
 
     const overlayStack = (await readFile("resources/js/controllers/_overlay_stack.js", "utf8"))
         .replace("export function registerOverlay", "function registerOverlay")
