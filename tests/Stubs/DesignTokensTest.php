@@ -877,6 +877,9 @@ it('uses physical inline CSS only for documented physical contracts', function (
         ->all();
     $structuralPhysical = physicalInlineDeclarations($structural);
     $structuralAllowed = [
+        // Floating UI reports physical coordinates; the slide sign is already resolved from the reading direction.
+        '[data-slot="navigation-menu-viewport"]' => ['left: var(--navigation-menu-viewport-x, 0px)'],
+        'from' => ['transform: translateX(var(--navigation-menu-motion-x))'],
         ':where([data-slot="sidebar-container"][data-side="left"])' => ['left: 0'],
         ':where([data-slot="sidebar-container"][data-side="right"])' => ['right: 0'],
         ':where([data-slot="sidebar"][data-collapsible="offcanvas"] > [data-slot="sidebar-container"][data-side="left"])' => ['left: calc(var(--sidebar-width) * -1)'],

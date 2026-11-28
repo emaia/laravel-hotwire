@@ -277,7 +277,7 @@ async function bundle() {
 
     const focusTrap = (await readFile("resources/js/controllers/_focus_trap.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")
-        .replace("export class FocusTrap", "class FocusTrap");
+        .replace(/^export /gm, "");
 
     const overlay = (await readFile("resources/js/controllers/_overlay.js", "utf8"))
         .replace(/import \{[^}]*\} from "\.\/_composition\.js";\s*/, "")

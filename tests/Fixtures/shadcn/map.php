@@ -1036,60 +1036,32 @@ return [
         ],
         'cn-native-select' => ['decision' => 'renamed', 'slot' => 'select'],
         'cn-native-select-icon' => ['decision' => 'renamed', 'slot' => 'select-icon'],
-        'cn-navigation-menu' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
-        'cn-navigation-menu-content' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
+        'cn-navigation-menu' => ['decision' => 'equivalent', 'slot' => 'navigation-menu'],
+        'cn-navigation-menu-content' => ['decision' => 'equivalent', 'slot' => 'navigation-menu-content'],
         'cn-navigation-menu-indicator' => [
             'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
+            'note' => 'The active trigger carries the expanded state; there is no separate viewport indicator.',
         ],
         'cn-navigation-menu-indicator-arrow' => [
             'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
+            'note' => 'There is no separate viewport indicator or arrow.',
         ],
-        'cn-navigation-menu-link' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
-        'cn-navigation-menu-list' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
+        'cn-navigation-menu-link' => ['decision' => 'equivalent', 'slot' => 'navigation-menu-link'],
+        'cn-navigation-menu-list' => ['decision' => 'equivalent', 'slot' => 'navigation-menu-list'],
         'cn-navigation-menu-popup' => [
             'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
+            'note' => 'The shared viewport is also the painted popup surface.',
         ],
         'cn-navigation-menu-positioner' => [
             'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
+            'note' => 'The controller positions the viewport itself without a separate wrapper.',
         ],
-        'cn-navigation-menu-trigger' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
-        'cn-navigation-menu-trigger-icon' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
-        ],
+        'cn-navigation-menu-trigger' => ['decision' => 'equivalent', 'slot' => 'navigation-menu-trigger'],
+        'cn-navigation-menu-trigger-icon' => ['decision' => 'equivalent', 'slot' => 'navigation-menu-trigger-icon'],
         'cn-navigation-menu-viewport' => [
-            'decision' => 'not-applicable',
-            'note' => 'The package ships no Navigation Menu; Navbar is a plain navigation bar, not a port of the upstream'
-                .' flyout anatomy.',
+            'decision' => 'divergent',
+            'slot' => 'navigation-menu-viewport',
+            'note' => 'One shared surface combines viewport, popup and positioning responsibilities.',
         ],
         'cn-pagination-content' => ['decision' => 'equivalent', 'slot' => 'pagination-content'],
         'cn-pagination-ellipsis' => ['decision' => 'equivalent', 'slot' => 'pagination-ellipsis'],
@@ -1992,13 +1964,26 @@ return [
         ],
         'navbar' => [
             'decision' => 'divergent',
-            'note' => 'Upstream\'s Navigation Menu covers this ground with a flyout anatomy the package does not port;'
-                .' Navbar is a plain navigation bar.',
+            'note' => 'Navbar is a plain navigation bar; the separate Navigation Menu owns the flyout anatomy.',
         ],
         'navbar-item' => [
             'decision' => 'divergent',
-            'note' => 'Upstream\'s Navigation Menu covers this ground with a flyout anatomy the package does not port;'
-                .' Navbar is a plain navigation bar.',
+            'note' => 'Navbar items are links, buttons or text, not disclosure triggers.',
+        ],
+        'navigation-menu' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu'],
+        'navigation-menu-content' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu-content'],
+        'navigation-menu-item' => [
+            'decision' => 'hotwire-only',
+            'note' => 'The corpus has no styling class for the individual list item.',
+        ],
+        'navigation-menu-link' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu-link'],
+        'navigation-menu-list' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu-list'],
+        'navigation-menu-trigger' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu-trigger'],
+        'navigation-menu-trigger-icon' => ['decision' => 'equivalent', 'class' => 'cn-navigation-menu-trigger-icon'],
+        'navigation-menu-viewport' => [
+            'decision' => 'divergent',
+            'class' => 'cn-navigation-menu-viewport',
+            'note' => 'One shared surface combines viewport, popup and positioning responsibilities.',
         ],
         'video-embed' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],
         'video-embed-frame' => ['decision' => 'hotwire-only', 'note' => 'The corpus declares no class for this part.'],

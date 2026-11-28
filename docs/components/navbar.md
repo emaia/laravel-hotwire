@@ -3,7 +3,8 @@
 Navigation bar for real links and buttons.
 
 Use `<hw:navbar>` for route or section navigation that should render as `<nav>` with links and `aria-current`, not as
-tabs. Use `<hw:tabs>` only when the control switches tab panels in the same document.
+tabs. Use [Navigation Menu](navigation-menu.md) for site navigation with flyout submenus, or `<hw:tabs>` when the
+control switches tab panels in the same document.
 
 ## Quick example
 

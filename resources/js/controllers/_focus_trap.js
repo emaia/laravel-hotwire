@@ -101,7 +101,8 @@ export class FocusTrap {
     }
 }
 
-function getFocusableElements(container) {
+/** Find sequentially focusable descendants, excluding hidden, inert and disabled elements. */
+export function getFocusableElements(container) {
     return [...container.querySelectorAll(FOCUS_CANDIDATE_SELECTOR)].filter(
         (element) => (element.tabIndex >= 0 || isEditingHost(element)) && isFocusableElement(element),
     );
